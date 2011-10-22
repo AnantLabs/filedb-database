@@ -1,9 +1,0 @@
-SCC = This is a Source Code Control file
-
-[SampleApp.csproj]
-SCC_Aux_Path = "C:\Dev\vss\EzTools"
-SCC_Project_Name = "$/EzTools.NET/FileDb/Windows/WinForms SampleApp", URNAAAAA
-
-[SampleApp.sln]
-SCC_Aux_Path = "C:\Dev\vss\EzTools"
-SCC_Project_Name = "$/EzTools.NET/FileDb/Windows/WinForms SampleApp", URNAAAAA
