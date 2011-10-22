@@ -1,0 +1,65 @@
+﻿<Window x:Class="FileDbDynamicDriverNs.ConnectionDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="FileDb Folder Selection"
+    SizeToContent="Height"
+    Width="336" WindowStartupLocation="CenterScreen">
+    <StackPanel Margin="6" Width="Auto">
+
+        <Label Padding="0,0,0,3">Connection Friendly Name</Label>
+        <TextBox Text="{Binding FriendlyName}" HorizontalContentAlignment="Left" TabIndex="1" Width="Auto" Name="TxtFriendlyName" />
+
+        <Label Padding="0,0,0,3">Database Folder</Label>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions> 
+            <TextBox Grid.Column="0" Text="{Binding Folder}" HorizontalContentAlignment="Left" TabIndex="2" Width="Auto" Name="TxtFolder" KeyDown="TxtFolder_KeyDown" LostFocus="TxtFolder_LostFocus" />
+            <Button Grid.Column="1" Name="BtnBrowse" Content="Browse" Margin="5,0,5,0" Padding="8,3" Width="60" IsDefault="False" TabIndex="3" Click="BtnBrowse_Click" />
+        </Grid>
+
+        <GroupBox Header="FileDb Database files" Margin="0,7,0,7">
+            <ListView Height="200" Name="LstFiles" TabIndex="5">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}" />
+                        <GridViewColumn Header="Size" Width="90">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Margin="0,0" HorizontalAlignment="Right" Text="{Binding Size}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </GroupBox>
+
+        <StackPanel Margin="0" Orientation="Horizontal">
+            <Label Padding="0,0,0,3" HorizontalAlignment="Stretch">File Extension (eg. fdb):</Label>
+            <Label Width="100" TabIndex="6"></Label>
+            <Button Name="BtnRefresh" Content="Refresh" Margin="5,0,0,0" Padding="8,3" HorizontalContentAlignment="Center" Height="25" FontSize="10" Click="BtnRefresh_Click" TabIndex="7" />
+        </StackPanel>
+        <StackPanel Margin="0" Orientation="Horizontal">
+            <TextBox Text="{Binding Extension}" HorizontalContentAlignment="Left" Width="50" TabIndex="8" Name="TxtExtension" KeyDown="TxtExtension_KeyDown" />
+            <Label Padding="0,0,0,3" FontSize="10" VerticalContentAlignment="Bottom" Margin="9,0">(press Enter to refresh list)</Label>
+        </StackPanel>
+
+        <CheckBox IsChecked="{Binding Persist}" Margin="0,5" TabIndex="9">Remember this connection</CheckBox>
+
+        <DockPanel LastChildFill="False" Margin="0,8,0,0">
+            <Button Name="BtnCancel" DockPanel.Dock="Right" Content="Cancel" Margin="5,0,0,0" Padding="8,3" MinWidth="60" IsCancel="True" TabIndex="11" />
+            <Button Name="BtnOK" DockPanel.Dock="Right" Content="OK" Margin="5,0,0,0" Padding="8,3" MinWidth="60" IsDefault="False" TabIndex="10" Click="BtnOK_Click" Height="25" Width="73" />
+        </DockPanel>
+        <TextBlock Margin="0,10,0,0">
+            <Hyperlink NavigateUri="http://www.eztools-software.com/downloads/filedb_linqpad_driver.zip" RequestNavigate="Hyperlink_RequestNavigate" Name="LnkDownload" >Download sample database from EzTools Software
+            </Hyperlink>
+        </TextBlock>
+    </StackPanel>    
+</Window>
