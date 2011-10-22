@@ -36,6 +36,8 @@ When Close is called, the Index and MetaData are written back to disk (Flush is 
 
 The database file can be opened in ReadOnly mode.  This is useful for when its in a folder without write priviledge.
 
+All of the actual database operations are done in class FileDbEngine.  Class FileDb wraps FileDbEngine and provides the public interface, making for a clean separation of concerns.
+
 
 What needs to be done
 ---------------------
