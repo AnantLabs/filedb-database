@@ -403,7 +403,7 @@ namespace SampleApp
         {
             try
             {
-                _db.Open( StrDbName );
+                _db.Open( StrDbName, false );
             }
             catch( Exception ex )
             {
@@ -420,7 +420,7 @@ namespace SampleApp
 
             try
             {
-                _db.Open( StrDbName, StrEncryptionKey );
+                _db.Open( StrDbName, false );
             }
             catch( Exception ex )
             {
@@ -722,7 +722,7 @@ namespace SampleApp
 
                 try
                 {
-                    employeesDb.Open( path + "Employees.fdb" );
+                    employeesDb.Open( path + "Employees.fdb", false );
                     string searchVal = @"\bFull";
                     var fieldSearchExp = new FilterExpression( "LastName", searchVal, Equality.Like );
 
@@ -760,7 +760,7 @@ namespace SampleApp
 
                 try
                 {
-                    customersDb.Open( path + "Customers.fdb" );
+                    customersDb.Open( path + "Customers.fdb", false );
 
                     FileDbNs.Table customers = customersDb.SelectAllRecords();
 
@@ -911,7 +911,7 @@ namespace SampleApp
 
                     do
                     {
-                        Record record = _db.GetCurrentRecord( true );
+                        Record record = _db.GetCurrentRecord( null, true );
                         records.Add( record );
 
                         foreach( string fieldName in record.FieldNames )
@@ -962,7 +962,7 @@ namespace SampleApp
                 FileDb employeesDb = new FileDb();
 
                 string path = System.IO.Path.Combine( AppDomain.CurrentDomain.BaseDirectory, StrNorthwindRelPath );
-                employeesDb.Open( path + "Employees.fdb" );
+                employeesDb.Open( path + "Employees.fdb", true );
 
                 try
                 {
@@ -1010,10 +1010,10 @@ namespace SampleApp
 
                 string path = System.IO.Path.Combine( AppDomain.CurrentDomain.BaseDirectory, StrNorthwindRelPath );
 
-                customersDb.Open( path + "Customers.fdb" );
-                ordersDb.Open( path + "Orders.fdb" );
-                orderDetailsDb.Open( path + "OrderDetails.fdb" );
-                productsDb.Open( path + "Products.fdb" );
+                customersDb.Open( path + "Customers.fdb", true );
+                ordersDb.Open( path + "Orders.fdb", true );
+                orderDetailsDb.Open( path + "OrderDetails.fdb", true );
+                productsDb.Open( path + "Products.fdb", true );
 
                 try
                 {
@@ -1086,7 +1086,7 @@ namespace SampleApp
                 FileDb employeesDb = new FileDb();
 
                 string path = System.IO.Path.Combine( AppDomain.CurrentDomain.BaseDirectory, StrNorthwindRelPath );
-                employeesDb.Open( path + "Employees.fdb" );
+                employeesDb.Open( path + "Employees.fdb", true );
 
                 try
                 {
@@ -1140,10 +1140,10 @@ namespace SampleApp
 
                 string path = System.IO.Path.Combine( AppDomain.CurrentDomain.BaseDirectory, StrNorthwindRelPath );
 
-                customersDb.Open( path + "Customers.fdb" );
-                ordersDb.Open( path + "Orders.fdb" );
-                orderDetailsDb.Open( path + "OrderDetails.fdb" );
-                productsDb.Open( path + "Products.fdb" );
+                customersDb.Open( path + "Customers.fdb", true );
+                ordersDb.Open( path + "Orders.fdb", true );
+                orderDetailsDb.Open( path + "OrderDetails.fdb", true );
+                productsDb.Open( path + "Products.fdb", true );
 
                 try
                 {
@@ -1247,9 +1247,9 @@ namespace SampleApp
 
                 string path = System.IO.Path.Combine( AppDomain.CurrentDomain.BaseDirectory, StrNorthwindRelPath );
 
-                customersDb.Open( path + "Customers.fdb" );
-                ordersDb.Open( path + "Orders.fdb" );
-                orderDetailsDb.Open( path + "OrderDetails.fdb" );
+                customersDb.Open( path + "Customers.fdb", true );
+                ordersDb.Open( path + "Orders.fdb", true );
+                orderDetailsDb.Open( path + "OrderDetails.fdb", true );
 
                 try
                 {
@@ -1372,6 +1372,21 @@ namespace SampleApp
             }
         }
         #endregion Helpers
+
+        private void BtnMetaData_Click( object sender, EventArgs e )
+        {
+            try
+            {
+                object metaData = _db.MetaData;
+                // MetaData can only be string or byte[]
+                _db.MetaData = new byte[] { 1, 2, 3, 4 };
+                int debug = 0;
+            }
+            catch( Exception ex )
+            {
+                MessageBox.Show( ex.Message );
+            }
+        }
 
     }
 }

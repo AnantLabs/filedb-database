@@ -62,6 +62,7 @@
             this.BtnLinqJoin = new System.Windows.Forms.Button();
             this.BtnLinqSelect = new System.Windows.Forms.Button();
             this.BtnTableFromTable = new System.Windows.Forms.Button();
+            this.BtnMetaData = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize) (this.grid)).BeginInit();
             this.SuspendLayout();
             // 
@@ -442,11 +443,23 @@
             this.BtnTableFromTable.UseVisualStyleBackColor = true;
             this.BtnTableFromTable.Click += new System.EventHandler( this.BtnTableFromTable_Click );
             // 
+            // BtnMetaData
+            // 
+            this.BtnMetaData.Location = new System.Drawing.Point( 566, 209 );
+            this.BtnMetaData.Margin = new System.Windows.Forms.Padding( 4 );
+            this.BtnMetaData.Name = "BtnMetaData";
+            this.BtnMetaData.Size = new System.Drawing.Size( 175, 36 );
+            this.BtnMetaData.TabIndex = 35;
+            this.BtnMetaData.Text = "Get/Set MetaData";
+            this.BtnMetaData.UseVisualStyleBackColor = true;
+            this.BtnMetaData.Click += new System.EventHandler( this.BtnMetaData_Click );
+            // 
             // MainFrm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF( 8F, 16F );
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size( 1168, 545 );
+            this.Controls.Add( this.BtnMetaData );
             this.Controls.Add( this.BtnTableFromTable );
             this.Controls.Add( this.BtnLinqAggregates );
             this.Controls.Add( this.BtnLinqHierarchicalObjects );
@@ -525,6 +538,7 @@
         private System.Windows.Forms.Button BtnLinqJoin;
         private System.Windows.Forms.Button BtnLinqSelect;
         private System.Windows.Forms.Button BtnTableFromTable;
+        private System.Windows.Forms.Button BtnMetaData;
     }
 }
 
