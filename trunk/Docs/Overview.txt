@@ -1,0 +1,51 @@
+Overview
+--------
+
+FileDb is a NoSQL database meant for use as a local data store for applications.  Here are some important points about FileDb:
+
+- Stores one table per file, including its index
+- Extremely small size DLL
+- Supports field types Int, UInt, Bool, String, Byte, Float, Double and DateTime and also arrays of the same types
+- Index supports a single Primary Key field (optional)
+- Compiled versions for Windows Phone 7, Silverlight and .NET
+- FileDb is VERY FAST
+- Use with LINQ to Objects to achieve full relational capability
+
+FileDb was specifically designed to use only native .NET data types so there would no need to translate between database storage and the CLR data types.  So you can just as easily read/write a String[] field as you would an Int field.  Another feature is that a database file created on any .NET platform will work on any other.  So you can create a database file on your Windows machine and it can be used in a Silverlight or Windows Phone app.
+
+FileDb also has a built-in query filter parser so you can write SQL-like filter expressions to make filtering data easy, like this:
+
+    string filter = "FirstName IN ('Cindy', 'John') AND Age > 32"
+
+
+Techinal
+--------
+
+The layout of the file is:
+
+  Schema
+  Data
+  Index
+  MetaData
+  
+When a database file is opened the Schema is read and Field structures are created and statistics read.  Then the Index and MetatData is read into memory.  Both of these are kept in memory as long as the file is open (until Close is called).
+
+Deleted records are tracked.  When a record is added, the deleted record locations are checked to see if a place large enough for the new record exists and if so that place is used, otherwise its added to the end of the Data section of the file.  The same procedure is used when a record is updated if its new size is larger than before.  When Clean is called the space is reclaimed by compacting the Data section.  There is an AutoClean mechanism which will call Clean automatically when a certain number of deleted records is reached.
+
+When Close is called, the Index and MetaData are written back to disk (Flush is called).  The Flush method writes the Index and MedaData to disk, and also flushes the data stream buffer to disk.  Clean is NOT called when the database is closed.
+
+The database file can be opened in ReadOnly mode.  This is useful for when its in a folder without write priviledge.
+
+
+What needs to be done
+---------------------
+
+The most needed thing at this point is a suite of test functions to be written which can be used to verify the accuracy of the database as changes are made.
+
+I also thought about making it so you could create an in-memory database, where there is no file backing (to create it, you would pass null as the filename).  Then have a Save method which returns a Byte[] or saves to a passed in Stream.  There may be some scenarios where this could be very handy.
+
+It would be cool if someone who knows LINQ internals could implement IQueryable to make it work even better with LINQ.  As it is now, you must select the dataset (Table) and use it int the LINQ query.  If IQueryable is implemented we can use the FileDb object in the LINQ query directly.
+
+
+
+
