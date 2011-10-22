@@ -1778,36 +1778,13 @@ fieldValues["StringArray"] = new string[] { "x", null };
             }
         }
 
-        private void BtnAddField_Click( object sender, RoutedEventArgs e )
-        {
-            try
-            {
-                Field newField = new Field( "MyNewField", DataType.String );
-                _db.AddField( newField, "default val" );
-            }
-            catch( Exception ex )
-            {
-                MessageBox.Show( ex.Message );
-            }
-        }
-
-        private void BtnRemoveField_Click( object sender, RoutedEventArgs e )
-        {
-            try
-            {
-                _db.RemoveField( "MyNewField" );
-            }
-            catch( Exception ex )
-            {
-                MessageBox.Show( ex.Message );
-            }
-        }
-
         private void BtnMetaData_Click( object sender, RoutedEventArgs e )
         {
             try
             {
-                _db.MetaData = new byte[] { 1,2,3,4 };
+                object metaData = _db.MetaData;
+                // MetaData can only be string or byte[]
+                _db.MetaData = new byte[] { 1, 2, 3, 4 };
                 int debug = 0;
             }
             catch( Exception ex )
