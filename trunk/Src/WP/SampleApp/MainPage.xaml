@@ -1,0 +1,69 @@
+﻿<phone:PhoneApplicationPage 
+    x:Class="SampleApp.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:phone="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone"
+    xmlns:shell="clr-namespace:Microsoft.Phone.Shell;assembly=Microsoft.Phone"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="768"
+    FontFamily="{StaticResource PhoneFontFamilyNormal}"
+    FontSize="{StaticResource PhoneFontSizeNormal}"
+    Foreground="{StaticResource PhoneForegroundBrush}"
+    SupportedOrientations="Portrait" Orientation="Portrait"
+    shell:SystemTray.IsVisible="True">
+
+    <!--LayoutRoot is the root grid where all page content is placed-->
+    <Grid x:Name="LayoutRoot" Background="Transparent">
+        <!--TitlePanel contains the name of the application and page title-->
+        <StackPanel x:Name="TitlePanel" Margin="12,17,0,635">
+            <TextBlock x:Name="ApplicationTitle" Text="FileDb Sample" Style="{StaticResource PhoneTextNormalStyle}"/>
+            <TextBlock x:Name="PageTitle" Text="FileDb" Margin="9,-7,0,0" Style="{StaticResource PhoneTextTitle1Style}"/>
+        </StackPanel>
+
+        <!--ContentPanel - place additional content here-->
+        <Grid x:Name="ContentPanel" Margin="12,140,12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="224*" />
+                <ColumnDefinition Width="232*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Height="Auto" HorizontalAlignment="Stretch" Name="stackPanel1" VerticalAlignment="Stretch" Grid.Column="0">
+                <Button Content="Create" Height="70" Name="BtnCreate" Width="Auto" FontSize="20" Padding="1,1" Click="BtnCreate_Click" />
+                <Button Content="Add Records" Height="70" Name="BtnAddRecords" Width="Auto" FontSize="20" Padding="1,1" Click="BtnAddRecords_Click" />
+                <Button Content="Open" Height="70" Name="BtnOpen" Width="Auto" FontSize="20" Padding="1,1" Click="BtnOpen_Click" />
+                <Button Content="Close" Height="70" Name="BtnClose" Width="Auto" FontSize="20" Padding="1,1" Click="BtnClose_Click" />
+                <Button Content="Drop" Height="70" Name="BtnDrop" Width="Auto" FontSize="20" Padding="1,1" Click="BtnDrop_Click" />
+                <Rectangle Height="2" Fill="White" StrokeThickness="1" Width="Auto" />
+                <Button Content="Update matching records" FontSize="20" Height="70" Name="BtnUpdateMatchingRecords" Padding="1,1" Width="Auto" Click="BtnUpdateMatchingRecords_Click" />
+                <Button Content="Update records Regex" FontSize="20" Height="70" Name="BtnUpdateRecordsRegex" Padding="1,1" Width="Auto" Click="BtnUpdateRecordsRegex_Click" />
+                <Rectangle Height="2" StrokeThickness="1" Width="Auto" Fill="White" />
+                <Button Content="Clean" FontSize="20" Height="70" Name="BtnClean" Padding="1,1" Width="Auto" Click="BtnClean_Click" />
+                <Button Content="Reindex" Height="70" Name="BtnReindex" Width="Auto" FontSize="20" Click="BtnReindex_Click" />
+            </StackPanel>
+            <StackPanel Height="Auto" HorizontalAlignment="Stretch" Margin="0,0,0,0" Name="stackPanel2" VerticalAlignment="Stretch" Grid.Column="1">
+                <Button Content="Get All Records" Height="70" Name="BtnGetAllRecords" Width="Auto" FontSize="20" Click="BtnGetAllRecords_Click" />
+                <Button Content="Get Records Regex" Height="70" Name="BtnGetRecordsRegex" Width="Auto" FontSize="20" Click="BtnGetRecordsRegex_Click" />
+                <Button Content="Get Matching Records" Height="70" Name="BtnGetMatchingRecords" Width="Auto" FontSize="20" Click="BtnGetMatchingRecords_Click" />
+                <Button Content="Get record by index" Height="70" Name="BtnGetRecordByIndex" Width="Auto" FontSize="20" Click="BtnGetRecordByIndex_Click" />
+                <Button Content="Get record by key" Height="70" Name="BtnGetRecordByKey" Width="Auto" FontSize="20" Click="BtnGetRecordByKey_Click" />
+                <Button Content="LINQ Select" Height="70" Name="BtnLinqSelect" Width="Auto" FontSize="20" Click="BtnLinqSelect_Click" />
+                <Rectangle Height="2" Stroke="Bisque" StrokeThickness="1" Width="Auto" Fill="White" />
+                <Button Content="Remove by key" Height="70" Name="BtnRemoveByKey" Width="Auto" FontSize="20" Click="BtnRemoveByKey_Click" />
+                <Button Content="Remove by value" Height="70" Name="BtnRemoveByValue" Width="Auto" FontSize="20" Click="BtnRemoveByValue_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+ 
+    <!--Sample code showing usage of ApplicationBar-->
+    <!--<phone:PhoneApplicationPage.ApplicationBar>
+        <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True">
+            <shell:ApplicationBarIconButton IconUri="/Images/appbar_button1.png" Text="Button 1"/>
+            <shell:ApplicationBarIconButton IconUri="/Images/appbar_button2.png" Text="Button 2"/>
+            <shell:ApplicationBar.MenuItems>
+                <shell:ApplicationBarMenuItem Text="MenuItem 1"/>
+                <shell:ApplicationBarMenuItem Text="MenuItem 2"/>
+            </shell:ApplicationBar.MenuItems>
+        </shell:ApplicationBar>
+    </phone:PhoneApplicationPage.ApplicationBar>-->
+
+</phone:PhoneApplicationPage>
