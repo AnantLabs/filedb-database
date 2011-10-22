@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp.csproj", "{1CDCF55D-1828-44F6-B5B9-433461838439}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileDb", "..\FileDb\FileDb.csproj", "{1C96E3B8-961A-4036-B137-5C3086DF1577}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1CDCF55D-1828-44F6-B5B9-433461838439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CDCF55D-1828-44F6-B5B9-433461838439}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CDCF55D-1828-44F6-B5B9-433461838439}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{1CDCF55D-1828-44F6-B5B9-433461838439}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CDCF55D-1828-44F6-B5B9-433461838439}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CDCF55D-1828-44F6-B5B9-433461838439}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{1C96E3B8-961A-4036-B137-5C3086DF1577}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C96E3B8-961A-4036-B137-5C3086DF1577}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C96E3B8-961A-4036-B137-5C3086DF1577}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C96E3B8-961A-4036-B137-5C3086DF1577}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
