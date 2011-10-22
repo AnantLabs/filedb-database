@@ -59,6 +59,7 @@
                 <Button Content="Remove by index" Height="22" Margin="0,10,0,0" Name="BtnRemoveByIndex" VerticalAlignment="Top" Click="BtnRemoveByIndex_Click" HorizontalAlignment="Center" Width="118" />
                 <Button Content="Remove by value 1" Height="22" HorizontalAlignment="Center" Margin="0,10,0,0" Name="BtnRemoveByValue" VerticalAlignment="Top" Width="120" Click="BtnRemoveByValue_Click" />
                 <Button Content="Remove By Value 2" Height="22" HorizontalAlignment="Center" Name="RemoveByValue2" VerticalAlignment="Top" Width="120" Click="RemoveByValue2_Click" Margin="0,10,0,0" />
+                <Button Content="Get/Set MetaData" Height="22" HorizontalAlignment="Center" Name="BtnMetaData" VerticalAlignment="Top" Width="120" Margin="0,10,0,0" Click="BtnMetaData_Click" />
             </StackPanel>
 
             <StackPanel Orientation="Vertical" Grid.Column="4" Margin="0">

@@ -85,7 +85,7 @@ namespace SampleApp
         {
             try
             {
-                _db.Open( StrDbName );
+                _db.Open( StrDbName, false );
             }
             catch( Exception ex )
             {
@@ -102,7 +102,7 @@ namespace SampleApp
 
             try
             {
-                _db.Open( StrDbName, StrEncryptionKey );
+                _db.Open( StrDbName, StrEncryptionKey, false );
             }
             catch( Exception ex )
             {
@@ -987,7 +987,7 @@ namespace SampleApp
 
                 try
                 {
-                    employeesDb.Open( "Employees.fdb" );
+                    employeesDb.Open( "Employees.fdb", false );
                     string searchVal = @"\bFull";
                     var fieldSearchExp = new FilterExpression( "LastName", searchVal, Equality.Like );
 
@@ -1024,7 +1024,7 @@ namespace SampleApp
 
                 try
                 {
-                    customersDb.Open( "Customers.fdb" );
+                    customersDb.Open( "Customers.fdb", false );
 
                     FileDbNs.Table customers = customersDb.SelectAllRecords();
 
@@ -1070,7 +1070,7 @@ namespace SampleApp
             FileDb customersDb = new FileDb();
 
             // now we can open the database
-            customersDb.Open( "Customers.fdb" );
+            customersDb.Open( "Customers.fdb", true );
 
             try
             {
@@ -1105,7 +1105,7 @@ namespace SampleApp
         {
             FileDb employeesDb = new FileDb();
 
-            employeesDb.Open( "Employees.fdb" );
+            employeesDb.Open( "Employees.fdb", true );
 
             try
             {
@@ -1161,10 +1161,10 @@ namespace SampleApp
                     orderDetailsDb = new FileDb(),
                     productsDb = new FileDb();
 
-            customersDb.Open( "Customers.fdb" );
-            ordersDb.Open( "Orders.fdb" );
-            orderDetailsDb.Open( "OrderDetails.fdb" );
-            productsDb.Open( "Products.fdb" );
+            customersDb.Open( "Customers.fdb", true );
+            ordersDb.Open( "Orders.fdb", true );
+            orderDetailsDb.Open( "OrderDetails.fdb", true );
+            productsDb.Open( "Products.fdb", true );
 
             try
             {
@@ -1225,10 +1225,10 @@ namespace SampleApp
                     orderDetailsDb = new FileDb(),
                     productsDb = new FileDb();
 
-            customersDb.Open( "Customers.fdb" );
-            ordersDb.Open( "Orders.fdb" );
-            orderDetailsDb.Open( "OrderDetails.fdb" );
-            productsDb.Open( "Products.fdb" );
+            customersDb.Open( "Customers.fdb", true );
+            ordersDb.Open( "Orders.fdb", true );
+            orderDetailsDb.Open( "OrderDetails.fdb", true );
+            productsDb.Open( "Products.fdb", true );
 
             try
             {
@@ -1310,7 +1310,7 @@ namespace SampleApp
         {
             FileDb employeesDb = new FileDb();
 
-            employeesDb.Open( "Employees.fdb" );
+            employeesDb.Open( "Employees.fdb", true );
 
             try
             {
@@ -1350,7 +1350,7 @@ namespace SampleApp
         {
             FileDb employeesDb = new FileDb();
 
-            employeesDb.Open( "Employees.fdb" );
+            employeesDb.Open( "Employees.fdb", true );
 
             try
             {
@@ -1411,10 +1411,10 @@ namespace SampleApp
                     orderDetailsDb = new FileDb(),
                     productsDb = new FileDb();
 
-            customersDb.Open( "Customers.fdb" );
-            ordersDb.Open( "Orders.fdb" );
-            orderDetailsDb.Open( "OrderDetails.fdb" );
-            productsDb.Open( "Products.fdb" );
+            customersDb.Open( "Customers.fdb", true );
+            ordersDb.Open( "Orders.fdb", true );
+            orderDetailsDb.Open( "OrderDetails.fdb", true );
+            productsDb.Open( "Products.fdb", true );
 
             try
             {
@@ -1507,10 +1507,10 @@ namespace SampleApp
                     orderDetailsDb = new FileDb(),
                     productsDb = new FileDb();
 
-            customersDb.Open( "Customers.fdb" );
-            ordersDb.Open( "Orders.fdb" );
-            orderDetailsDb.Open( "OrderDetails.fdb" );
-            productsDb.Open( "Products.fdb" );
+            customersDb.Open( "Customers.fdb", true );
+            ordersDb.Open( "Orders.fdb", true );
+            orderDetailsDb.Open( "OrderDetails.fdb", true );
+            productsDb.Open( "Products.fdb", true );
 
             try
             {
@@ -1622,9 +1622,9 @@ namespace SampleApp
                     ordersDb = new FileDb(),
                     orderDetailsDb = new FileDb();
 
-            customersDb.Open( "Customers.fdb" );
-            ordersDb.Open( "Orders.fdb" );
-            orderDetailsDb.Open( "OrderDetails.fdb" );
+            customersDb.Open( "Customers.fdb", true );
+            ordersDb.Open( "Orders.fdb", true );
+            orderDetailsDb.Open( "OrderDetails.fdb", true );
 
             try
             {
@@ -1699,9 +1699,9 @@ namespace SampleApp
                     ordersDb = new FileDb(),
                     orderDetailsDb = new FileDb();
 
-            customersDb.Open( "Customers.fdb" );
-            ordersDb.Open( "Orders.fdb" );
-            orderDetailsDb.Open( "OrderDetails.fdb" );
+            customersDb.Open( "Customers.fdb", true );
+            ordersDb.Open( "Orders.fdb", true );
+            orderDetailsDb.Open( "OrderDetails.fdb", true );
 
             try
             {
@@ -1765,6 +1765,21 @@ namespace SampleApp
                 customersDb.Close();
                 ordersDb.Close();
                 orderDetailsDb.Close();
+            }
+        }
+
+        private void BtnMetaData_Click( object sender, RoutedEventArgs e )
+        {
+            try
+            {
+                object metaData = _db.MetaData;
+                // MetaData can only be string or byte[]
+                _db.MetaData = new byte[] { 1, 2, 3, 4 };
+                int debug = 0;
+            }
+            catch( Exception ex )
+            {
+                MessageBox.Show( ex.Message );
             }
         }
     }
