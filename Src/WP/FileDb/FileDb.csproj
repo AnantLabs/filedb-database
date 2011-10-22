@@ -71,8 +71,8 @@
     <Compile Include="..\..\Src\FileDb.cs">
       <Link>FileDb.cs</Link>
     </Compile>
-    <Compile Include="..\..\Src\SearchExpression.cs">
-      <Link>SearchExpression.cs</Link>
+    <Compile Include="..\..\Src\FilterExpression.cs">
+      <Link>FilterExpression.cs</Link>
     </Compile>
     <Compile Include="..\..\Src\Table.cs">
       <Link>Table.cs</Link>

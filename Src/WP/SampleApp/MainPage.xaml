@@ -50,6 +50,7 @@
                 <Rectangle Height="2" Stroke="Bisque" StrokeThickness="1" Width="Auto" Fill="White" />
                 <Button Content="Remove by key" Height="70" Name="BtnRemoveByKey" Width="Auto" FontSize="20" Click="BtnRemoveByKey_Click" />
                 <Button Content="Remove by value" Height="70" Name="BtnRemoveByValue" Width="Auto" FontSize="20" Click="BtnRemoveByValue_Click" />
+                <Button Content="Get/Set MetaData" Height="70" Name="BtnMetaData" Width="Auto" FontSize="20" Click="BtnMetaData_Click" />
             </StackPanel>
         </Grid>
     </Grid>
