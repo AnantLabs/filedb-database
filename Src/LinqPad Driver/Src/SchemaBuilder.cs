@@ -133,7 +133,7 @@ namespace FileDbDynamicDriverNs
                 writer.WriteLine( "    FileDbNs.FileDb db = new FileDbNs.FileDb();" );
                 writer.WriteLine( "    try" );
                 writer.WriteLine( "    {" );
-                writer.WriteLine( string.Format( "      db.Open( System.IO.Path.Combine( _dbPath, @\"{0}\" ) );", fi.Name ) );
+                writer.WriteLine( string.Format( "      db.Open( System.IO.Path.Combine( _dbPath, @\"{0}\" ), false );", fi.Name ) );
                 writer.WriteLine( string.Format( "      _{0} = db.SelectAllRecords<{1}>();", tablename, tablename ) );
                 writer.WriteLine( "    }" );
                 writer.WriteLine( "    finally" );
