@@ -688,6 +688,21 @@ namespace SampleApp
                 MessageBox.Show( ex.Message );
             }
         }
+
+        private void BtnMetaData_Click( object sender, RoutedEventArgs e )
+        {
+            try
+            {
+                object metaData = _db.MetaData;
+                // MetaData can only be string or byte[]
+                _db.MetaData = new byte[] { 1, 2, 3, 4 };
+                int debug = 0;
+            }
+            catch( Exception ex )
+            {
+                MessageBox.Show( ex.Message );
+            }
+        }
         #endregion Misc functions
 
         #region Linq functions
