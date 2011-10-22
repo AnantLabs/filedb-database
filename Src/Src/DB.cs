@@ -973,6 +973,7 @@ namespace FileDbNs
         }
 
         //----------------------------------------------------------------------------------------
+        /* TODO: implement
         /// <summary>
         /// Add the specified Field to the database.
         /// </summary>
@@ -982,10 +983,11 @@ namespace FileDbNs
         {
             lock( this )
             {
-                //_db.addfield( newField, defaultVal );
+                _db.addfield( newField, defaultVal );
             }
         }
 
+        //----------------------------------------------------------------------------------------
         /// <summary>
         /// Remove the specified Field from the database.
         /// </summary>
@@ -995,9 +997,9 @@ namespace FileDbNs
         {
             lock( this )
             {
-                //_db.reindex();
+                _db.removeRemoveField();
             }
-        }
+        }*/
 
         #endregion Maintenance
 
