@@ -2519,6 +2519,7 @@ namespace FileDbNs
         }
 
 #if false
+        // TODO: implement
         internal void addfield( Field fieldToAdd, object defaultVal )
         {
             checkIsDbOpen();
@@ -2666,6 +2667,7 @@ namespace FileDbNs
 #endif
 
 #if false
+        // TODO: implement
         internal bool removeField( string fieldName )
         {
             checkIsDbOpen();
