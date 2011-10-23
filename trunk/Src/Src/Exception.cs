@@ -2,7 +2,7 @@
 
 namespace FileDbNs
 {
-    public enum FileDbExceptions
+    public enum FileDbExceptionsEnum
     {
         NoOpenDatabase,
         IndexOutOfRange,
@@ -36,6 +36,7 @@ namespace FileDbNs
     // This exception is raised whenever a statement cannot be compiled.
     public class FileDbException : Exception
     {
+        #region Strings
         internal const string IndexOutOfRange = "Index out of range";
 
         internal const string RecordNumOutOfRange = "Record index out of range - {0}.";
@@ -98,21 +99,23 @@ namespace FileDbNs
 
         internal const string InvalidMetaDataType = "Invalid meta data type - must be String or Byte[]";
 
-        /////////////////////////////////////////
-        FileDbExceptions _id;
+        #endregion Strings
 
-        public FileDbExceptions ID
+        /////////////////////////////////////////
+        FileDbExceptionsEnum _id;
+
+        public FileDbExceptionsEnum ID
         {
             get { return _id; }
         }
 
-        public FileDbException( string message, FileDbExceptions id )
+        public FileDbException( string message, FileDbExceptionsEnum id )
             : base( message )
         {
             _id = id;
         }
 
-        public FileDbException( string message, FileDbExceptions id, Exception cause )
+        public FileDbException( string message, FileDbExceptionsEnum id, Exception cause )
             : base( message, cause )
         {
             _id = id;

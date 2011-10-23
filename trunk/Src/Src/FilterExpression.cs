@@ -22,8 +22,8 @@ namespace FileDbNs
         /// <param name="searchVal">The Field value to filter on</param>
         /// <param name="equality">The Equality operator to use in the value comparison</param>
         /// 
-        public FilterExpression( string fieldName, object searchVal, Equality equality )
-            : this( fieldName, searchVal, equality, MatchType.UseCase )
+        public FilterExpression( string fieldName, object searchVal, EqualityEnum equality )
+            : this( fieldName, searchVal, equality, MatchTypeEnum.UseCase )
         {
         }
 
@@ -35,7 +35,7 @@ namespace FileDbNs
         /// <param name="equality">The Equality operator to use in the value comparison</param>
         /// <param name="matchType">The match type, eg. MatchType.Exact</param>
         /// 
-        public FilterExpression( string fieldName, object searchVal, Equality equality, MatchType matchType )
+        public FilterExpression( string fieldName, object searchVal, EqualityEnum equality, MatchTypeEnum matchType )
         {
             FieldName = fieldName;
             SearchVal = searchVal;
@@ -43,12 +43,12 @@ namespace FileDbNs
             Equality = equality;
         }
 
-        internal BoolOp BoolOp { get; set; }
+        internal BoolOpEnum BoolOp { get; set; }
 
         public string FieldName { get; set; }
         public object SearchVal { get; set; }
-        public MatchType MatchType { get; set; }
-        public Equality Equality { get; set; }
+        public MatchTypeEnum MatchType { get; set; }
+        public EqualityEnum Equality { get; set; }
 
         /// <summary>
         /// Parse the expression string to create a FilterExpressionGroup representing a simple expression.
@@ -90,7 +90,7 @@ namespace FileDbNs
                 hashSet.Add( val );
             }
 
-            fexp = new FilterExpression( fieldName, hashSet, Equality.In );
+            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
 
             return fexp;
         }
@@ -122,7 +122,7 @@ namespace FileDbNs
                 hashSet.Add( val );
             }
 
-            fexp = new FilterExpression( fieldName, hashSet, Equality.In );
+            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
 
             return fexp;
         }
@@ -143,9 +143,9 @@ namespace FileDbNs
         {
         }
         
-        internal BoolOp BoolOp { get; set; }
+        internal BoolOpEnum BoolOp { get; set; }
 
-        public void Add( BoolOp boolOp, object searchExpressionOrGroup )
+        public void Add( BoolOpEnum boolOp, object searchExpressionOrGroup )
         {
             // set the BoolOp into the expression or group
             if( searchExpressionOrGroup is FilterExpression )
@@ -209,9 +209,9 @@ namespace FileDbNs
             string fieldName = null;
             object searchVal = null;
             var sbTemp = new StringBuilder();
-            Equality comparisonOp = Equality.Equal;
-            MatchType matchType = MatchType.UseCase;
-            BoolOp curBoolOp = BoolOp.And;
+            EqualityEnum comparisonOp = EqualityEnum.Equal;
+            MatchTypeEnum matchType = MatchTypeEnum.UseCase;
+            BoolOpEnum curBoolOp = BoolOpEnum.And;
             int startPos = pos;
 
             // skip past any leading spaces
@@ -262,7 +262,7 @@ namespace FileDbNs
                         if( fieldName[0] == '~' )
                         {
                             fieldName = fieldName.Substring( 1 );
-                            matchType = MatchType.IgnoreCase;
+                            matchType = MatchTypeEnum.IgnoreCase;
                         }
                         state = ParseState.CompareOp;
                     }
@@ -284,7 +284,7 @@ namespace FileDbNs
                         // should be LIKE or IN
                         if( pos+4 >= filter.Length )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
                         // NOT
                         if( char.ToUpper(filter[pos]) == 'N' && char.ToUpper(filter[pos + 1]) == 'O' && char.ToUpper(filter[pos + 2]) == 'T' && char.IsWhiteSpace( filter[pos+3] ) )
@@ -302,19 +302,19 @@ namespace FileDbNs
                                 while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
                                 if( filter[pos] != '(' )
                                     throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos - 4 ) ),
-                                        FileDbExceptions.InvalidFilterConstruct );
+                                        FileDbExceptionsEnum.InvalidFilterConstruct );
                             }
-                            comparisonOp = not ? Equality.NotIn : Equality.In;
+                            comparisonOp = not ? EqualityEnum.NotIn : EqualityEnum.In;
                         }
                         // LIKE
                         else if( char.ToUpper( filter[pos] ) == 'L' && char.ToUpper( filter[pos + 1] ) == 'I' && char.ToUpper( filter[pos + 2] ) == 'K' && char.ToUpper( filter[pos + 3] ) == 'E' && char.IsWhiteSpace( filter[pos + 4] ) )
                         {
                             pos += 4;
-                            comparisonOp = not? Equality.NotLike : Equality.Like;
+                            comparisonOp = not? EqualityEnum.NotLike : EqualityEnum.Like;
                         }
                         else
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos - 4 ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
                     }
                     /* deprecated
                     else if( filter[pos] == '~' ) // ~=
@@ -333,56 +333,56 @@ namespace FileDbNs
                     {
                         if( ++pos >= filter.Length )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
                         // next char must be =
                         if( filter[pos] != '=' )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
-                        comparisonOp = Equality.NotEqual;
+                        comparisonOp = EqualityEnum.NotEqual;
                     }
                     else if( filter[pos] == '=' )
                     {
-                        comparisonOp = Equality.Equal;
+                        comparisonOp = EqualityEnum.Equal;
                     }
                     else if( filter[pos] == '<' ) // <, <= or <>
                     {
                         if( pos + 1 >= filter.Length )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
                         if( filter[pos + 1] == '>' )
                         {
                             pos++;
-                            comparisonOp = Equality.NotEqual;
+                            comparisonOp = EqualityEnum.NotEqual;
                         }
                         else if( filter[pos + 1] == '=' )
                         {
                             pos++;
-                            comparisonOp = Equality.LessThanOrEqual;
+                            comparisonOp = EqualityEnum.LessThanOrEqual;
                         }
                         else
-                            comparisonOp = Equality.LessThan;
+                            comparisonOp = EqualityEnum.LessThan;
                     }
                     else if( filter[pos] == '>' ) // > or >=
                     {
                         if( pos + 1 >= filter.Length )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
                         if( filter[pos + 1] == '=' )
                         {
                             pos++;
-                            comparisonOp = Equality.GreaterThanOrEqual;
+                            comparisonOp = EqualityEnum.GreaterThanOrEqual;
                         }
                         else
-                            comparisonOp = Equality.GreaterThan;
+                            comparisonOp = EqualityEnum.GreaterThan;
                     }
                     else
                     {
                         throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                            FileDbExceptions.InvalidFilterConstruct );
+                            FileDbExceptionsEnum.InvalidFilterConstruct );
                     }
                     pos++;
                     state = ParseState.Right;
@@ -392,7 +392,7 @@ namespace FileDbNs
                 #region Right
                 else if( state == ParseState.Right )
                 {
-                    if( comparisonOp == Equality.In || comparisonOp == Equality.NotIn )
+                    if( comparisonOp == EqualityEnum.In || comparisonOp == EqualityEnum.NotIn )
                     {
                         // skip whitespace
                         while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
@@ -412,7 +412,7 @@ namespace FileDbNs
                         }
                         if( endPos >= filter.Length )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
                         string inVals = filter.Substring( pos, endPos - pos );
 
@@ -496,23 +496,23 @@ namespace FileDbNs
                         // we must be finished
                         if( sbTemp.Length == 0 )
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
 
                         string sOp = sbTemp.ToString();
                         sbTemp.Length = 0;
 
                         if( string.Compare( sOp, "AND", StringComparison.OrdinalIgnoreCase ) == 0 )
                         {
-                            curBoolOp = BoolOp.And;
+                            curBoolOp = BoolOpEnum.And;
                         }
                         else if( string.Compare( sOp, "OR", StringComparison.OrdinalIgnoreCase ) == 0 )
                         {
-                            curBoolOp = BoolOp.Or;
+                            curBoolOp = BoolOpEnum.Or;
                         }
                         else
                         {
                             throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
+                                FileDbExceptionsEnum.InvalidFilterConstruct );
                         }
 
                         state = ParseState.Left; // start over on next expression
@@ -537,7 +537,7 @@ namespace FileDbNs
             // did we just complete an Expression?
             if( state == ParseState.Right )
             {
-                if( comparisonOp != Equality.In && comparisonOp != Equality.NotIn )
+                if( comparisonOp != EqualityEnum.In && comparisonOp != EqualityEnum.NotIn )
                 {
                     searchVal = sbTemp.ToString();
                     sbTemp.Length = 0;
@@ -550,7 +550,7 @@ namespace FileDbNs
         // Note: we will parse the InClause values but we don't know the Field type at this time
         // so we will add the values as strings and convert them later (see FileDb.evaluate)
         //
-        private static HashSet<object> parseInVals( string inVals, MatchType matchType )
+        private static HashSet<object> parseInVals( string inVals, MatchTypeEnum matchType )
         {
             var hashSet = new HashSet<object>();
 
@@ -597,7 +597,7 @@ namespace FileDbNs
                         string val = sb.ToString();
                         if( isStringVal )
                         {
-                            if( matchType == MatchType.IgnoreCase )
+                            if( matchType == MatchTypeEnum.IgnoreCase )
                                 val = val.ToUpper();
                         }
                         else // we can trim non-string values
@@ -622,7 +622,7 @@ namespace FileDbNs
                 string val = sb.ToString();
                 if( isStringVal )
                 {
-                    if( matchType == MatchType.IgnoreCase )
+                    if( matchType == MatchTypeEnum.IgnoreCase )
                         val = val.ToUpper();
                 }
                 else // we can trim non-string values

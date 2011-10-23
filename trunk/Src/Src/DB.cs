@@ -130,7 +130,7 @@ namespace FileDbNs
                 {
                     Type metaType = value.GetType();
                     if( metaType != typeof( String ) && metaType != typeof( Byte[] ) )
-                        throw new FileDbException( FileDbException.InvalidMetaDataType, FileDbExceptions.InvalidMetaDataType );
+                        throw new FileDbException( FileDbException.InvalidMetaDataType, FileDbExceptionsEnum.InvalidMetaDataType );
                 }
                 _db.MetaData = value;
             }
@@ -228,7 +228,7 @@ namespace FileDbNs
                 {
                     if( fields.ContainsKey( fieldName ) )
                         throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ),
-                            FileDbExceptions.FieldSpecifiedTwice );
+                            FileDbExceptionsEnum.FieldSpecifiedTwice );
                     fields.Add( _db.Fields[fieldName] );
                 }
             }
@@ -242,7 +242,7 @@ namespace FileDbNs
             }
 
             if( includeIndex )
-                fields.Add( new Field( StrIndex, DataType.Int, fields.Count ) ); // TODO: check the ordinal
+                fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) ); // TODO: check the ordinal
 
             table = new Table( fields, records, true );
 
@@ -701,7 +701,7 @@ namespace FileDbNs
                     foreach( string fieldName in fieldList )
                     {
                         if( fields.ContainsKey( fieldName ) )
-                            throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptions.FieldSpecifiedTwice );
+                            throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptionsEnum.FieldSpecifiedTwice );
                         fields.Add( _db.Fields[fieldName] );
                     }
                 }
@@ -715,7 +715,7 @@ namespace FileDbNs
                 }
 
                 if( includeIndex )
-                    fields.Add( new Field( StrIndex, DataType.Int, fields.Count ) ); // TODO: check the ordinal
+                    fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) ); // TODO: check the ordinal
 
                 row = new Record( fields, record );
             }

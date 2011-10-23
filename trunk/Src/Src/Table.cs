@@ -37,7 +37,7 @@ namespace FileDbNs
         /// <param name="name">The name of the field</param>
         /// <param name="type">The data type of the field</param>
         /// 
-        public Field( string name, DataType type )
+        public Field( string name, DataTypeEnum type )
             : this( name, type, -1 )
         {
         }
@@ -51,7 +51,7 @@ namespace FileDbNs
         /// <param name="type">The data type of the field</param>
         /// <param name="ordinal">The zero-based ordinal index of the field</param>
         /// 
-        public Field( string name, DataType type, int ordinal )
+        public Field( string name, DataTypeEnum type, int ordinal )
         {
             Name = name;
             DataType = type;
@@ -72,7 +72,7 @@ namespace FileDbNs
         /// <summary>
         /// The type of the field.
         /// </summary>
-        public DataType DataType { get; set; }
+        public DataTypeEnum DataType { get; set; }
 
         /// <summary>
         /// The zero-based ordinal index of the field.
@@ -251,28 +251,28 @@ namespace FileDbNs
                 Field f = _fields[0];
                 switch( f.DataType )
                 {
-                    case DataType.String:
+                    case DataTypeEnum.String:
                         type = typeof( String );
                         break;
-                    case DataType.Byte:
+                    case DataTypeEnum.Byte:
                         type = typeof( Byte );
                         break;
-                    case DataType.Int:
+                    case DataTypeEnum.Int:
                         type = typeof( Int32 );
                         break;
-                    case DataType.UInt:
+                    case DataTypeEnum.UInt:
                         type = typeof( UInt32 );
                         break;
-                    case DataType.Float:
+                    case DataTypeEnum.Float:
                         type = typeof( Single );
                         break;
-                    case DataType.Double:
+                    case DataTypeEnum.Double:
                         type = typeof( Double );
                         break;
-                    case DataType.Bool:
+                    case DataTypeEnum.Bool:
                         type = typeof( Boolean );
                         break;
-                    case DataType.DateTime:
+                    case DataTypeEnum.DateTime:
                         type = typeof( DateTime );
                         break;
                 }
@@ -335,13 +335,13 @@ namespace FileDbNs
                 if( idx >= 0 && idx < _values.Count )
                     return _values[idx];
                 else
-                    throw new FileDbException( FileDbException.IndexOutOfRange, FileDbExceptions.IndexOutOfRange );
+                    throw new FileDbException( FileDbException.IndexOutOfRange, FileDbExceptionsEnum.IndexOutOfRange );
             }
             ///
             set
             {
                 if( !(idx >= 0 && idx < _values.Count) )
-                    throw new FileDbException( FileDbException.IndexOutOfRange, FileDbExceptions.IndexOutOfRange );
+                    throw new FileDbException( FileDbException.IndexOutOfRange, FileDbExceptionsEnum.IndexOutOfRange );
 
                 _values[idx] = value;
             }
@@ -965,7 +965,7 @@ namespace FileDbNs
         public Table SelectRecords( FilterExpression filter, string[] fieldList, string[] orderByList )
         {
             FilterExpressionGroup filterExpGrp = new FilterExpressionGroup();
-            filterExpGrp.Add( BoolOp.And, filter );
+            filterExpGrp.Add( BoolOpEnum.And, filter );
 
             return SelectRecords( filterExpGrp, fieldList, orderByList );
         }

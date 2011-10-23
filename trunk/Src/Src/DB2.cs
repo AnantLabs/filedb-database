@@ -34,7 +34,7 @@ namespace FileDbNs
                 {
                     if( fields.ContainsKey( fieldName ) )
                         throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ),
-                            FileDbExceptions.FieldSpecifiedTwice );
+                            FileDbExceptionsEnum.FieldSpecifiedTwice );
                     fields.Add( _db.Fields[fieldName] );
                 }
             }
@@ -48,7 +48,7 @@ namespace FileDbNs
             }
 
             if( includeIndex )
-                fields.Add( new Field( StrIndex, DataType.Int, fields.Count ) );
+                fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) );
 
             // use reflection to populate the Field properties
 
@@ -70,28 +70,28 @@ namespace FileDbNs
 
                     switch( field.DataType )
                     {
-                        case DataType.String:
+                        case DataTypeEnum.String:
                             fieldType = field.IsArray? typeof( String[] ) : typeof( String );
                         break;
-                        case DataType.Byte:
+                        case DataTypeEnum.Byte:
                             fieldType = field.IsArray ? typeof( Byte[] ) : typeof( Byte );
                         break;
-                        case DataType.Int:
+                        case DataTypeEnum.Int:
                             fieldType = field.IsArray ? typeof( Int32[] ) : typeof( Int32 );
                         break;
-                        case DataType.UInt:
+                        case DataTypeEnum.UInt:
                             fieldType = field.IsArray ? typeof( UInt32[] ) : typeof( UInt32 );
                         break;
-                        case DataType.Float:
+                        case DataTypeEnum.Float:
                             fieldType = field.IsArray ? typeof( Single[] ) : typeof( Single );
                         break;
-                        case DataType.Double:
+                        case DataTypeEnum.Double:
                             fieldType = field.IsArray ? typeof( Double[] ) : typeof( Double );
                         break;
-                        case DataType.Bool:
+                        case DataTypeEnum.Bool:
                             fieldType = field.IsArray ? typeof( Boolean[] ) : typeof( Boolean );
                         break;
-                        case DataType.DateTime:
+                        case DataTypeEnum.DateTime:
                             fieldType = field.IsArray ? typeof( DateTime[] ) : typeof( DateTime );
                         break;
                     }
@@ -508,7 +508,7 @@ namespace FileDbNs
                     foreach( string fieldName in fieldList )
                     {
                         if( fields.ContainsKey( fieldName ) )
-                            throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptions.FieldSpecifiedTwice );
+                            throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptionsEnum.FieldSpecifiedTwice );
                         fields.Add( _db.Fields[fieldName] );
                     }
                 }
@@ -522,7 +522,7 @@ namespace FileDbNs
                 }
 
                 if( includeIndex )
-                    fields.Add( new Field( StrIndex, DataType.Int, fields.Count ) );
+                    fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) );
 
                 obj = new T();
                 PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );

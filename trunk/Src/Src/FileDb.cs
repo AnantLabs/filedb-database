@@ -252,7 +252,7 @@ namespace FileDbNs
                     Int32 sig = _dataReader.ReadInt32();
                     if( sig != SIGNATURE )
                     {
-                        throw new FileDbException( FileDbException.InvalidDatabaseSignature, FileDbExceptions.InvalidDatabaseSignature );
+                        throw new FileDbException( FileDbException.InvalidDatabaseSignature, FileDbExceptionsEnum.InvalidDatabaseSignature );
                     }
 
                     // Read the version
@@ -265,7 +265,7 @@ namespace FileDbNs
                     if( _ver_major > VERSION_MAJOR )
                     {
                         throw new FileDbException( string.Format( FileDbException.CantOpenNewerDbVersion,
-                                        _ver_major, _ver_minor, VERSION_MAJOR ), FileDbExceptions.CantOpenNewerDbVersion );
+                                        _ver_major, _ver_minor, VERSION_MAJOR ), FileDbExceptionsEnum.CantOpenNewerDbVersion );
                     }
 
                     /* REVIEW: I think we will go by major version only for compatibility
@@ -324,7 +324,7 @@ namespace FileDbNs
             if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
                 !File.Exists( dbName ) )
             #endif
-                throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptions.DatabaseFileNotFound );
+                throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
 
             FileAccess access;
             if( _openReadOnly )
@@ -381,7 +381,7 @@ namespace FileDbNs
         {
             if( !_isOpen )
             {
-                throw new FileDbException( FileDbException.NoOpenDatabase, FileDbExceptions.NoOpenDatabase );
+                throw new FileDbException( FileDbException.NoOpenDatabase, FileDbExceptionsEnum.NoOpenDatabase );
             }
         }
 
@@ -389,7 +389,7 @@ namespace FileDbNs
         {
             if( _openReadOnly )
             {
-                throw new FileDbException( FileDbException.DatabaseReadOnlyMode, FileDbExceptions.NoOpenDatabase );
+                throw new FileDbException( FileDbException.DatabaseReadOnlyMode, FileDbExceptionsEnum.NoOpenDatabase );
             }
         }
         
@@ -431,19 +431,19 @@ namespace FileDbNs
 
                 switch( field.DataType )
                 {
-                    case DataType.Byte:
-                    case DataType.Int:
-                    case DataType.UInt:
-                    case DataType.String:
-                    case DataType.Float:
-                    case DataType.Double:
-                    case DataType.Bool:
-                    case DataType.DateTime:
+                    case DataTypeEnum.Byte:
+                    case DataTypeEnum.Int:
+                    case DataTypeEnum.UInt:
+                    case DataTypeEnum.String:
+                    case DataTypeEnum.Float:
+                    case DataTypeEnum.Double:
+                    case DataTypeEnum.Bool:
+                    case DataTypeEnum.DateTime:
                     break;
 
                     default: // Unknown type..!                        
                     throw new FileDbException( string.Format( FileDbException.InvalidTypeInSchema, (Int32) field.DataType ),
-                                    FileDbExceptions.InvalidTypeInSchema );
+                                    FileDbExceptionsEnum.InvalidTypeInSchema );
                 }
 
                 if( field.IsPrimaryKey && string.IsNullOrEmpty( _primaryKey ) )
@@ -452,16 +452,16 @@ namespace FileDbNs
                     // Is the key an array or boolean?  
                     // If so, don't allow them to be primary keys...
                     
-                    if( !(field.DataType == DataType.Int || field.DataType == DataType.String) )
+                    if( !(field.DataType == DataTypeEnum.Int || field.DataType == DataTypeEnum.String) )
                     {
                         throw new FileDbException( string.Format( FileDbException.InvalidPrimaryKeyType, field.Name ),
-                                        FileDbExceptions.InvalidPrimaryKeyType );
+                                        FileDbExceptionsEnum.InvalidPrimaryKeyType );
                     }
 
                     if( field.IsArray )
                     {
                         throw new FileDbException( string.Format( FileDbException.InvalidPrimaryKeyType, field.Name ),
-                                        FileDbExceptions.InvalidPrimaryKeyType );
+                                        FileDbExceptionsEnum.InvalidPrimaryKeyType );
                     }
 
                     _primaryKey = field.Name.ToUpper();
@@ -562,7 +562,7 @@ namespace FileDbNs
 
                         if( data == null )
                             throw new FileDbException( string.Format( FileDbException.MissingPrimaryKey,
-                                _primaryKey ), FileDbExceptions.MissingPrimaryKey );
+                                _primaryKey ), FileDbExceptionsEnum.MissingPrimaryKey );
 
                         Int32 pos = bsearch( _index, 0, _index.Count - 1, data );
 
@@ -570,7 +570,7 @@ namespace FileDbNs
                         if( pos > 0 )
                             // Oops... duplicate key
                             throw new FileDbException( string.Format( FileDbException.DuplicatePrimaryKey,
-                                _primaryKey, data.ToString() ), FileDbExceptions.DuplicatePrimaryKey );
+                                _primaryKey, data.ToString() ), FileDbExceptionsEnum.DuplicatePrimaryKey );
 
                         // Revert the result from bsearch to the proper insertion position
                         pos = (-pos) - 1;
@@ -663,7 +663,7 @@ namespace FileDbNs
             checkReadOnly();
 
             if( _numRecords == 0 )
-                throw new FileDbException( FileDbException.DatabaseEmpty, FileDbExceptions.DatabaseEmpty );
+                throw new FileDbException( FileDbException.DatabaseEmpty, FileDbExceptionsEnum.DatabaseEmpty );
 
             // find the index of the record
             // we only need to get a single field because really just want the index
@@ -674,7 +674,7 @@ namespace FileDbNs
                 fieldToGet = _fields[_primaryKey].Name;
             object[] existingRecord = this.getRecordByKey( key, new string[] { fieldToGet }, true );
             if( existingRecord == null )
-                throw new FileDbException( FileDbException.PrimaryKeyValueNotFound, FileDbExceptions.PrimaryKeyValueNotFound );
+                throw new FileDbException( FileDbException.PrimaryKeyValueNotFound, FileDbExceptionsEnum.PrimaryKeyValueNotFound );
 
             // the index is in the last column
 
@@ -692,7 +692,7 @@ namespace FileDbNs
             checkReadOnly();
 
             if( _numRecords == 0 )
-                throw new FileDbException( FileDbException.DatabaseEmpty, FileDbExceptions.DatabaseEmpty );
+                throw new FileDbException( FileDbException.DatabaseEmpty, FileDbExceptionsEnum.DatabaseEmpty );
 
             bool indexUpdated;
             updateRecordByIndex( record, index, _index, true, true, out indexUpdated );
@@ -743,7 +743,7 @@ namespace FileDbNs
                         {
                             // its not the same record and we cannot allow a duplicate key
                             throw new FileDbException( string.Format( FileDbException.DuplicatePrimaryKey,
-                                            _primaryKey, record[_primaryKey].ToString() ), FileDbExceptions.DuplicatePrimaryKey );
+                                            _primaryKey, record[_primaryKey].ToString() ), FileDbExceptionsEnum.DuplicatePrimaryKey );
                         }
                     }
 
@@ -755,7 +755,7 @@ namespace FileDbNs
                     // Ensure the record number is a number within range
                     if( (index < 0) || (index > _numRecords - 1) )
                     {
-                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, index ), FileDbExceptions.IndexOutOfRange );
+                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, index ), FileDbExceptionsEnum.IndexOutOfRange );
                     }
                 }
 
@@ -880,7 +880,7 @@ namespace FileDbNs
         internal Int32 updateRecords( FilterExpression searchExp, FieldValues record )
         {
             var searchExpGrp = new FilterExpressionGroup();
-            searchExpGrp.Add( BoolOp.And, searchExp );            
+            searchExpGrp.Add( BoolOpEnum.And, searchExp );            
             return updateRecords( searchExpGrp, record );
         }
         
@@ -1302,7 +1302,7 @@ namespace FileDbNs
                 {
                     if( key.GetType() != typeof( Int32 ) )
                     {
-                        throw new FileDbException( FileDbException.InvalidKeyFieldType, FileDbExceptions.InvalidKeyFieldType );
+                        throw new FileDbException( FileDbException.InvalidKeyFieldType, FileDbExceptionsEnum.InvalidKeyFieldType );
                     }
 
                     pos = (Int32) key;
@@ -1310,7 +1310,7 @@ namespace FileDbNs
                     // Ensure the "key" is the item number within range
                     if( pos < 0 || pos >= _numRecords )
                     {
-                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, pos ), FileDbExceptions.IndexOutOfRange );
+                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, pos ), FileDbExceptionsEnum.IndexOutOfRange );
                     }
                 }
 
@@ -1367,7 +1367,7 @@ namespace FileDbNs
                 // Ensure it is within range
                 if( (recordNum < 0) || (recordNum >= _numRecords) )
                 {
-                    throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, recordNum ), FileDbExceptions.IndexOutOfRange );
+                    throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, recordNum ), FileDbExceptionsEnum.IndexOutOfRange );
                 }
 
                 setRecordDeleted( _index[recordNum], true );
@@ -1416,12 +1416,12 @@ namespace FileDbNs
             if( fieldName[0] == '~' )
             {
                 fieldName = fieldName.Substring( 1 );
-                searchExp.MatchType = MatchType.IgnoreCase;
+                searchExp.MatchType = MatchTypeEnum.IgnoreCase;
             }
 
             // Check the field name is valid
             if( !_fields.ContainsKey( fieldName ) )
-                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, searchExp.FieldName ), FileDbExceptions.InvalidFieldName );
+                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, searchExp.FieldName ), FileDbExceptionsEnum.InvalidFieldName );
 
             Field field = _fields[fieldName];
             Int32 deleteCount = 0;
@@ -1444,7 +1444,7 @@ namespace FileDbNs
 
                     object val = record[field.Ordinal].ToString();
 
-                    if( (searchExp.Equality == Equality.Like || searchExp.Equality == Equality.NotLike) && regex == null )
+                    if( (searchExp.Equality == EqualityEnum.Like || searchExp.Equality == EqualityEnum.NotLike) && regex == null )
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     bool isMatch = evaluate( field, searchExp, record, regex );
@@ -1623,7 +1623,7 @@ namespace FileDbNs
                 // No more records left?
                 if( isEof )
                 {
-                    throw new FileDbException( FileDbException.IteratorPastEndOfFile, FileDbExceptions.IteratorPastEndOfFile );
+                    throw new FileDbException( FileDbException.IteratorPastEndOfFile, FileDbExceptionsEnum.IteratorPastEndOfFile );
                 }
 
                 int indexOffset = _index[_iteratorIndex];
@@ -1717,7 +1717,7 @@ namespace FileDbNs
                     foreach( string fieldName in fieldList )
                     {
                         if( !_fields.ContainsKey( fieldName ) )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptions.InvalidFieldName );
+                            throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
                         Field fld = _fields[fieldName];
                         tmpRecord[n++] = record[fld.Ordinal];
                     }
@@ -1781,7 +1781,7 @@ namespace FileDbNs
                     foreach( string fieldName in fieldList )
                     {
                         if( !_fields.ContainsKey( fieldName ) )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptions.InvalidFieldName );
+                            throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
                         Field fld = _fields[fieldName];
                         tmpRecord[n++] = record[fld.Ordinal];
                     }
@@ -1810,12 +1810,12 @@ namespace FileDbNs
             if( fieldName[0] == '~' )
             {
                 fieldName = fieldName.Substring( 1 );
-                searchExp.MatchType = MatchType.IgnoreCase;
+                searchExp.MatchType = MatchTypeEnum.IgnoreCase;
             }
 
             // Check the field name is valid
             if( !_fields.ContainsKey( fieldName ) )
-                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, searchExp.FieldName ), FileDbExceptions.InvalidFieldName );
+                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, searchExp.FieldName ), FileDbExceptionsEnum.InvalidFieldName );
 
             Field field = _fields[fieldName];
 
@@ -1847,7 +1847,7 @@ namespace FileDbNs
                     object[] record = readRecord( offset, includeIndex, out deleted );
                     Debug.Assert( !deleted );
 
-                    if( (searchExp.Equality == Equality.Like || searchExp.Equality == Equality.NotLike) && regex == null )
+                    if( (searchExp.Equality == EqualityEnum.Like || searchExp.Equality == EqualityEnum.NotLike) && regex == null )
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     bool isMatch = evaluate( field, searchExp, record, regex );
@@ -1861,7 +1861,7 @@ namespace FileDbNs
                             foreach( string fldName in fieldList )
                             {
                                 if( !_fields.ContainsKey( fldName ) )
-                                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fldName ), FileDbExceptions.InvalidFieldName );
+                                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fldName ), FileDbExceptionsEnum.InvalidFieldName );
                                 Field fld = _fields[fldName];
                                 tmpRecord[n++] = record[fld.Ordinal];
                             }
@@ -1935,7 +1935,7 @@ namespace FileDbNs
                             foreach( string fieldName in fieldList )
                             {
                                 if( !_fields.ContainsKey( fieldName ) )
-                                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptions.InvalidFieldName );
+                                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
                                 Field fld = _fields[fieldName];
                                 tmpRecord[n++] = record[fld.Ordinal];
                             }
@@ -1984,7 +1984,7 @@ namespace FileDbNs
                 if( searchExpressionOrGroup == null )
                     continue;
 
-                BoolOp boolOp;
+                BoolOpEnum boolOp;
 
                 if( searchExpressionOrGroup.GetType() == typeof( FilterExpressionGroup ) )
                 {
@@ -2001,12 +2001,12 @@ namespace FileDbNs
                     if( fieldName[0] == '~' )
                     {
                         fieldName = fieldName.Substring( 1 );
-                        searchExp.MatchType = MatchType.IgnoreCase;
+                        searchExp.MatchType = MatchTypeEnum.IgnoreCase;
                     }
 
                     // Check the field name is valid
                     if( !fields.ContainsKey( fieldName ) )
-                        throw new FileDbException( string.Format( FileDbException.InvalidFieldName, searchExp.FieldName ), FileDbExceptions.InvalidFieldName );
+                        throw new FileDbException( string.Format( FileDbException.InvalidFieldName, searchExp.FieldName ), FileDbExceptionsEnum.InvalidFieldName );
 
                     Field field = fields[fieldName];
                     thisMatch = evaluate( field, searchExp, record, null );
@@ -2019,7 +2019,7 @@ namespace FileDbNs
                 }
                 else
                 {
-                    if( boolOp == BoolOp.And )
+                    if( boolOp == BoolOpEnum.And )
                     {
                         isMatch = isMatch && thisMatch;
                         // we can stop as soon as one doesn't match when ANDing
@@ -2046,7 +2046,7 @@ namespace FileDbNs
             if( field.IsArray )
                 return false;
 
-            Equality compareResult = Equality.NotEqual;
+            EqualityEnum compareResult = EqualityEnum.NotEqual;
 
             // get the field value
             object val = record[field.Ordinal];
@@ -2058,7 +2058,7 @@ namespace FileDbNs
             else if( val != null && searchExp.SearchVal != null ) // neither null
             {
                 // putting the RegEx search first (outside of the test below) allows RegEx searches on non-string fields
-                if( (searchExp.Equality == Equality.Like || searchExp.Equality == Equality.NotLike) )
+                if( (searchExp.Equality == EqualityEnum.Like || searchExp.Equality == EqualityEnum.NotLike) )
                 {
                     // hopefully searching for strings
 
@@ -2066,19 +2066,19 @@ namespace FileDbNs
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     // See if the record matches the regular expression
-                    compareResult = regex.IsMatch( val.ToString() ) ? Equality.Like : Equality.NotLike;
+                    compareResult = regex.IsMatch( val.ToString() ) ? EqualityEnum.Like : EqualityEnum.NotLike;
                 }
-                else if( searchExp.Equality == Equality.In || searchExp.Equality == Equality.NotIn )
+                else if( searchExp.Equality == EqualityEnum.In || searchExp.Equality == EqualityEnum.NotIn )
                 {
                     HashSet<object> hashSet = searchExp.SearchVal as HashSet<object>;
                     if( hashSet == null )
-                        throw new FileDbException( FileDbException.HashSetExpected, FileDbExceptions.HashSetExpected );
+                        throw new FileDbException( FileDbException.HashSetExpected, FileDbExceptionsEnum.HashSetExpected );
 
                     // If the HashSet was created by the FilterExpression parser, the Field type wasn't
                     // yet known so all of the values will be string.  We must convert them to the
                     // Field type now.
 
-                    if( field.DataType != DataType.String )
+                    if( field.DataType != DataTypeEnum.String )
                     {
                         HashSet<object> tempHashSet = new HashSet<object>();
                         foreach( object obj in hashSet )
@@ -2090,25 +2090,25 @@ namespace FileDbNs
                     }
                     else
                     {
-                        if( searchExp.MatchType == MatchType.IgnoreCase )
+                        if( searchExp.MatchType == MatchTypeEnum.IgnoreCase )
                             val = val.ToString().ToUpper();
                     }
 
-                    compareResult = hashSet.Contains( val ) ? Equality.In : Equality.NotIn;
+                    compareResult = hashSet.Contains( val ) ? EqualityEnum.In : EqualityEnum.NotIn;
                     
                     #if DEBUG
-                    if( compareResult == Equality.In )
+                    if( compareResult == EqualityEnum.In )
                     {
                         int debug = 0;
                     }
                     #endif
                 }
-                else if( field.DataType == DataType.String )
+                else if( field.DataType == DataTypeEnum.String )
                 {
                     int ncomp = string.Compare( searchExp.SearchVal.ToString(), val.ToString(),
-                        searchExp.MatchType == MatchType.UseCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase );
+                        searchExp.MatchType == MatchTypeEnum.UseCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase );
 
-                    compareResult = ncomp == 0 ? Equality.Equal : (ncomp > 0 ? Equality.GreaterThan : Equality.LessThan);
+                    compareResult = ncomp == 0 ? EqualityEnum.Equal : (ncomp > 0 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 else
                 {
@@ -2122,9 +2122,9 @@ namespace FileDbNs
 
             // first check for NotEqual since it would be anythying which is not Equal
 
-            if( searchExp.Equality == Equality.NotEqual )
+            if( searchExp.Equality == EqualityEnum.NotEqual )
             {
-                if( compareResult != Equality.Equal )
+                if( compareResult != EqualityEnum.Equal )
                     isMatch = true;
             }
             else
@@ -2134,31 +2134,31 @@ namespace FileDbNs
                     isMatch = true;
                 else
                 {
-                    if( compareResult == Equality.Equal )
+                    if( compareResult == EqualityEnum.Equal )
                     {
-                        if( searchExp.Equality == Equality.Equal ||
-                            searchExp.Equality == Equality.LessThanOrEqual ||
-                            searchExp.Equality == Equality.GreaterThanOrEqual )
+                        if( searchExp.Equality == EqualityEnum.Equal ||
+                            searchExp.Equality == EqualityEnum.LessThanOrEqual ||
+                            searchExp.Equality == EqualityEnum.GreaterThanOrEqual )
                         {
                             isMatch = true;
                         }
                     }
-                    else if( compareResult == Equality.NotEqual )
+                    else if( compareResult == EqualityEnum.NotEqual )
                     {
-                        if( searchExp.Equality == Equality.NotEqual ||
-                            searchExp.Equality == Equality.LessThan ||
-                            searchExp.Equality == Equality.GreaterThan )
+                        if( searchExp.Equality == EqualityEnum.NotEqual ||
+                            searchExp.Equality == EqualityEnum.LessThan ||
+                            searchExp.Equality == EqualityEnum.GreaterThan )
                         {
                             isMatch = true;
                         }
                     }
-                    else if( compareResult == Equality.LessThan &&
-                             (searchExp.Equality == Equality.LessThan || searchExp.Equality == Equality.LessThanOrEqual) )
+                    else if( compareResult == EqualityEnum.LessThan &&
+                             (searchExp.Equality == EqualityEnum.LessThan || searchExp.Equality == EqualityEnum.LessThanOrEqual) )
                     {
                         isMatch = true;
                     }
-                    else if( compareResult == Equality.GreaterThan &&
-                             (searchExp.Equality == Equality.GreaterThan || searchExp.Equality == Equality.GreaterThanOrEqual) )
+                    else if( compareResult == EqualityEnum.GreaterThan &&
+                             (searchExp.Equality == EqualityEnum.GreaterThan || searchExp.Equality == EqualityEnum.GreaterThanOrEqual) )
                     {
                         isMatch = true;
                     }
@@ -2167,49 +2167,49 @@ namespace FileDbNs
             return isMatch;
         }
 
-        static Equality compareVals( Field field, object val1, object val2 )
+        static EqualityEnum compareVals( Field field, object val1, object val2 )
         {
-            Equality retVal = Equality.NotEqual;
+            EqualityEnum retVal = EqualityEnum.NotEqual;
 
             switch( field.DataType )
             {
-                case DataType.Byte:
+                case DataTypeEnum.Byte:
                 {
                     Byte b1 = Convert.ToByte( val1 ),
                          b2 = Convert.ToByte( val2 );
 
-                    retVal = b1 == b2 ? Equality.Equal : (b1 > b2 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = b1 == b2 ? EqualityEnum.Equal : (b1 > b2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
 
-                case DataType.Bool:
+                case DataTypeEnum.Bool:
                 {
                     bool b1 = Convert.ToBoolean( val1 ),
                          b2 = Convert.ToBoolean( val2 );
 
-                    retVal = b1 == b2 ? Equality.Equal : Equality.NotEqual;
+                    retVal = b1 == b2 ? EqualityEnum.Equal : EqualityEnum.NotEqual;
                 }
                 break;
 
-                case DataType.Float:
+                case DataTypeEnum.Float:
                 {
                     float f1 = Convert.ToSingle( val1 ),
                           f2 = Convert.ToSingle( val2 );
 
-                    retVal = f1 == f2 ? Equality.Equal : (f1 > f2 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = f1 == f2 ? EqualityEnum.Equal : (f1 > f2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
 
-                case DataType.Double:
+                case DataTypeEnum.Double:
                 {
                     double d1 = Convert.ToDouble( val1 ),
                            d2 = Convert.ToDouble( val2 );
 
-                    retVal = d1 == d2 ? Equality.Equal : (d1 > d2 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = d1 == d2 ? EqualityEnum.Equal : (d1 > d2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
 
-                case DataType.Int:
+                case DataTypeEnum.Int:
                 {
                     Int32 i1 = Convert.ToInt32( val1 ),
                           i2 = Convert.ToInt32( val2 );
@@ -2218,32 +2218,32 @@ namespace FileDbNs
                     {
                         int debug = 0;
                     }*/
-                    retVal = i1 == i2 ? Equality.Equal : (i1 > i2 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = i1 == i2 ? EqualityEnum.Equal : (i1 > i2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
 
-                case DataType.UInt:
+                case DataTypeEnum.UInt:
                 {
                     UInt32 i1 = Convert.ToUInt32( val1 ),
                            i2 = Convert.ToUInt32( val2 );
 
-                    retVal = i1 == i2 ? Equality.Equal : (i1 > i2 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = i1 == i2 ? EqualityEnum.Equal : (i1 > i2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
 
-                case DataType.DateTime:
+                case DataTypeEnum.DateTime:
                 {
                     DateTime dt1 = Convert.ToDateTime( val1 ),
                              dt2 = Convert.ToDateTime( val2 );
                     
-                    retVal = dt1 == dt2 ? Equality.Equal : (dt1 > dt2 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = dt1 == dt2 ? EqualityEnum.Equal : (dt1 > dt2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
 
-                case DataType.String:
+                case DataTypeEnum.String:
                 {                    
                     int ncomp = string.Compare( val1.ToString(), val2.ToString(), StringComparison.CurrentCulture );
-                    retVal = ncomp == 0 ? Equality.Equal : (ncomp > 0 ? Equality.GreaterThan : Equality.LessThan);
+                    retVal = ncomp == 0 ? EqualityEnum.Equal : (ncomp > 0 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
             }
@@ -2251,55 +2251,55 @@ namespace FileDbNs
             return retVal;
         }
 
-        static object convertValueToType( object value, DataType dataType )
+        static object convertValueToType( object value, DataTypeEnum dataType )
         {
             object retVal = null;
 
             switch( dataType )
             {
-                case DataType.Byte:
+                case DataTypeEnum.Byte:
                 {
                     retVal = Convert.ToByte( value );
                 }
                 break;
 
-                case DataType.Bool:
+                case DataTypeEnum.Bool:
                 {
                     retVal = Convert.ToBoolean( value );
                 }
                 break;
 
-                case DataType.Float:
+                case DataTypeEnum.Float:
                 {
                     retVal = Convert.ToSingle( value );
                 }
                 break;
 
-                case DataType.Double:
+                case DataTypeEnum.Double:
                 {
                     retVal = Convert.ToDouble( value );
                 }
                 break;
 
-                case DataType.Int:
+                case DataTypeEnum.Int:
                 {
                     retVal = Convert.ToInt32( value );
                 }
                 break;
 
-                case DataType.UInt:
+                case DataTypeEnum.UInt:
                 {
                     retVal = Convert.ToUInt32( value );
                 }
                 break;
 
-                case DataType.DateTime:
+                case DataTypeEnum.DateTime:
                 {
                     retVal = Convert.ToDateTime( value );
                 }
                 break;
 
-                case DataType.String:
+                case DataTypeEnum.String:
                 {
                     retVal = value.ToString();
                 }
@@ -2347,7 +2347,7 @@ namespace FileDbNs
                         foreach( string fieldName in fieldList )
                         {
                             if( !_fields.ContainsKey( fieldName ) )
-                                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptions.InvalidFieldName );
+                                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
                             Field fld = _fields[fieldName];
                             tmpRecord[n++] = record[fld.Ordinal];
                         }
@@ -2461,7 +2461,7 @@ namespace FileDbNs
                     // if there is no primary key, the record number must be Int32
                     if( key.GetType() != typeof( int ) )
                     {
-                        throw new FileDbException( FileDbException.NeedIntegerKey, FileDbExceptions.NeedIntegerKey );
+                        throw new FileDbException( FileDbException.NeedIntegerKey, FileDbExceptionsEnum.NeedIntegerKey );
                     }
 
                     Int32 nkey = (Int32) key;
@@ -2469,7 +2469,7 @@ namespace FileDbNs
                     // Ensure the record number is within range
                     if( (nkey < 0) || (nkey >= _numRecords) )
                     {
-                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, nkey ), FileDbExceptions.IndexOutOfRange );
+                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, nkey ), FileDbExceptionsEnum.IndexOutOfRange );
                     }
 
                     // ... must be found!
@@ -2843,7 +2843,7 @@ namespace FileDbNs
                     continue;
 
                 if( !_fields.ContainsKey( fieldName ) )
-                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptions.InvalidFieldName );
+                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
 
                 Field field = _fields[fieldName];
                 verifyFieldSchema( field, record[fieldName] );
@@ -2874,14 +2874,14 @@ namespace FileDbNs
             if( value != null )
             {
                 if( field.IsArray && !value.GetType().IsArray )
-                    throw new FileDbException( string.Format( FileDbException.NonArrayValue, field.Name ), FileDbExceptions.NonArrayValue );
+                    throw new FileDbException( string.Format( FileDbException.NonArrayValue, field.Name ), FileDbExceptionsEnum.NonArrayValue );
 
                 // Verify the type
                 switch( field.DataType )
                 {
                     // hopefully these will throw err if wrong type
 
-                    case DataType.Byte:
+                    case DataTypeEnum.Byte:
                         if( field.IsArray )
                         {
                             value = (Byte[]) value;
@@ -2892,7 +2892,7 @@ namespace FileDbNs
                         }
                     break;
 
-                    case DataType.Int:
+                    case DataTypeEnum.Int:
                         if( field.IsArray )
                         {
                             value = (Int32[]) value;
@@ -2903,7 +2903,7 @@ namespace FileDbNs
                         }
                         break;
 
-                    case DataType.UInt:
+                    case DataTypeEnum.UInt:
                         if( field.IsArray )
                         {
                             value = (UInt32[]) value;
@@ -2914,7 +2914,7 @@ namespace FileDbNs
                         }
                         break;
 
-                    case DataType.String:
+                    case DataTypeEnum.String:
                         if( field.IsArray )
                         {
                             value = (string[]) value;
@@ -2926,7 +2926,7 @@ namespace FileDbNs
                         }
                         break;
 
-                    case DataType.Float:
+                    case DataTypeEnum.Float:
                         if( field.IsArray )
                         {
                             value = (float[]) value;
@@ -2937,7 +2937,7 @@ namespace FileDbNs
                         }
                         break;
 
-                    case DataType.Double:
+                    case DataTypeEnum.Double:
                         if( field.IsArray )
                         {
                             value = (double[]) value;
@@ -2948,7 +2948,7 @@ namespace FileDbNs
                         }
                         break;
 
-                    case DataType.Bool:
+                    case DataTypeEnum.Bool:
                         if( field.IsArray )
                         {
                             // can be Byte[] or bool[]
@@ -2963,7 +2963,7 @@ namespace FileDbNs
                         }
                         break;
 
-                    case DataType.DateTime:
+                    case DataTypeEnum.DateTime:
                         if( field.IsArray )
                         {
                             // can be string[] or DateTime[]
@@ -2981,7 +2981,7 @@ namespace FileDbNs
                     default:
                         // Unknown type...!
                         throw new FileDbException( string.Format( FileDbException.StrInvalidDataType2, field.Name, field.DataType.ToString(), value.GetType().Name ),
-                            FileDbExceptions.InvalidDataType );
+                            FileDbExceptionsEnum.InvalidDataType );
                 }
             }
         }
@@ -3311,7 +3311,7 @@ namespace FileDbNs
 
             switch( field.DataType )
             {
-                case DataType.Byte:
+                case DataTypeEnum.Byte:
                     if( field.IsArray )
                     {
                         size = sizeof( Int32 );
@@ -3323,7 +3323,7 @@ namespace FileDbNs
                         size = 1;
                 break;
 
-                case DataType.Int:
+                case DataTypeEnum.Int:
                     if( field.IsArray )
                     {
                         size = sizeof( Int32 );
@@ -3335,7 +3335,7 @@ namespace FileDbNs
                         size = sizeof( Int32 );
                 break;
 
-                case DataType.UInt:
+                case DataTypeEnum.UInt:
                 if( field.IsArray )
                 {
                     size = sizeof( UInt32 );
@@ -3347,7 +3347,7 @@ namespace FileDbNs
                     size = sizeof( UInt32 );
                 break;
 
-                case DataType.Float:
+                case DataTypeEnum.Float:
                     if( field.IsArray )
                     {
                         size = sizeof( Int32 );
@@ -3371,7 +3371,7 @@ namespace FileDbNs
                         size = sizeof( float );
                 break;
 
-                case DataType.Double:
+                case DataTypeEnum.Double:
                 if( field.IsArray )
                 {
                     size = sizeof( Int32 );
@@ -3395,7 +3395,7 @@ namespace FileDbNs
                     size = sizeof( double );
                 break;
 
-                case DataType.Bool:
+                case DataTypeEnum.Bool:
                     if( field.IsArray )
                     {
                         size = sizeof( Int32 );
@@ -3419,7 +3419,7 @@ namespace FileDbNs
                         size = 1;
                 break;
 
-                case DataType.DateTime:
+                case DataTypeEnum.DateTime:
                 {
                     // DateTimes are stored as string
                     _testWriter = getTestWriter();
@@ -3477,7 +3477,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.String:
+                case DataTypeEnum.String:
                 {
                     _testWriter = getTestWriter();
 
@@ -3510,7 +3510,7 @@ namespace FileDbNs
                 break;
 
                 default:
-                    throw new FileDbException( string.Format( FileDbException.StrInvalidDataType, (Int32) field.DataType ), FileDbExceptions.InvalidDataType );
+                    throw new FileDbException( string.Format( FileDbException.StrInvalidDataType, (Int32) field.DataType ), FileDbExceptionsEnum.InvalidDataType );
 
             }
 
@@ -3541,7 +3541,7 @@ namespace FileDbNs
         {
             switch( field.DataType )
             {
-                case DataType.Byte:
+                case DataTypeEnum.Byte:
                     if( field.IsArray )
                     {
                         Byte[] arr = (Byte[]) data;
@@ -3574,7 +3574,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataType.Int:
+                case DataTypeEnum.Int:
                     if( field.IsArray )
                     {
                         Int32[] arr = (Int32[]) data;
@@ -3607,7 +3607,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataType.UInt:
+                case DataTypeEnum.UInt:
                     if( field.IsArray )
                     {
                         UInt32[] arr = (UInt32[]) data;
@@ -3640,7 +3640,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataType.Float:
+                case DataTypeEnum.Float:
                     if( field.IsArray )
                     {
                         float[] arr = (float[]) data;
@@ -3673,7 +3673,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataType.Double:
+                case DataTypeEnum.Double:
                     if( field.IsArray )
                     {
                         double[] arr = (double[]) data;
@@ -3706,7 +3706,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataType.Bool:
+                case DataTypeEnum.Bool:
                 {
                     if( field.IsArray )
                     {
@@ -3741,7 +3741,7 @@ namespace FileDbNs
                                 }
                             }
                             else
-                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptions.InvalidDataType );
+                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
                         }
                         else
                             dataWriter.Write( (Int32) (-1) );
@@ -3760,7 +3760,7 @@ namespace FileDbNs
                             else if( data.GetType() == typeof( Byte ) )
                                 val = ((Byte) data) == 0 ? true : false;
                             else
-                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptions.InvalidDataType );
+                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
 
                             dataWriter.Write( val ? (Byte) 1 : (Byte) 0 );
                         }
@@ -3768,7 +3768,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.DateTime:
+                case DataTypeEnum.DateTime:
                 {
                     if( field.IsArray )
                     {
@@ -3805,7 +3805,7 @@ namespace FileDbNs
                                 }
                             }
                             else
-                                throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptions.InvalidDataType );
+                                throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
                         }
                         else
                             dataWriter.Write( (Int32) (-1) );
@@ -3827,13 +3827,13 @@ namespace FileDbNs
                                 dataWriter.Write( dt.ToString( DateTimeFmt ) );
                             }
                             else
-                                throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptions.InvalidDataType );
+                                throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
                         }
                     }
                 }
                 break;
 
-                case DataType.String:
+                case DataTypeEnum.String:
                     if( field.IsArray )
                     {
                         string[] arr = (string[]) data;
@@ -3851,7 +3851,7 @@ namespace FileDbNs
                 default:
                     // Unknown type
                     throw new FileDbException( string.Format( FileDbException.StrInvalidDataType2,
-                        field.Name, field.DataType.ToString(), data.GetType().Name ), FileDbExceptions.InvalidDataType );
+                        field.Name, field.DataType.ToString(), data.GetType().Name ), FileDbExceptionsEnum.InvalidDataType );
             }
         }
 
@@ -3935,7 +3935,7 @@ namespace FileDbNs
                  tright = right.GetType();
 
             if( tleft != tright )
-                throw new FileDbException( FileDbException.MismatchedKeyFieldTypes, FileDbExceptions.MismatchedKeyFieldTypes );
+                throw new FileDbException( FileDbException.MismatchedKeyFieldTypes, FileDbExceptionsEnum.MismatchedKeyFieldTypes );
 
             if( tleft == typeof( string ) )
                 return string.Compare( left as string, right as string );
@@ -3947,7 +3947,7 @@ namespace FileDbNs
                 return nleft < nright ? -1 : (nleft > nright ? 1 : 0); // todo: check if this is correct
             }
             else
-                throw new FileDbException( FileDbException.InvalidKeyFieldType, FileDbExceptions.InvalidKeyFieldType );
+                throw new FileDbException( FileDbException.InvalidKeyFieldType, FileDbExceptionsEnum.InvalidKeyFieldType );
         }
 
         /// <summary>
@@ -4102,7 +4102,7 @@ namespace FileDbNs
         {
             switch( field.DataType )
             {
-                case DataType.Byte:
+                case DataTypeEnum.Byte:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4116,7 +4116,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadByte();
 
-                case DataType.Int:
+                case DataTypeEnum.Int:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4134,7 +4134,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadInt32();
 
-                case DataType.UInt:
+                case DataTypeEnum.UInt:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4152,7 +4152,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadUInt32();
 
-                case DataType.Float:
+                case DataTypeEnum.Float:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4170,7 +4170,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadSingle();
 
-                case DataType.Double:
+                case DataTypeEnum.Double:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4188,7 +4188,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadDouble();
 
-                case DataType.Bool:
+                case DataTypeEnum.Bool:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4206,7 +4206,7 @@ namespace FileDbNs
                     else
                         return (dataReader.ReadByte() == 1);
 
-                case DataType.DateTime:
+                case DataTypeEnum.DateTime:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4231,7 +4231,7 @@ namespace FileDbNs
                             return DateTime.Parse( s );
                     }
 
-                case DataType.String:
+                case DataTypeEnum.String:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4251,7 +4251,7 @@ namespace FileDbNs
 
                 default:
                     // Error in type
-                    throw new FileDbException( string.Format( FileDbException.StrInvalidDataType, (Int32) field.DataType ), FileDbExceptions.InvalidDataType );
+                    throw new FileDbException( string.Format( FileDbException.StrInvalidDataType, (Int32) field.DataType ), FileDbExceptionsEnum.InvalidDataType );
             }
         }
 
@@ -4336,12 +4336,12 @@ namespace FileDbNs
 
             if( metaType == typeof( String ) )
             {
-                dataWriter.Write( (Int32) DataType.String );
+                dataWriter.Write( (Int32) DataTypeEnum.String );
                 dataWriter.Write( (String) _metaData );
             }
             else if( metaType == typeof( Byte[] ) )
             {
-                dataWriter.Write( (Int32) DataType.Byte );
+                dataWriter.Write( (Int32) DataTypeEnum.Byte );
                 Byte[] arr = (Byte[]) _metaData;
                 dataWriter.Write( (Int32) arr.Length );
                 dataWriter.Write( arr );
@@ -4356,11 +4356,11 @@ namespace FileDbNs
             {
                 if( _ver_major >= 2 )
                 {
-                    DataType dataType;
+                    DataTypeEnum dataType;
 
                     try
                     {
-                        dataType = (DataType) reader.ReadInt32();
+                        dataType = (DataTypeEnum) reader.ReadInt32();
                     }
                     catch( EndOfStreamException ex )
                     {
@@ -4370,11 +4370,11 @@ namespace FileDbNs
 
                     switch( dataType )
                     {
-                        case DataType.String:
+                        case DataTypeEnum.String:
                             _metaData = reader.ReadString();
                             break;
 
-                        case DataType.Byte:
+                        case DataTypeEnum.Byte:
                             // read the length
                             Int32 len = reader.ReadInt32();
                             _metaData = reader.ReadBytes( len );
@@ -4550,7 +4550,7 @@ namespace FileDbNs
             {
                 // Read the fields in
                 string name = reader.ReadString();
-                DataType type = (DataType) reader.ReadInt16();
+                DataTypeEnum type = (DataTypeEnum) reader.ReadInt16();
                 Field field = new Field( name, type, i );
                 _fields.Add( field );
 
@@ -4651,13 +4651,13 @@ namespace FileDbNs
             }
         }
 
-        internal static int CompareVals( object v1, object v2, DataType dataType, bool caseInsensitive )
+        internal static int CompareVals( object v1, object v2, DataTypeEnum dataType, bool caseInsensitive )
         {
             int compVal = 0;
 
             switch( dataType )
             {
-                case DataType.Byte:
+                case DataTypeEnum.Byte:
                 {
                     Byte b1 = (Byte) v1,
                          b2 = (Byte) v2;
@@ -4665,7 +4665,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.Int:
+                case DataTypeEnum.Int:
                 {
                     Int32 i1 = (Int32) v1,
                         i2 = (Int32) v2;
@@ -4673,7 +4673,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.UInt:
+                case DataTypeEnum.UInt:
                 {
                     UInt32 i1 = (UInt32) v1,
                            i2 = (UInt32) v2;
@@ -4681,7 +4681,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.Bool:
+                case DataTypeEnum.Bool:
                 {
                     Byte b1 = (Byte) v1,
                          b2 = (Byte) v2;
@@ -4689,7 +4689,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.Float:
+                case DataTypeEnum.Float:
                 {
                     float f1 = (float) v1,
                           f2 = (float) v2;
@@ -4697,7 +4697,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.Double:
+                case DataTypeEnum.Double:
                 {
                     double d1 = (double) v1,
                            d2 = (double) v2;
@@ -4705,7 +4705,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataType.DateTime:
+                case DataTypeEnum.DateTime:
                 {
                     DateTime dt1, dt2;
 
@@ -4721,13 +4721,13 @@ namespace FileDbNs
                         dt2 = (DateTime) v2;
                     }
                     else
-                        throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptions.InvalidDataType );
+                        throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
 
                     compVal = dt1 < dt2 ? -1 : (dt1 > dt2 ? 1 : 0);
                 }
                 break;
 
-                case DataType.String:
+                case DataTypeEnum.String:
                 {
                     string s1 = (string) v1,
                            s2 = (string) v2;
