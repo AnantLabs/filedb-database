@@ -9,6 +9,7 @@
     <field name="Byte" type="Byte"/>
     <field name="Double" type="Double"/>
     <field name="UInt" type="UInt"/>
+    <field name="Decimal" type="Decimal"/>
     <field name="IntArray" type="Int" isArray="true"/>
     <field name="StringArray" type="String" isArray="true"/>
     <field name="DateTimeArray" type="DateTime" isArray="true"/>
@@ -27,6 +28,7 @@
       <col>1</col>
       <col>4.56</col>
       <col>100</col>
+      <col>1234567890</col>
       <col>100|200|300|400</col>
       <col>one|two|three</col>
       <col>1988-5-2|1990-10-24|1991-2-16</col>
@@ -44,6 +46,7 @@
       <col>2</col>
       <col>.789</col>
       <col>200</col>
+      <col>2345678901</col>
       <col>200|300|400|500</col>
       <col>two|three|four</col>
       <col>1976-5-18|1981-1-30|1999-12-11</col>
@@ -59,6 +62,7 @@
       <col>3</col>
       <col>8.43</col>
       <col>300</col>
+      <col>3456789012</col>
       <col>300|400|500|600</col>
       <col>three|four|five</col>
     </row>

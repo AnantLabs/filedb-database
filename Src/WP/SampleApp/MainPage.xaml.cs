@@ -106,33 +106,33 @@ namespace SampleApp
                          isArray = col.isArray == null ? false : (bool) col.isArray;
                     int autoIncStart = col.autoIncStart == null ? -1 : (int) col.autoIncStart;
 
-                    DataType dataType = DataType.String;
+                    DataTypeEnum dataType = DataTypeEnum.String;
 
                     switch( type.ToLower() )
                     {
                         case "int":
-                            dataType = DataType.Int;
+                            dataType = DataTypeEnum.Int;
                         break;
                         case "uint":
-                            dataType = DataType.UInt;
+                            dataType = DataTypeEnum.UInt;
                         break;
                         case "string":
-                            dataType = DataType.String;
+                            dataType = DataTypeEnum.String;
                         break;
                         case "datetime":
-                            dataType = DataType.DateTime;
+                            dataType = DataTypeEnum.DateTime;
                         break;
                         case "bool":
-                            dataType = DataType.Bool;
+                            dataType = DataTypeEnum.Bool;
                         break;
                         case "float":
-                            dataType = DataType.Float;
+                            dataType = DataTypeEnum.Float;
                         break;
                         case "double":
-                            dataType = DataType.Double;
+                            dataType = DataTypeEnum.Double;
                         break;
                         case "byte":
-                            dataType = DataType.Byte;
+                            dataType = DataTypeEnum.Byte;
                         break;
                     }
 
@@ -147,41 +147,41 @@ namespace SampleApp
 
 #else
                 var fieldLst = new List<Field>( 20 );
-                Field field = new Field( "ID", DataType.Int );
+                Field field = new Field( "ID", DataTypeEnum.Int );
                 field.AutoIncStart = 0;
                 field.IsPrimaryKey = true;
                 fieldLst.Add( field );
-                field = new Field( "FirstName", DataType.String );
+                field = new Field( "FirstName", DataTypeEnum.String );
                 //field.IsPrimaryKey = true;
                 fieldLst.Add( field );
-                field = new Field( "LastName", DataType.String );
+                field = new Field( "LastName", DataTypeEnum.String );
                 fieldLst.Add( field );
-                field = new Field( "BirthDate", DataType.DateTime );
+                field = new Field( "BirthDate", DataTypeEnum.DateTime );
                 fieldLst.Add( field );
-                field = new Field( "IsCitizen", DataType.Bool );
+                field = new Field( "IsCitizen", DataTypeEnum.Bool );
                 fieldLst.Add( field );
-                field = new Field( "Float", DataType.Float );
+                field = new Field( "Float", DataTypeEnum.Float );
                 fieldLst.Add( field );
-                field = new Field( "Byte", DataType.Byte );
+                field = new Field( "Byte", DataTypeEnum.Byte );
                 fieldLst.Add( field );
 
                 // array types
-                field = new Field( "StringArray", DataType.String );
+                field = new Field( "StringArray", DataTypeEnum.String );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "ByteArray", DataType.Byte );
+                field = new Field( "ByteArray", DataTypeEnum.Byte );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "IntArray", DataType.Int );
+                field = new Field( "IntArray", DataTypeEnum.Int );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "FloatArray", DataType.Float );
+                field = new Field( "FloatArray", DataTypeEnum.Float );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "DateTimeArray", DataType.DateTime );
+                field = new Field( "DateTimeArray", DataTypeEnum.DateTime );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "BoolArray", DataType.Bool );
+                field = new Field( "BoolArray", DataTypeEnum.Bool );
                 field.IsArray = true;
                 fieldLst.Add( field );
 #endif
@@ -230,7 +230,7 @@ namespace SampleApp
 
                         if( !string.IsNullOrEmpty( value ) )
                         {
-                            if( field.DataType == DataType.Bool )
+                            if( field.DataType == DataTypeEnum.Bool )
                             {
                                 if( field.IsArray )
                                 {
@@ -249,7 +249,7 @@ namespace SampleApp
                                         record.Add( field.Name, bval );
                                 }
                             }
-                            else if( field.DataType == DataType.Byte )
+                            else if( field.DataType == DataTypeEnum.Byte )
                             {
                                 if( field.IsArray )
                                 {
@@ -268,7 +268,7 @@ namespace SampleApp
                                         record.Add( field.Name, bval );
                                 }
                             }
-                            else if( field.DataType == DataType.Int )
+                            else if( field.DataType == DataTypeEnum.Int )
                             {
                                 if( field.IsArray )
                                 {
@@ -287,7 +287,7 @@ namespace SampleApp
                                         record.Add( field.Name, ival );
                                 }
                             }
-                            else if( field.DataType == DataType.UInt )
+                            else if( field.DataType == DataTypeEnum.UInt )
                             {
                                 if( field.IsArray )
                                 {
@@ -306,7 +306,7 @@ namespace SampleApp
                                         record.Add( field.Name, ival );
                                 }
                             }
-                            else if( field.DataType == DataType.Float )
+                            else if( field.DataType == DataTypeEnum.Float )
                             {
                                 if( field.IsArray )
                                 {
@@ -325,7 +325,7 @@ namespace SampleApp
                                         record.Add( field.Name, dval );
                                 }
                             }
-                            else if( field.DataType == DataType.Double )
+                            else if( field.DataType == DataTypeEnum.Double )
                             {
                                 if( field.IsArray )
                                 {
@@ -466,7 +466,7 @@ namespace SampleApp
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, Equality.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
 
                 Table table = _db.SelectRecords( fieldSearchExp );
                 displayRecords( table );
@@ -496,18 +496,18 @@ namespace SampleApp
                 displayRecords( table );
 
                 // we can manually build the same FilterExpressionGroup
-                var lnameExp = new FilterExpression( "LastName", "Fuller", Equality.Equal, MatchType.UseCase );
-                var fname1Exp = new FilterExpression( "FirstName", "steven", Equality.Equal, MatchType.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "Fuller", EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                var fname1Exp = new FilterExpression( "FirstName", "steven", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
                 // the following two lines produce the same FilterExpression
                 var fname2Exp = FilterExpression.Parse( "FirstName LIKE 'NANCY'" );
-                fname2Exp = new FilterExpression( "FirstName", "NANCY", Equality.Like );
+                fname2Exp = new FilterExpression( "FirstName", "NANCY", EqualityEnum.Like );
 
                 var fnamesGrp = new FilterExpressionGroup();
-                fnamesGrp.Add( BoolOp.Or, fname1Exp );
-                fnamesGrp.Add( BoolOp.Or, fname2Exp );
+                fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
+                fnamesGrp.Add( BoolOpEnum.Or, fname2Exp );
                 var allNamesGrp = new FilterExpressionGroup();
-                allNamesGrp.Add( BoolOp.And, lnameExp );
-                allNamesGrp.Add( BoolOp.And, fnamesGrp );
+                allNamesGrp.Add( BoolOpEnum.And, lnameExp );
+                allNamesGrp.Add( BoolOpEnum.And, fnamesGrp );
 
                 table = _db.SelectRecords( allNamesGrp );
                 displayRecords( table );
@@ -570,18 +570,18 @@ namespace SampleApp
                 displayRecords( table );
 
                 // equivalent building it manually
-                var fname1Exp = new FilterExpression( "FirstName", "andrew", Equality.Equal, MatchType.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "andrew", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
                 // the following two lines produce the same FilterExpression
                 var fname2Exp = FilterExpression.Parse( "~FirstName = nancy" );
-                fname2Exp = new FilterExpression( "FirstName", "nancy", Equality.Equal, MatchType.IgnoreCase );
-                var lnameExp = new FilterExpression( "LastName", "fuller", Equality.Equal, MatchType.IgnoreCase );
+                fname2Exp = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "fuller", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
-                fnamesGrp.Add( BoolOp.Or, fname1Exp );
-                fnamesGrp.Add( BoolOp.Or, fname2Exp );
+                fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
+                fnamesGrp.Add( BoolOpEnum.Or, fname2Exp );
                 var allNamesGrp = new FilterExpressionGroup();
-                allNamesGrp.Add( BoolOp.And, lnameExp );
-                allNamesGrp.Add( BoolOp.And, fnamesGrp );
+                allNamesGrp.Add( BoolOpEnum.And, lnameExp );
+                allNamesGrp.Add( BoolOpEnum.And, fnamesGrp );
 
                 var fieldValues = new FieldValues();
                 fieldValues.Add( "IsCitizen", false );
@@ -605,7 +605,7 @@ namespace SampleApp
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, Equality.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
 
                 var fieldValues = new FieldValues();
                 fieldValues.Add( "IsCitizen", true );
@@ -629,11 +629,11 @@ namespace SampleApp
             {
                 // the following two lines produce the same FilterExpression
                 var exp1 = FilterExpression.Parse( "~FirstName = nancy" );
-                exp1 = new FilterExpression( "FirstName", "nancy", Equality.Equal, MatchType.IgnoreCase );
-                var exp2 = new FilterExpression( "LastName", "leverling", Equality.Equal, MatchType.IgnoreCase );
+                exp1 = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var exp2 = new FilterExpression( "LastName", "leverling", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
                 var expGrp = new FilterExpressionGroup();
-                expGrp.Add( BoolOp.Or, exp1 );
-                expGrp.Add( BoolOp.Or, exp2 );
+                expGrp.Add( BoolOpEnum.Or, exp1 );
+                expGrp.Add( BoolOpEnum.Or, exp2 );
 
                 Table table = _db.SelectRecords( expGrp, new string[] { "ID" } );
 
@@ -653,7 +653,7 @@ namespace SampleApp
         {
             try
             {
-                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", Equality.Equal, MatchType.UseCase );
+                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", EqualityEnum.Equal, MatchTypeEnum.UseCase );
                 int numDeleted = _db.DeleteRecords( searchExp );
             }
             catch( Exception ex )
