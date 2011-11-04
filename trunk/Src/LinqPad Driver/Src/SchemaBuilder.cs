@@ -70,28 +70,28 @@ namespace FileDbDynamicDriverNs
 
                     switch( field.DataType )
                     {
-                        case FileDbNs.DataType.String:
+                        case FileDbNs.DataTypeEnum.String:
                             dataType = field.IsArray ? "String[]" : "String";
                             break;
-                        case FileDbNs.DataType.Bool:
+                        case FileDbNs.DataTypeEnum.Bool:
                             dataType = field.IsArray? "Boolean[]" : "Boolean";
                             break;
-                        case FileDbNs.DataType.Byte:
+                        case FileDbNs.DataTypeEnum.Byte:
                             dataType = field.IsArray ? "Byte[]" : "Byte";
                             break;
-                        case FileDbNs.DataType.DateTime:
+                        case FileDbNs.DataTypeEnum.DateTime:
                             dataType = field.IsArray ? "DateTime[]" : "DateTime";
                             break;
-                        case FileDbNs.DataType.Float:
+                        case FileDbNs.DataTypeEnum.Float:
                             dataType = field.IsArray ? "Single[]" : "Single";
                             break;
-                        case FileDbNs.DataType.Double:
+                        case FileDbNs.DataTypeEnum.Double:
                             dataType = field.IsArray ? "Double[]" : "Double";
                             break;
-                        case FileDbNs.DataType.Int:
+                        case FileDbNs.DataTypeEnum.Int:
                             dataType = field.IsArray ? "Int32[]" : "Int32";
                             break;
-                        case FileDbNs.DataType.UInt:
+                        case FileDbNs.DataTypeEnum.UInt:
                             dataType = field.IsArray ? "UInt32[]" : "UInt32";
                             break;
                     }
