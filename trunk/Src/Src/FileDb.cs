@@ -26,35 +26,39 @@ namespace FileDbNs
                   ReadLock = 1,
                   WriteLock = 2;
 
+        const int VerNullValueSupport = 202;
+        
+        const int DateTimeByteLen = 10;
+        const int GuidByteLen = 16;
+
         // Automatically incremented Int32 type
         internal const Int32 AutoIncField = 0x1;
 
         // Array type
         internal const Int32 ArrayField = 0x2;       
 
-        // Major version of the FFDB package
+        // Major version of the FileDb assembly
         const byte VERSION_MAJOR = 2;
 
-        // Minor version of the FFDB package
-        const byte VERSION_MINOR = 0;
+        // Minor version of the FileDb assembly
+        const byte VERSION_MINOR = 2;
 
         // Signature to help validate file
         const Int32 SIGNATURE = 0x0123BABE;
 
-        // Location of the 'records count' offset in the FFDB index. Internal use only.
+        // Location of the 'records count' offset in the index
         const Int32 SCHEMA_OFFSET = 6;
         const Int32 NUM_RECS_OFFSET = SCHEMA_OFFSET;
 
-        // Location of the 'deleted count' offset in the FFDB index.
-        // Always the next 'Int32 size' offset after the 'records count' offset.
+        // Location of the 'deleted count' offset in the FFDB index
+        // Always the next 'Int32 size' offset after the 'records count' offset
         // Internal use only.
         const Int32 INDEX_DELETED_OFFSET = SCHEMA_OFFSET + 4;
 
         // Location of the Index offset, which is always written at the end of the data file
         const Int32 INDEX_OFFSET = INDEX_DELETED_OFFSET + 4;
 
-        // Size of the field specifing the size of a record in the index.
-        // Internal use only.
+        // Size of the field specifing the size of a record in the index
         const Int32 INDEX_RBLOCK_SIZE = 4;
 
         #endregion Consts
@@ -90,7 +94,8 @@ namespace FileDbNs
               _iteratorIndex;
 
         Int32 _ver_major,
-              _ver_minor;
+              _ver_minor,
+              _ver;
 
         Fields _fields;
 
@@ -167,11 +172,6 @@ namespace FileDbNs
 
         #region Properties
 
-        internal string DateTimeFmt
-        {
-            get; set;
-        }
-
         internal Fields Fields
         {
             get { checkIsDbOpen(); return _fields; }
@@ -214,7 +214,6 @@ namespace FileDbNs
             _isOpen = false;
             _openReadOnly = false;
             AutoFlush = false;
-            DateTimeFmt = "yyyy-MM-dd hh:mm:ss.ffff";
         }
 
         internal void setEncryptionKey( string encryptionKey )
@@ -242,6 +241,7 @@ namespace FileDbNs
 
                 _ver_major = 0;
                 _ver_minor = 0;
+                _ver = 0;
 
                 try
                 {
@@ -258,6 +258,8 @@ namespace FileDbNs
                     // Read the version
                     _ver_major = _dataReader.ReadByte();
                     _ver_minor = _dataReader.ReadByte();
+                    _ver = _ver_major * 100 + _ver_minor;
+
 
                     // Make sure we only read databases of the same major version or less,
                     // because major version change means file format changed
@@ -288,11 +290,10 @@ namespace FileDbNs
                     else if( !string.IsNullOrEmpty( encryptionKey ) )
                         _encryptor = new Encryptor( encryptionKey, this.GetType().ToString() );
 
-
                     // now if the major version is older we must update the schema
                     // which means we must call cleanup to do the job for us
-
-                    if( _ver_major < VERSION_MAJOR )
+                    // at 2.2 we started supporting NULL fields
+                    if( _ver_major < VERSION_MAJOR || _ver < VerNullValueSupport )
                         cleanup( true );
                 }
                 finally
@@ -439,7 +440,10 @@ namespace FileDbNs
                     case DataTypeEnum.Double:
                     case DataTypeEnum.Bool:
                     case DataTypeEnum.DateTime:
-                    break;
+                    case DataTypeEnum.Int64:
+                    case DataTypeEnum.Decimal:
+                    case DataTypeEnum.Guid:
+                        break;
 
                     default: // Unknown type..!                        
                     throw new FileDbException( string.Format( FileDbException.InvalidTypeInSchema, (Int32) field.DataType ),
@@ -481,6 +485,7 @@ namespace FileDbNs
 
             _ver_major = VERSION_MAJOR;
             _ver_minor = VERSION_MINOR;
+            _ver = _ver_major * 100 + _ver_minor;
 
             try
             {
@@ -544,8 +549,6 @@ namespace FileDbNs
                     }
                 }
 
-                //List<Int32> vIndex = readIndex2();
-
                 // Check the index.  To enable a binary search, we must read in the 
                 // entire index, insert our item then write it back out.
                 // Where there is no primary key, we can't do a binary search so skip
@@ -578,9 +581,10 @@ namespace FileDbNs
                     }
                 }
 
+                byte[] nullmask;
                 Int32 newOffset = _indexStartPos,
-                        recordSize = getRecordSize( record ),
-                        deletedIndex = -1;
+                      recordSize = getRecordSize( record, out nullmask ),
+                      deletedIndex = -1;
 
                 if( _numDeleted > 0 )
                 {
@@ -604,7 +608,7 @@ namespace FileDbNs
 
                 _dataStrm.Seek( newOffset, SeekOrigin.Begin );
 
-                writeRecord( _dataWriter, record, recordSize, false );
+                writeRecord( _dataWriter, record, recordSize, nullmask, false );
                 _dataWriter.Flush();
 
                 if( newIndex < 0 )
@@ -794,7 +798,8 @@ namespace FileDbNs
                 }
 
                 // Get the size of the new record for calculations below
-                Int32 newSize = getRecordSize( fullRecord ),
+                byte[] nullmask;
+                Int32 newSize = getRecordSize( fullRecord, out nullmask ),
                       deletedIndex = -1,
                       newPos = _indexStartPos;
 
@@ -824,7 +829,7 @@ namespace FileDbNs
 
                 // Write the record to the database file
                 _dataStrm.Seek( newPos, SeekOrigin.Begin );
-                writeRecord( _dataWriter, fullRecord, newSize, false );
+                writeRecord( _dataWriter, fullRecord, newSize, nullmask, false );
 
                 // check to see if we went past the previous _indexStartPos
                 int newDataEndPos = (int) _dataStrm.Position;
@@ -933,10 +938,9 @@ namespace FileDbNs
                             // ensure all fields are in the record so that updateRecord will not have to read them in again
                             foreach( Field field in _fields )
                             {
-                                string upperName = field.Name.ToUpper();
-                                if( !fullRecord.ContainsKey( upperName ) )
+                                if( !fullRecord.ContainsKey( field.Name ) )
                                 {
-                                    fullRecord.Add( upperName, row[field.Ordinal] );
+                                    fullRecord.Add( field.Name, row[field.Ordinal] );
                                 }
                             }
                         }
@@ -1083,13 +1087,13 @@ namespace FileDbNs
         /// Remove all deleted records
         /// </summary>
         /// 
-        internal void cleanup( bool force )
+        internal void cleanup( bool schemaChange )
         {
             checkIsDbOpen();
             checkReadOnly();
 
             // Don't bother if the database is clean
-            if( !force && _numDeleted == 0 )
+            if( !schemaChange && _numDeleted == 0 )
                 return;
 
             //lockWrite( false );
@@ -1101,7 +1105,7 @@ namespace FileDbNs
             // Note that we attempt the file creation under the DB lock, so
             // that another process doesn't try to create the same file at the
             // same time.
-            string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
+            string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp.fdb";
             tmpFilename = Path.Combine( Path.GetDirectoryName( _dbName ), tmpFilename );
             #if SILVERLIGHT
             IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
@@ -1140,16 +1144,31 @@ namespace FileDbNs
                 for( Int32 idx = 0; idx < _index.Count; ++idx )
                 {
                     Int32 offset = _index[idx];
-
-                    // Read in the entire record
                     bool deleted;
-                    byte[] record = readRecordRaw( _dataReader, offset, out deleted );                        
-                    Debug.Assert( !deleted );
 
-                    // Save the new file offset
+                    // Save the new file offset index
                     newIndex.Add( (Int32) tmpdb.Position );
 
-                    writeRecordRaw( tmpDataWriter, record, false );
+                    // Read in the entire record
+                    if( schemaChange )
+                    {
+                        int size;
+                        object[] record = readRecord( _dataReader, offset, false, out size, out deleted );
+                        Debug.Assert( !deleted );
+
+                        FieldValues fullRecord = new FieldValues( _fields.Count );
+
+                        foreach( Field field in _fields )
+                            fullRecord.Add( field.Name, record[field.Ordinal] );
+
+                        writeRecord( tmpDataWriter, fullRecord, -1, null, false );
+                    }
+                    else
+                    {
+                        byte[] record = readRecordRaw( _dataReader, offset, out deleted );
+                        Debug.Assert( !deleted );
+                        writeRecordRaw( tmpDataWriter, record, false );
+                    }
                 }
                 _indexStartPos = (int) tmpdb.Position;
                 writeIndexStart( tmpDataWriter );
@@ -2246,9 +2265,54 @@ namespace FileDbNs
                     retVal = ncomp == 0 ? EqualityEnum.Equal : (ncomp > 0 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
                 }
                 break;
+
+                case DataTypeEnum.Int64:
+                {
+                    Int64 i1 = Convert.ToInt64( val1 ),
+                          i2 = Convert.ToInt64( val2 );
+
+                    retVal = i1 == i2 ? EqualityEnum.Equal : (i1 > i2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                }
+                break;
+
+                case DataTypeEnum.Decimal:
+                {
+                    Decimal d1 = Convert.ToDecimal( val1 ),
+                            d2 = Convert.ToDecimal( val2 );
+
+                    retVal = d1 == d2 ? EqualityEnum.Equal : (d1 > d2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                }
+                break;
+
+                case DataTypeEnum.Guid:
+                {
+                    Guid g1 = convertToGuid( val1 ),
+                         g2 = convertToGuid( val2 );
+
+                    retVal = g1.CompareTo( g2 ) == 0 ? EqualityEnum.Equal : EqualityEnum.NotEqual;
+                }
+                break;
             }
 
             return retVal;
+        }
+
+        static Guid convertToGuid( object val )
+        {
+            Guid guid;
+            Type type = val.GetType();
+
+            if( type == typeof( Guid ) )
+                guid = (Guid) val;
+            else if( type == typeof( byte[] ) )
+                guid = new Guid( (byte[]) val );
+            else if( type == typeof( string ) )
+                guid = new Guid( (string) val );
+            else
+                throw new FileDbException( string.Format( FileDbException.CantConvertTypeToGuid, type.ToString() ),
+                    FileDbExceptionsEnum.CantConvertTypeToGuid );
+
+            return guid;
         }
 
         static object convertValueToType( object value, DataTypeEnum dataType )
@@ -2302,6 +2366,24 @@ namespace FileDbNs
                 case DataTypeEnum.String:
                 {
                     retVal = value.ToString();
+                }
+                break;
+
+                case DataTypeEnum.Int64:
+                {
+                    retVal = Convert.ToInt64( value );
+                }
+                break;
+
+                case DataTypeEnum.Decimal:
+                {
+                    retVal = Convert.ToDecimal( value );
+                }
+                break;
+
+                case DataTypeEnum.Guid:
+                {
+                    retVal = convertToGuid( value );
                 }
                 break;
             }
@@ -2815,7 +2897,7 @@ namespace FileDbNs
         ///////////////////////////////////////////////////////////////////////
         #region private methods
 
-        // make all fieldnames uppercase
+        /* make all fieldnames uppercase
         FieldValues normalizeFieldNames( FieldValues record )
         {
             var newRecord = new FieldValues( record.Count );
@@ -2825,7 +2907,7 @@ namespace FileDbNs
                 newRecord.Add( fieldName.ToUpper(), record[fieldName] );
             }
             return newRecord;
-        }
+        }*/
 
         /// <summary>
         /// Helper
@@ -2910,7 +2992,7 @@ namespace FileDbNs
                         }
                         else
                         {
-                            UInt32 n = (value == null? 0 : Convert.ToUInt32( value ));
+                            UInt32 n = (value == null? (uint) 0 : Convert.ToUInt32( value ));
                         }
                         break;
 
@@ -2933,7 +3015,7 @@ namespace FileDbNs
                         }
                         else
                         {
-                            float f = (value == null ? 0 : Convert.ToSingle( value ));
+                            float f = (value == null ? (float) 0 : Convert.ToSingle( value ));
                         }
                         break;
 
@@ -2944,7 +3026,7 @@ namespace FileDbNs
                         }
                         else
                         {
-                            double f = (value == null? 0 : Convert.ToDouble( value ));
+                            double f = (value == null? 0d : Convert.ToDouble( value ));
                         }
                         break;
 
@@ -2975,6 +3057,39 @@ namespace FileDbNs
                         else
                         {
                             DateTime d = (value == null? DateTime.MinValue : Convert.ToDateTime( value ));
+                        }
+                        break;
+
+                    case DataTypeEnum.Int64:
+                        if( field.IsArray )
+                        {
+                            value = (Int64[]) value;
+                        }
+                        else
+                        {
+                            Int64 f = (value == null ? (Int64) 0 : Convert.ToInt64( value ));
+                        }
+                        break;
+
+                    case DataTypeEnum.Decimal:
+                        if( field.IsArray )
+                        {
+                            value = (Decimal[]) value;
+                        }
+                        else
+                        {
+                            Decimal f = (value == null ? (Decimal) 0 : Convert.ToDecimal( value ));
+                        }
+                        break;
+
+                    case DataTypeEnum.Guid:
+                        if( field.IsArray )
+                        {
+                            value = (Guid[]) value;
+                        }
+                        else
+                        {
+                            Guid g = value == null ? Guid.NewGuid() : convertToGuid( value );
                         }
                         break;
 
@@ -3123,69 +3238,90 @@ namespace FileDbNs
             fileStrm.SetLength( fileStrm.Position );
         }
 
-        void writeRecord( BinaryWriter dataWriter, FieldValues record, Int32 size, bool deleted )
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dataWriter"></param>
+        /// <param name="record"></param>
+        /// <param name="size"></param>
+        /// <param name="nullmask">to keep track of null fields in written record</param>
+        /// <param name="deleted"></param>
+        /// 
+        void writeRecord( BinaryWriter dataWriter, FieldValues record, Int32 size, byte[] nullmask, bool deleted )
         {
             // Auto-calculate the record size
             if( size < 0 && _encryptor == null )
-                size = getRecordSize( record );
+                size = getRecordSize( record, out nullmask );
+
+            // gotta set the nullmask first
+            int ncol = 0;
+            foreach( Field field in _fields )
+            {
+                object data = null;
+
+                if( record.ContainsKey( field.Name ) )
+                    data = record[field.Name];
+
+                if( data == null )
+                    setNullMask( nullmask, ncol );
+                ncol++;
+            }
 
             #if DEBUG
-            int proposedSize = size;
+            int startPos, proposedSize = size;
             #endif
-
             MemoryStream memStrm = null;
             BinaryWriter origDataWriter = dataWriter;
 
             if( _encryptor != null )
             {
-                memStrm = new MemoryStream( 200 );
+                memStrm = new MemoryStream( size + nullmask.Length + 100 );
                 dataWriter = new BinaryWriter( memStrm );
+                #if DEBUG
+                startPos = (int) memStrm.Position;
+                #endif
             }
             else
             {
                 if( deleted )
-                    size = -size;
+                    size = -size; // deleted indicator
+                
                 // Write out the size of the record
                 dataWriter.Write( size );
-            }
 
-            #if DEBUG
-            int startPos;
-            if( _encryptor != null )
-                startPos = (int) memStrm.Position;
-            else
-                startPos = (int) _dataStrm.Position;
-            #endif
+                #if DEBUG
+                startPos = (int) dataWriter.BaseStream.Position; // _dataStrm.Position;
+                #endif
+            }
+            dataWriter.Write( nullmask );
 
             // Write out the entire record in field order
+            ncol = 0;
             foreach( Field field in _fields )
             {
                 // all fieldnames in the record should now be upper case
-                string uprName = field.Name.ToUpper();
                 object data = null;
 
-                if( record.ContainsKey( uprName ) )
-                    data = record[uprName];
+                if( record.ContainsKey( field.Name ) )
+                    data = record[field.Name];
 
-                writeItem( dataWriter, field, data );
+                if( data != null )
+                    writeItem( dataWriter, field, data );
+                ncol++;
             }
             
-            if( AutoFlush ) flush();
-
             if( _encryptor != null )
             {
                 memStrm.Seek( 0, SeekOrigin.Begin );
-                //using( var outStrm = new MemoryStream( (int) memStrm.Length * 2 ) )
-                {
-                    byte[] bytes = _encryptor.Encrypt( memStrm.ToArray() );
-                    //byte[] bytes = outStrm.ToArray();
-                    size = bytes.Length;
-                    if( deleted )
-                        size = -size;
-                    // Write out the size of the record
-                    origDataWriter.Write( size );
-                    origDataWriter.Write( bytes );
-                }
+
+                byte[] bytes = _encryptor.Encrypt( memStrm.ToArray() );
+                size = bytes.Length;
+
+                if( deleted )
+                    size = -size;
+
+                origDataWriter.Write( size );
+                origDataWriter.Write( bytes );
             }
 
             #if DEBUG
@@ -3193,10 +3329,35 @@ namespace FileDbNs
             if( _encryptor != null )
                 endPos = (int) memStrm.Length;
             else
-                endPos = (int) _dataStrm.Position;                
+                endPos = (int) dataWriter.BaseStream.Position;                
             int actualSize = endPos - startPos;
             Debug.Assert( actualSize == proposedSize );
             #endif
+
+            if( AutoFlush ) flush();
+        }
+
+        /*enum BitFlags : byte
+        {
+            P0 = 1,
+            P1 = 2,
+            P2 = 4,
+            P3 = 8,
+            P4 = 0x10,
+            P5 = 0x20,
+            P6 = 0x40,
+            P7 = 0x80
+        }*/
+
+        static byte[] s_bitmask = new byte[] { 1, 2, 4, 8, 0x10, 0x20, 0x40, 0x80 };
+
+        void setNullMask( byte[] nullmask, int pos )
+        {            
+            int bytePos = pos / 8;
+            pos = pos % 8;
+            byte b = nullmask[bytePos];
+            b |= s_bitmask[pos];
+            nullmask[bytePos] = b;
         }
 
         /// <summary>
@@ -3206,7 +3367,7 @@ namespace FileDbNs
         /// <param name="record"></param>
         /// <param name="size"></param>
         /// <returns></returns>
-        ///
+        /*
         void writeRecord( BinaryWriter dataWriter, object[] record, Int32 size, bool deleted )
         {
             // Auto-calculate the record size
@@ -3253,7 +3414,7 @@ namespace FileDbNs
                     origDataWriter.Write( bytes );
                 }
             }
-        }
+        }*/
 
         void writeRecordRaw( BinaryWriter dataWriter, byte[] record, bool deleted )
         {
@@ -3268,19 +3429,26 @@ namespace FileDbNs
             dataWriter.Write( record );
         }
 
-        Int32 getRecordSize( FieldValues record )
+        Int32 getRecordSize( FieldValues record, out byte[] nullmask )
         {
             Int32 size = 0;
+
+            int nBytes = _fields.Count / 8;
+            if( (_fields.Count % 8) > 0 )
+                nBytes++;
+            nullmask = new byte[nBytes];
+            size += nBytes;
 
             // Size up each field
 
             foreach( Field field in _fields )
             {
                 object data = null;
-                string uprName = field.Name.ToUpper();
-                if( record.ContainsKey( uprName ) )
-                    data = record[uprName];
-                size += getItemSize( field, data );
+                if( record.ContainsKey( field.Name ) )
+                    data = record[field.Name];
+
+                if( data != null )
+                    size += getItemSize( field, data );
             }
             return size;
         }
@@ -3290,7 +3458,7 @@ namespace FileDbNs
         /// </summary>
         /// <param name="record"></param>
         /// <returns></returns>
-        ///
+        /*
         Int32 getRecordSize( object[] record )
         {
             Int32 size = 0;
@@ -3303,11 +3471,14 @@ namespace FileDbNs
                 size += getItemSize( field, data );
             }
             return size;
-        }
+        }*/
 
         Int32 getItemSize( Field field, object data )
         {
             Int32 size = 0;
+
+            if( data == null )
+                return size;
 
             switch( field.DataType )
             {
@@ -3336,15 +3507,15 @@ namespace FileDbNs
                 break;
 
                 case DataTypeEnum.UInt:
-                if( field.IsArray )
-                {
-                    size = sizeof( UInt32 );
-                    UInt32[] arr = (UInt32[]) data;
-                    if( arr != null )
-                        size += arr.Length * sizeof( UInt32 );
-                }
-                else
-                    size = sizeof( UInt32 );
+                    if( field.IsArray )
+                    {
+                        size = sizeof( UInt32 );
+                        UInt32[] arr = (UInt32[]) data;
+                        if( arr != null )
+                            size += arr.Length * sizeof( UInt32 );
+                    }
+                    else
+                        size = sizeof( UInt32 );
                 break;
 
                 case DataTypeEnum.Float:
@@ -3352,67 +3523,54 @@ namespace FileDbNs
                     {
                         size = sizeof( Int32 );
                         float[] arr = (float[]) data;
-                        if( arr != null )
-                        {
-                            size += arr.Length * sizeof( float );
-                            #if DEBUG
-                            _testWriter = getTestWriter();
-                            foreach( float d in arr )
-                            {
-                                _testWriter.Write( d );
-                            }
-                            _testWriter.Flush();
-                            int testSize = (Int32) _testStrm.Position;
-                            Debug.Assert( testSize == size - sizeof( Int32 ) );
-                            #endif
-                        }
+                        size += arr.Length * sizeof( float );
+
+                        #if DEBUG
+                        _testWriter = getTestWriter();
+                        foreach( float d in arr )
+                            _testWriter.Write( d );
+                        _testWriter.Flush();
+                        int testSize = (Int32) _testStrm.Position;
+                        Debug.Assert( testSize == size - sizeof( Int32 ) );
+                        #endif
                     }
                     else
                         size = sizeof( float );
                 break;
 
                 case DataTypeEnum.Double:
-                if( field.IsArray )
-                {
-                    size = sizeof( Int32 );
-                    double[] arr = (double[]) data;
-                    if( arr != null )
+                    if( field.IsArray )
                     {
+                        size = sizeof( Int32 );
+                        double[] arr = (double[]) data;
                         size += arr.Length * sizeof( double );
+
                         #if DEBUG
                         _testWriter = getTestWriter();
                         foreach( double d in arr )
-                        {
                             _testWriter.Write( d );
-                        }
                         _testWriter.Flush();
                         int testSize = (Int32) _testStrm.Position;
                         Debug.Assert( testSize == size - sizeof( Int32 ) );
                         #endif
                     }
-                }
-                else
-                    size = sizeof( double );
+                    else
+                        size = sizeof( double );
                 break;
 
                 case DataTypeEnum.Bool:
                     if( field.IsArray )
                     {
                         size = sizeof( Int32 );
-                        if( data != null )
+                        if( data.GetType() == typeof( bool[] ) )
                         {
-                            if( data.GetType() == typeof( bool[] ) )
-                            {
-                                bool[] arr = (bool[]) data;
-                                if( arr != null )
-                                    size += arr.Length;
-                            }
-                            else if( data.GetType() == typeof( Byte[] ) )
-                            {
-                                Byte[] arr = (Byte[]) data;
-                                if( arr != null )
-                                    size += arr.Length;
-                            }
+                            bool[] arr = (bool[]) data;
+                            size += arr.Length;
+                        }
+                        else if( data.GetType() == typeof( Byte[] ) )
+                        {
+                            Byte[] arr = (Byte[]) data;
+                            size += arr.Length;
                         }
                     }
                     else
@@ -3421,7 +3579,8 @@ namespace FileDbNs
 
                 case DataTypeEnum.DateTime:
                 {
-                    // DateTimes are stored as string
+                    // DateTimes were stored as string prior to 2.2
+                    #if false
                     _testWriter = getTestWriter();
 
                     if( field.IsArray )
@@ -3474,6 +3633,26 @@ namespace FileDbNs
 
                     _testWriter.Flush();
                     size += (Int32) _testStrm.Position;
+                    #endif
+
+                    if( field.IsArray )
+                    {
+                        size = sizeof( Int32 );
+                        if( data.GetType() == typeof( DateTime[] ) )
+                        {
+                            DateTime[] arr = (DateTime[]) data;
+                            size += arr.Length * DateTimeByteLen;
+                        }
+                        else // must be string
+                        {
+                            string[] arr = (string[]) data;
+                            size += arr.Length * DateTimeByteLen;
+                        }
+                    }
+                    else
+                    {
+                        size += DateTimeByteLen;
+                    }
                 }
                 break;
 
@@ -3485,28 +3664,99 @@ namespace FileDbNs
                     {
                         size = sizeof( Int32 );
                         string[] arr = (string[]) data;
-                        if( arr != null )
-                        {
-                            foreach( string s in arr )
-                            {
-                                _testWriter.Write( s == null ? string.Empty : s ); // can't write null strings
-                            }
-                        }
+                        foreach( string s in arr )
+                            _testWriter.Write( s == null ? string.Empty : s ); // can't write null strings
                     }
                     else
                     {
-                        if( data == null )
-                            _testWriter.Write( string.Empty );  // can't write null strings
-                        else
-                            _testWriter.Write( data.ToString() );
+                        _testWriter.Write( data.ToString() );
                     }
 
                     if( _testStrm.Position > 0 )
                     {
-                        _testWriter.Flush();
+                        _testWriter.Flush(); // is this necessary?
                         size += (Int32) _testStrm.Position;
                     }
                 }
+                break;
+
+                case DataTypeEnum.Int64:
+                    if( field.IsArray )
+                    {
+                        size = sizeof( Int32 );
+                        Int64[] arr = (Int64[]) data;
+                        size += arr.Length * sizeof( Int64 );
+
+                        #if DEBUG
+                        _testWriter = getTestWriter();
+                        foreach( Int64 i in arr )
+                            _testWriter.Write( i );
+                        _testWriter.Flush(); // is this necessary?
+                        int testSize = (Int32) _testStrm.Position;
+                        Debug.Assert( testSize == size - sizeof( Int32 ) );
+                        #endif
+                    }
+                    else
+                        size = sizeof( Int64 );
+                break;
+
+                case DataTypeEnum.Decimal:
+                    if( field.IsArray )
+                    {
+                        size = sizeof( Int32 );
+                        Decimal[] arr = (Decimal[]) data;
+                        size += arr.Length * sizeof( Decimal );
+
+                        #if DEBUG
+                        _testWriter = getTestWriter();
+                        foreach( Decimal d in arr )
+                            writeDecimal( _testWriter, d );
+                        _testWriter.Flush(); // is this necessary?
+                        int testSize = (Int32) _testStrm.Position;
+                        Debug.Assert( testSize == size - sizeof( Int32 ) );
+                        #endif
+                    }
+                    else
+                        size = sizeof( Decimal );
+                break;
+
+                case DataTypeEnum.Guid:
+                    // Guids are stored as byte[]
+                    _testWriter = getTestWriter();
+
+                    if( field.IsArray )
+                    {
+                        size = sizeof( Int32 );
+
+                        if( data.GetType() == typeof( Guid[] ) )
+                        {
+                            Guid[] arr = (Guid[]) data;
+                            if( arr != null )
+                            {
+                                foreach( Guid g in arr )
+                                    _testWriter.Write( g.ToByteArray() );
+                            }
+                        }
+                        /*else // must be string
+                        {
+                            string[] arr = (string[]) data;
+                            if( arr != null )
+                            {
+                                foreach( string s in arr )
+                                {
+                                    DateTime dt = DateTime.Parse( s );
+                                    _testWriter.Write( dt.ToString( DateTimeFmt ) );
+                                }
+                            }
+                        }*/
+                    }
+                    else
+                    {
+                        Guid guid = (Guid) data;
+                        _testWriter.Write( guid.ToByteArray() );
+                    }
+                    _testWriter.Flush(); // is this necessary?
+                    size += (Int32) _testStrm.Position;
                 break;
 
                 default:
@@ -3539,38 +3789,28 @@ namespace FileDbNs
         /// 
         void writeItem( BinaryWriter dataWriter, Field field, object data )
         {
+            if( data == null )
+                return;
+
             switch( field.DataType )
             {
                 case DataTypeEnum.Byte:
                     if( field.IsArray )
                     {
                         Byte[] arr = (Byte[]) data;
-                        // write the length
-                        dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                        dataWriter.Write( arr.Length );
 
-                        if( arr != null )
-                        {
-                            foreach( Byte b in arr )
-                            {
-                                dataWriter.Write( b );
-                            }
-                        }
+                        foreach( Byte b in arr )
+                            dataWriter.Write( b );
                     }
                     else
                     {
-                        if( data == null )
-                        {
-                            dataWriter.Write( (Byte) 0 );
-                        }
+                        Byte val;
+                        if( data.GetType() != typeof( Byte ) )
+                            val = Convert.ToByte( data );
                         else
-                        {
-                            Byte val;
-                            if( data.GetType() != typeof( Byte ) )
-                                val = Convert.ToByte( data );
-                            else
-                                val = (Byte) data;
-                            dataWriter.Write( val );
-                        }
+                            val = (Byte) data;
+                        dataWriter.Write( val );
                     }
                     break;
 
@@ -3578,32 +3818,19 @@ namespace FileDbNs
                     if( field.IsArray )
                     {
                         Int32[] arr = (Int32[]) data;
-                        // write the length
-                        dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                        dataWriter.Write( arr.Length );
 
-                        if( arr != null )
-                        {
-                            foreach( Int32 i in arr )
-                            {
-                                dataWriter.Write( i );
-                            }
-                        }
+                        foreach( Int32 i in arr )
+                            dataWriter.Write( i );
                     }
                     else
                     {
-                        if( data == null )
-                        {
-                            dataWriter.Write( (Int32) 0 );
-                        }
+                        Int32 val;
+                        if( data.GetType() != typeof( Int32 ) )
+                            val = Convert.ToInt32( data );
                         else
-                        {
-                            Int32 val;
-                            if( data.GetType() != typeof( Int32 ) )
-                                val = Convert.ToInt32( data );
-                            else
-                                val = (Int32) data;
-                            dataWriter.Write( val );
-                        }
+                            val = (Int32) data;
+                        dataWriter.Write( val );
                     }
                     break;
 
@@ -3611,32 +3838,19 @@ namespace FileDbNs
                     if( field.IsArray )
                     {
                         UInt32[] arr = (UInt32[]) data;
-                        // write the length
-                        dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                        dataWriter.Write( arr.Length );
 
-                        if( arr != null )
-                        {
-                            foreach( UInt32 i in arr )
-                            {
-                                dataWriter.Write( i );
-                            }
-                        }
+                        foreach( UInt32 i in arr )
+                            dataWriter.Write( i );
                     }
                     else
                     {
-                        if( data == null )
-                        {
-                            dataWriter.Write( (UInt32) 0 );
-                        }
+                        UInt32 val;
+                        if( data.GetType() != typeof( UInt32 ) )
+                            val = Convert.ToUInt32( data );
                         else
-                        {
-                            UInt32 val;
-                            if( data.GetType() != typeof( UInt32 ) )
-                                val = Convert.ToUInt32( data );
-                            else
-                                val = (UInt32) data;
-                            dataWriter.Write( val );
-                        }
+                            val = (UInt32) data;
+                        dataWriter.Write( val );
                     }
                     break;
 
@@ -3644,32 +3858,19 @@ namespace FileDbNs
                     if( field.IsArray )
                     {
                         float[] arr = (float[]) data;
-                        // write the length
-                        dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                        dataWriter.Write( arr.Length );
 
-                        if( arr != null )
-                        {
-                            foreach( float d in arr )
-                            {
-                                dataWriter.Write( d );
-                            }
-                        }
+                        foreach( float d in arr )
+                            dataWriter.Write( d );
                     }
                     else
                     {
-                        if( data == null )
-                        {
-                            dataWriter.Write( 0f );
-                        }
+                        float val;
+                        if( data.GetType() != typeof( float ) )
+                            val = Convert.ToSingle( data );
                         else
-                        {
-                            float val;
-                            if( data.GetType() != typeof( float ) )
-                                val = Convert.ToSingle( data );
-                            else
-                                val = (float) data;
-                            dataWriter.Write( val );
-                        }
+                            val = (float) data;
+                        dataWriter.Write( val );
                     }
                     break;
 
@@ -3677,32 +3878,19 @@ namespace FileDbNs
                     if( field.IsArray )
                     {
                         double[] arr = (double[]) data;
-                        // write the length
-                        dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                        dataWriter.Write( arr.Length );
 
-                        if( arr != null )
-                        {
-                            foreach( double d in arr )
-                            {
-                                dataWriter.Write( d );
-                            }
-                        }
+                        foreach( double d in arr )
+                            dataWriter.Write( d );
                     }
                     else
                     {
-                        if( data == null )
-                        {
-                            dataWriter.Write( 0d );
-                        }
+                        double val;
+                        if( data.GetType() != typeof( double ) )
+                            val = Convert.ToDouble( data );
                         else
-                        {
-                            double val;
-                            if( data.GetType() != typeof( double ) )
-                                val = Convert.ToDouble( data );
-                            else
-                                val = (double) data;
-                            dataWriter.Write( val );
-                        }
+                            val = (double) data;
+                        dataWriter.Write( val );
                     }
                     break;
 
@@ -3710,60 +3898,36 @@ namespace FileDbNs
                 {
                     if( field.IsArray )
                     {
-                        if( data != null )
+                        if( data.GetType() == typeof( bool[] ) )
                         {
-                            if( data.GetType() == typeof( bool[] ) )
-                            {
-                                bool[] arr = (bool[]) data;
-                                // write the length
-                                dataWriter.Write( arr.Length );
+                            bool[] arr = (bool[]) data;
+                            dataWriter.Write( arr.Length );
 
-                                if( arr != null )
-                                {
-                                    foreach( bool b in arr )
-                                    {
-                                        dataWriter.Write( b ? (Byte) 1 : (Byte)0 );
-                                    }
-                                }
-                            }
-                            else if( data.GetType() == typeof( Byte[] ) )
-                            {
-                                Byte[] arr = (Byte[]) data;
-                                // write the length
-                                dataWriter.Write( arr.Length );
+                            foreach( bool b in arr )
+                                dataWriter.Write( b ? (Byte) 1 : (Byte)0 );
+                        }
+                        else if( data.GetType() == typeof( Byte[] ) )
+                        {
+                            Byte[] arr = (Byte[]) data;
+                            dataWriter.Write( arr.Length );
 
-                                if( arr != null )
-                                {
-                                    foreach( Byte b in arr )
-                                    {
-                                        dataWriter.Write( b );
-                                    }
-                                }
-                            }
-                            else
-                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
+                            foreach( Byte b in arr )
+                                dataWriter.Write( b );
                         }
                         else
-                            dataWriter.Write( (Int32) (-1) );
+                            throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
                     }
                     else
                     {
-                        if( data == null )
-                        {
-                            dataWriter.Write( (Byte) 0 );
-                        }
+                        bool val;
+                        if( data.GetType() == typeof( bool ) )
+                            val = (bool) data;
+                        else if( data.GetType() == typeof( Byte ) )
+                            val = ((Byte) data) == 0 ? true : false;
                         else
-                        {
-                            bool val;
-                            if( data.GetType() == typeof( bool ) )
-                                val = (bool) data;
-                            else if( data.GetType() == typeof( Byte ) )
-                                val = ((Byte) data) == 0 ? true : false;
-                            else
-                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
+                            throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
 
-                            dataWriter.Write( val ? (Byte) 1 : (Byte) 0 );
-                        }
+                        dataWriter.Write( val ? (Byte) 1 : (Byte) 0 );
                     }
                 }
                 break;
@@ -3772,63 +3936,43 @@ namespace FileDbNs
                 {
                     if( field.IsArray )
                     {
-                        if( data != null )
+                        if( data.GetType() == typeof( DateTime[] ) )
                         {
-                            if( data.GetType() == typeof( DateTime[] ) )
-                            {
-                                DateTime[] arr = (DateTime[]) data;
-                                // write the length
-                                dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                            DateTime[] arr = (DateTime[]) data;
+                            dataWriter.Write( arr.Length );
 
-                                if( arr != null )
-                                {
-                                    foreach( DateTime dt in arr )
-                                    {
-                                        dataWriter.Write( dt.ToString( DateTimeFmt ) );
-                                    }
-                                }
-                            }
-                            else if( data.GetType() == typeof( string[] ) )
-                            {
-                                string[] arr = (string[]) data;
-                                // write the length
-                                dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+                            foreach( DateTime dt in arr )
+                                writeDate( dt, dataWriter );
+                        }
+                        else if( data.GetType() == typeof( string[] ) )
+                        {
+                            string[] arr = (string[]) data;
+                            dataWriter.Write( arr.Length );
 
-                                if( arr != null )
-                                {
-                                    // convert each string to DateTime then write it in our format
-                                    foreach( string s in arr )
-                                    {
-                                        DateTime dt = DateTime.Parse( s );
-                                        dataWriter.Write( dt.ToString( DateTimeFmt ) );
-                                    }
-                                }
+                            // convert each string to DateTime then write it in our format
+                            foreach( string s in arr )
+                            {
+                                DateTime dt = DateTime.Parse( s );
+                                writeDate( dt, dataWriter );
                             }
-                            else
-                                throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
                         }
                         else
-                            dataWriter.Write( (Int32) (-1) );
+                            throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
                     }
                     else
                     {
-                        if( data == null )
-                            dataWriter.Write( String.Empty );  // can't write null
-                        else
+                        if( data.GetType() == typeof( DateTime ) )
                         {
-                            if( data.GetType() == typeof( DateTime ) )
-                            {
-                                DateTime dt = (DateTime) data;
-                                dataWriter.Write( dt.ToString( DateTimeFmt ) );
-                            }
-                            else if( data.GetType() == typeof( String ) )
-                            {
-                                DateTime dt = DateTime.Parse( data.ToString() );
-                                dataWriter.Write( dt.ToString( DateTimeFmt ) );
-                            }
-                            else
-                                throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
+                            DateTime dt = (DateTime) data;
+                            writeDate( dt, dataWriter );
                         }
+                        else if( data.GetType() == typeof( String ) )
+                        {
+                            DateTime dt = DateTime.Parse( data.ToString() );
+                            writeDate( dt, dataWriter );
+                        }
+                        else
+                            throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
                     }
                 }
                 break;
@@ -3841,10 +3985,90 @@ namespace FileDbNs
                     }
                     else
                     {
-                        if( data == null )
-                            dataWriter.Write( String.Empty );  // can't write null
+                        dataWriter.Write( data.ToString() );
+                    }
+                    break;
+
+                case DataTypeEnum.Int64:
+                    if( field.IsArray )
+                    {
+                        Int64[] arr = (Int64[]) data;
+                        dataWriter.Write( arr.Length );
+
+                        foreach( Int64 i in arr )
+                            dataWriter.Write( i );
+                    }
+                    else
+                    {
+                        Int64 val;
+                        if( data.GetType() != typeof( Int64 ) )
+                            val = Convert.ToInt64( data );
                         else
-                            dataWriter.Write( data.ToString() );
+                            val = (Int64) data;
+                        dataWriter.Write( val );
+                    }
+                    break;
+
+                case DataTypeEnum.Decimal:
+                    if( field.IsArray )
+                    {
+                        Decimal[] arr = (Decimal[]) data;
+                        dataWriter.Write( arr.Length );
+
+                        foreach( Decimal d in arr )
+                            writeDecimal( dataWriter, d );
+                    }
+                    else
+                    {
+                        Decimal d;
+                        if( data.GetType() != typeof( Decimal ) )
+                            d = Convert.ToDecimal( data );
+                        else
+                            d = (Decimal) data;
+                        writeDecimal( dataWriter, d );
+                    }
+                    break;
+
+                case DataTypeEnum.Guid:
+                    if( field.IsArray )
+                    {
+                        if( data.GetType() == typeof( Guid[] ) )
+                        {
+                            Guid[] arr = (Guid[]) data;
+                            dataWriter.Write( arr.Length );
+
+                            foreach( Guid g in arr )
+                                dataWriter.Write( g.ToByteArray() );
+                        }
+                        else if( data.GetType() == typeof( string[] ) )
+                        {
+                            string[] arr = (string[]) data;
+                            dataWriter.Write( arr.Length );
+
+                            // convert each string to Guid
+                            foreach( string s in arr )
+                            {
+                                Guid g = new Guid( s );
+                                dataWriter.Write( g.ToByteArray() );
+                            }
+                        }
+                        else
+                            throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
+                    }
+                    else
+                    {
+                        if( data.GetType() == typeof( Guid ) )
+                        {
+                            Guid g = (Guid) data;
+                            dataWriter.Write( g.ToByteArray() );
+                        }
+                        else if( data.GetType() == typeof( String ) )
+                        {
+                            Guid g = new Guid( data.ToString() );
+                            dataWriter.Write( g.ToByteArray() );
+                        }
+                        else
+                            throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
                     }
                     break;
 
@@ -3855,20 +4079,97 @@ namespace FileDbNs
             }
         }
 
+        void writeDecimal( BinaryWriter writer, Decimal dec )
+        {
+            Int32[] arr = decimal.GetBits( dec );
+            writer.Write( arr[0] );
+            writer.Write( arr[1] );
+            writer.Write( arr[2] );
+            writer.Write( arr[3] );
+        }
+
+        Decimal readDecimal( BinaryReader reader )
+        {
+            Int32[] arr = new Int32[4];
+            arr[0] = reader.ReadInt32();
+            arr[1] = reader.ReadInt32();
+            arr[2] = reader.ReadInt32();
+            arr[3] = reader.ReadInt32();
+
+            return new decimal( arr );
+        }
+
         void writeStringArray( BinaryWriter dataWriter, string[] arr )
         {
             // write the length
-            dataWriter.Write( arr != null ? arr.Length : (Int32) (-1) );
+            dataWriter.Write( arr.Length );
 
-            if( arr != null )
+            foreach( string s in arr )
             {
-                foreach( string s in arr )
-                {
-                    dataWriter.Write( s == null? String.Empty : s );
-                }
+                dataWriter.Write( s == null? String.Empty : s );
             }
         }
-        
+
+        void writeDate( DateTime dt, BinaryWriter writer )
+        {
+            writer.Write( (Int16) dt.Year );
+            writer.Write( (Byte) dt.Month );
+            writer.Write( (Byte) dt.Day );
+            writer.Write( (Byte) dt.Hour );
+            writer.Write( (Byte) dt.Minute );
+            writer.Write( (Byte) dt.Second );
+            writer.Write( (UInt16) dt.Millisecond );
+            writer.Write( (Byte) dt.Kind );
+
+#if false
+            Int16 year;
+            Byte month, day, hour, minute, second;
+            UInt16 milliseconds;
+
+            year = (Int16) dt.Year;
+            month = (Byte) dt.Month;
+            day = (Byte) dt.Day;
+            hour = (Byte) dt.Hour;
+            minute = (Byte) dt.Minute;
+            second = (Byte) dt.Second;
+            milliseconds = (UInt16) dt.Millisecond;
+            MemoryStream memstrm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter( memstrm );
+
+            memstrm.Seek( 0, SeekOrigin.Begin );
+            BinaryReader reader = new BinaryReader( memstrm );
+
+            year = reader.ReadInt16();
+            month = reader.ReadByte();
+            day = reader.ReadByte();
+            hour = reader.ReadByte();
+            minute = reader.ReadByte();
+            second = reader.ReadByte();
+            milliseconds = reader.ReadUInt16();
+            dt = new DateTime( year, month, day, hour, minute, second, milliseconds );
+#endif
+        }
+
+        DateTime readDate( BinaryReader reader )
+        {
+            Int16 year;
+            Byte month, day, hour, minute, second;
+            UInt16 milliseconds;
+            DateTimeKind kind;
+
+            year = reader.ReadInt16();
+            month = reader.ReadByte();
+            day = reader.ReadByte();
+            hour = reader.ReadByte();
+            minute = reader.ReadByte();
+            second = reader.ReadByte();
+            milliseconds = reader.ReadUInt16();
+            kind = (DateTimeKind) reader.ReadByte();            
+
+            DateTime dt = new DateTime( year, month, day, hour, minute, second, milliseconds, kind );
+            return dt;
+        }
+
         ///------------------------------------------------------------------------------
         /// <summary>
         /// Private function to perform a binary search
@@ -4001,27 +4302,39 @@ namespace FileDbNs
 
             object[] record = new object[numFields]; // one extra for the index
 
-            if( size > 0 )
+            Debug.Assert( size > 0 );
+            
+            MemoryStream memStrm = null;
+
+            if( _encryptor != null )
             {
-                MemoryStream memStrm = null;
-
-                if( _encryptor != null )
-                {
-                    byte[] bytes = dataReader.ReadBytes( size );
-                    //memStrm = new MemoryStream( size * 2 );
-                    bytes = _encryptor.Decrypt( bytes );
-                    //bytes = memStrm.ToArray();
-                    memStrm = new MemoryStream( bytes );
-                    dataReader = new BinaryReader( memStrm );
-                }
-
-                // Read in the entire record
-                for( Int32 n = 0; n < _fields.Count; n++ )
-                {
-                    Field field = _fields[n];
-                    record[n] = readItem( dataReader, field );
-                }
+                byte[] bytes = dataReader.ReadBytes( size );
+                bytes = _encryptor.Decrypt( bytes );
+                memStrm = new MemoryStream( bytes );
+                dataReader = new BinaryReader( memStrm );
             }
+
+            byte[] nullmask = null;
+            if( _ver >= VerNullValueSupport )
+                nullmask = readNullmask( dataReader );
+
+            // Read in the entire record
+            for( Int32 n = 0; n < _fields.Count; n++ )
+            {
+                if( nullmask != null )
+                {
+                    // get the correct byte
+                    int pos = n / 8;
+                    byte b = nullmask[pos];
+                    // get the bit pos in the byte
+                    pos = n % 8;
+                    if( (b & s_bitmask[pos]) != 0 )
+                        continue;
+                }
+                Field field = _fields[n];
+                record[n] = readItem( dataReader, field );
+            }
+            
             return record;
         }
 
@@ -4062,6 +4375,8 @@ namespace FileDbNs
         {
             // Read in the record KEY only
 
+            byte[] nullmask = null;
+
             if( _encryptor == null )
             {
                 _dataStrm.Seek( offset + INDEX_RBLOCK_SIZE, SeekOrigin.Begin );
@@ -4072,22 +4387,35 @@ namespace FileDbNs
                 _dataStrm.Seek( offset, SeekOrigin.Begin );
                 int size = dataReader.ReadInt32();
 
-                if( size < 0 )
+                if( size < 0 ) // deleted record
                     size = -size;
 
                 MemoryStream memStrm = null;
 
-                if( _encryptor != null )
-                {
-                    byte[] bytes = dataReader.ReadBytes( size );
-                    //memStrm = new MemoryStream( size * 2 );
-                    bytes = _encryptor.Decrypt( bytes );
-                    //bytes = memStrm.ToArray();
-                    memStrm = new MemoryStream( bytes );
-                    dataReader = new BinaryReader( memStrm );
-                }
+                byte[] bytes = dataReader.ReadBytes( size );
+                bytes = _encryptor.Decrypt( bytes );
+                memStrm = new MemoryStream( bytes );
+                dataReader = new BinaryReader( memStrm );
             }
+
+            if( _ver >= VerNullValueSupport )
+            {
+                // read past the nullmask
+                nullmask = readNullmask( dataReader );
+            }
+
+            // NOTE: Key field must not be null or empty
+
             return readItem( dataReader, _primaryKeyField );
+        }
+
+        byte[] readNullmask( BinaryReader dataReader )
+        {
+            // read the nullmask
+            int nBytes = _fields.Count / 8;
+            if( (_fields.Count % 8) > 0 )
+                nBytes++;
+            return dataReader.ReadBytes( nBytes );
         }
 
         /// <summary>
@@ -4125,9 +4453,7 @@ namespace FileDbNs
                         {
                             arr = new Int32[elements];
                             for( Int32 i = 0; i < elements; i++ )
-                            {
                                 arr[i] = dataReader.ReadInt32();
-                            }
                         }
                         return arr;
                     }
@@ -4143,9 +4469,7 @@ namespace FileDbNs
                         {
                             arr = new UInt32[elements];
                             for( UInt32 i = 0; i < elements; i++ )
-                            {
                                 arr[i] = dataReader.ReadUInt32();
-                            }
                         }
                         return arr;
                     }
@@ -4161,9 +4485,7 @@ namespace FileDbNs
                         {
                             arr = new float[elements];
                             for( Int32 i = 0; i < elements; i++ )
-                            {
                                 arr[i] = dataReader.ReadSingle();
-                            }
                         }
                         return arr;
                     }
@@ -4179,9 +4501,7 @@ namespace FileDbNs
                         {
                             arr = new double[elements];
                             for( Int32 i = 0; i < elements; i++ )
-                            {
                                 arr[i] = dataReader.ReadDouble();
-                            }
                         }
                         return arr;
                     }
@@ -4197,9 +4517,7 @@ namespace FileDbNs
                         {
                             arr = new bool[elements];
                             for( Int32 i = 0; i < elements; i++ )
-                            {
                                 arr[i] = dataReader.ReadByte() == 1;
-                            }
                         }
                         return arr;
                     }
@@ -4216,19 +4534,31 @@ namespace FileDbNs
                             arr = new DateTime[elements];
                             for( Int32 i = 0; i < elements; i++ )
                             {
-                                string s = dataReader.ReadString();
-                                arr[i] = DateTime.Parse( s );
+                                if( _ver < VerNullValueSupport )
+                                {
+                                    string s = dataReader.ReadString();
+                                    arr[i] = DateTime.Parse( s );
+                                }
+                                else
+                                {
+                                    arr[i] = readDate( dataReader );
+                                }
                             }
                         }
                         return arr;
                     }
                     else
                     {
-                        string s = dataReader.ReadString();
-                        if( s.Length == 0 )
-                            return DateTime.MinValue;
+                        if( _ver < VerNullValueSupport )
+                        {
+                            string s = dataReader.ReadString();
+                            if( s.Length == 0 )
+                                return DateTime.MinValue;
+                            else
+                                return DateTime.Parse( s );
+                        }
                         else
-                            return DateTime.Parse( s );
+                            return readDate( dataReader );
                     }
 
                 case DataTypeEnum.String:
@@ -4240,14 +4570,66 @@ namespace FileDbNs
                         {
                             arr = new string[elements];
                             for( Int32 i = 0; i < elements; i++ )
-                            {
                                 arr[i] = dataReader.ReadString();
-                            }
                         }
                         return arr;
                     }
                     else
                         return dataReader.ReadString();
+
+                case DataTypeEnum.Int64:
+                    if( field.IsArray )
+                    {
+                        Int32 elements = dataReader.ReadInt32();
+                        Int64[] arr = null;
+                        if( elements >= 0 )
+                        {
+                            arr = new Int64[elements];
+                            for( Int32 i = 0; i < elements; i++ )
+                                arr[i] = dataReader.ReadInt64();
+                        }
+                        return arr;
+                    }
+                    else
+                        return dataReader.ReadInt64();
+
+                case DataTypeEnum.Decimal:
+                    if( field.IsArray )
+                    {
+                        Int32 elements = dataReader.ReadInt32();
+                        Decimal[] arr = null;
+                        if( elements >= 0 )
+                        {
+                            arr = new Decimal[elements];
+                            for( Int32 i = 0; i < elements; i++ )
+                                arr[i] = readDecimal( dataReader );
+                        }
+                        return arr;
+                    }
+                    else
+                        return readDecimal( dataReader );
+
+                case DataTypeEnum.Guid:
+                    if( field.IsArray )
+                    {
+                        Int32 elements = dataReader.ReadInt32();
+                        Guid[] arr = null;
+                        if( elements >= 0 )
+                        {
+                            arr = new Guid[elements];
+                            for( Int32 i = 0; i < elements; i++ )
+                            {
+                                Byte[] bytes = dataReader.ReadBytes( GuidByteLen );
+                                arr[i] = new Guid( bytes );
+                            }
+                        }
+                        return arr;
+                    }
+                    else
+                    {
+                        Byte[] bytes = dataReader.ReadBytes( GuidByteLen );
+                        return new Guid( bytes );
+                    }
 
                 default:
                     // Error in type
@@ -4399,7 +4781,7 @@ namespace FileDbNs
         void writeField( BinaryWriter writer, Field field )
         {
             writer.Write( field.Name );
-            writer.Write( (short) field.DataType );
+            writer.Write( (Int16) field.DataType );
 
             Int32 flags=0;
             if( field.IsAutoInc )
@@ -4467,7 +4849,6 @@ namespace FileDbNs
                 caseLst.Add( caseInsensitive );
 
                 string origOrderByName = orderByField;
-                //orderByField = orderByField.ToUpper();
 
                 // Check the orderby field name
                 if( !fields.ContainsKey( orderByField ) )
@@ -4550,8 +4931,38 @@ namespace FileDbNs
             {
                 // Read the fields in
                 string name = reader.ReadString();
-                DataTypeEnum type = (DataTypeEnum) reader.ReadInt16();
-                Field field = new Field( name, type, i );
+                DataTypeEnum dataType = (DataTypeEnum) reader.ReadInt16();
+                
+                if( _ver < 201 )
+                {
+                    // we changed the enum values to match the .NET TypeCodes
+
+                    if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Bool )
+                        dataType = DataTypeEnum.Bool;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Byte )
+                        dataType = DataTypeEnum.Byte;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Int )
+                        dataType = DataTypeEnum.Int;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.UInt )
+                        dataType = DataTypeEnum.UInt;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Int64 )
+                        dataType = DataTypeEnum.Int64;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Float )
+                        dataType = DataTypeEnum.Float;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Double )
+                        dataType = DataTypeEnum.Double;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Decimal )
+                        dataType = DataTypeEnum.Decimal;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.DateTime )
+                        dataType = DataTypeEnum.DateTime;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.String )
+                        dataType = DataTypeEnum.String;
+                    else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Guid )
+                        dataType = DataTypeEnum.Guid;
+                }
+
+
+                Field field = new Field( name, dataType, i );
                 _fields.Add( field );
 
                 if( string.Compare( _primaryKey, name, StringComparison.CurrentCultureIgnoreCase ) == 0 )
@@ -4740,9 +5151,33 @@ namespace FileDbNs
                 }
                 break;
 
-                default:
-                Debug.Assert( false );
+                case DataTypeEnum.Int64:
+                {
+                    Int64 i1 = (Int64) v1,
+                          i2 = (Int64) v2;
+                    compVal = i1 < i2 ? -1 : (i1 > i2 ? 1 : 0);
+                }
                 break;
+
+                case DataTypeEnum.Decimal:
+                {
+                    Decimal d1 = (Decimal) v1,
+                            d2 = (Decimal) v2;
+                    compVal = d1 < d2 ? -1 : (d1 > d2 ? 1 : 0);
+                }
+                break;
+
+                case DataTypeEnum.Guid:
+                {
+                    Guid g1 = (Guid) v1,
+                         g2 = (Guid) v2;
+                    compVal = g1.CompareTo( g2 );
+                }
+                break;
+
+                default:
+                    Debug.Assert( false );
+                    break;
             }
 
             return compVal;

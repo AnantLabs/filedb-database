@@ -110,6 +110,11 @@ namespace FileDbNs
         /// </summary>
         public string Comment { get; set; }
 
+        /// <summary>
+        /// User property to associate a value with this Field
+        /// </summary>
+        public object Tag { get; set; }
+
 
         public Field Clone()
         {
@@ -411,52 +416,53 @@ namespace FileDbNs
         }
 
         #region Get helpers
+
         /// <summary>
-        /// Return the integer field value. The field value must be type Int.
+        /// Return the integer field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The integer field value</returns>
         /// 
-        public Int32 GetInt( string fieldName )
+        public Int32? GetInt( string fieldName )
         {
             return (Int32) this[fieldName];
         }
 
         /// <summary>
-        /// Return the integer field value. The field value must be type Int.
+        /// Return the integer field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The integer field value</returns>
         /// 
-        public Int32 GetInt( int index )
+        public Int32? GetInt( int index )
         {
             return (Int32) this[index];
         }
 
         /// <summary>
-        /// Return the unsigned integer field value. The field value must be type Int.
+        /// Return the unsigned integer field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The unsigned integer field value</returns>
         /// 
-        public UInt32 GetUInt( string fieldName )
+        public UInt32? GetUInt( string fieldName )
         {
             return (UInt32) this[fieldName];
         }
 
         /// <summary>
-        /// Return the unsigned integer field value. The field value must be type Int.
+        /// Return the unsigned integer field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The unsigned integer field value</returns>
         /// 
-        public UInt32 GetUInt( int index )
+        public UInt32? GetUInt( int index )
         {
             return (UInt32) this[index];
         }
 
         /// <summary>
-        /// Return the String field value. The field value must be type Int.
+        /// Return the String field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The String field value</returns>
@@ -467,9 +473,9 @@ namespace FileDbNs
         }
 
         /// <summary>
-        /// Return the String field value. The field value must be type Int.
+        /// Return the String field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The String field value</returns>
         /// 
         public String GetString( int index )
@@ -478,111 +484,111 @@ namespace FileDbNs
         }
 
         /// <summary>
-        /// Return the Byte field value. The field value must be type Int.
+        /// Return the Byte field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The Byte field value</returns>
         /// 
-        public Byte GetByte( string fieldName )
+        public Byte? GetByte( string fieldName )
         {
             return (Byte) this[fieldName];
         }
 
         /// <summary>
-        /// Return the Byte field value. The field value must be type Int.
+        /// Return the Byte field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The Byte field value</returns>
         /// 
-        public Byte GetByte( int index )
+        public Byte? GetByte( int index )
         {
             return (Byte) this[index];
         }
 
         /// <summary>
-        /// Return the Single field value. The field value must be type Int.
+        /// Return the Single field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The Single field value</returns>
         /// 
-        public Single GetSingle( string fieldName )
+        public Single? GetSingle( string fieldName )
         {
             return (Single) this[fieldName];
         }
 
         /// <summary>
-        /// Return the Single field value. The field value must be type Int.
+        /// Return the Single field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The Single field value</returns>
         /// 
-        public Single GetSingle( int index )
+        public Single? GetSingle( int index )
         {
             return (Single) this[index];
         }
 
         /// <summary>
-        /// Return the Double field value. The field value must be type Int.
+        /// Return the Double field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The Double field value</returns>
         /// 
-        public Double GetDouble( string fieldName )
+        public Double? GetDouble( string fieldName )
         {
             return (Double) this[fieldName];
         }
 
         /// <summary>
-        /// Return the Double field value. The field value must be type Int.
+        /// Return the Double field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The Double field value</returns>
         /// 
-        public Double GetDouble( int index )
+        public Double? GetDouble( int index )
         {
             return (Double) this[index];
         }
 
         /// <summary>
-        /// Return the Boolean field value. The field value must be type Int.
+        /// Return the Boolean field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The Boolean field value</returns>
         /// 
-        public Boolean GetBoolean( string fieldName )
+        public Boolean? GetBoolean( string fieldName )
         {
             return (Boolean) this[fieldName];
         }
 
         /// <summary>
-        /// Return the Boolean field value. The field value must be type Int.
+        /// Return the Boolean field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The Boolean field value</returns>
         /// 
-        public Boolean GetBoolean( int index )
+        public Boolean? GetBoolean( int index )
         {
             return (Boolean) this[index];
         }
 
         /// <summary>
-        /// Return the DateTime field value. The field value must be type Int.
+        /// Return the DateTime field value.
         /// </summary>
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The DateTime field value</returns>
         /// 
-        public DateTime GetDateTime( string fieldName )
+        public DateTime? GetDateTime( string fieldName )
         {
             return (DateTime) this[fieldName];
         }
 
         /// <summary>
-        /// Return the DateTime field value. The field value must be type Int.
+        /// Return the DateTime field value.
         /// </summary>
-        /// <param name="fieldName">The ordinal index of the field</param>
+        /// <param name="index">The ordinal index of the field</param>
         /// <returns>The DateTime field value</returns>
         /// 
-        public DateTime GetDateTime( int index )
+        public DateTime? GetDateTime( int index )
         {
             return (DateTime) this[index];
         }

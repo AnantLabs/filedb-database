@@ -30,7 +30,9 @@ namespace FileDbNs
         HashSetExpected,
         CantAddOrRemoveFieldWithDeletedRecords,
         DatabaseReadOnlyMode,
-        InvalidMetaDataType
+        InvalidMetaDataType,
+        CantConvertTypeToGuid,
+        GuidTypeMustBeGuidOrByteArray
     }
 
     // This exception is raised whenever a statement cannot be compiled.
@@ -98,6 +100,10 @@ namespace FileDbNs
         internal const string DatabaseReadOnlyMode = "Database is open in read-only mode";
 
         internal const string InvalidMetaDataType = "Invalid meta data type - must be String or Byte[]";
+
+        internal const string CantConvertTypeToGuid = "Cannot convert type {0} to Guid";
+
+        internal const string GuidTypeMustBeGuidOrByteArray = "Guid type must be Guid or Byte array";
 
         #endregion Strings
 

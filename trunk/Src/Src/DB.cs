@@ -81,17 +81,6 @@ namespace FileDbNs
             get { return _db.getAutoCleanThreshold(); }
             set { _db.setAutoCleanThreshold( value ); }
         }
-        
-        //----------------------------------------------------------------------------------------
-        /// <summary>
-        /// DateTime values are stored as strings using the specified format.  By setting this value,
-        /// you can specify the format of how DateTimes are stored in the file (including precision).
-        /// </summary>
-        public string DateTimeFmt
-        {
-            get { return _db.DateTimeFmt; }
-            set { _db.DateTimeFmt = value; }
-        }
 
         /// <summary>
         /// Specifies whether to automatically flush data buffers and write the index after each
