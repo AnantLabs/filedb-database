@@ -153,66 +153,6 @@ namespace FileDbDynamicDriverNs
 
             return writer.ToString();
         }
-        /*
-        internal static string GenerateCode( string folder, string extension, string nameSpace )
-        {
-            DirectoryInfo dirInfo = new DirectoryInfo( folder );
-            FileInfo[] files = dirInfo.GetFiles( String.Format( "*.{0}", extension ) );
-            string dotExtension = "." + extension;
-
-            var writer = new StringWriter();
-
-            writer.WriteLine( "namespace " + nameSpace );
-            writer.WriteLine( '{' );
-
-            writer.WriteLine( "public class FileDbContext" );
-            writer.WriteLine( '{' );
-            writer.WriteLine();
-                writer.WriteLine( "string _dbPath;" );
-                writer.WriteLine();
-
-                // constructor
-
-                writer.WriteLine( "public FileDbContext( string dbPath )" );
-                writer.WriteLine( '{' );
-                    writer.WriteLine( "_dbPath = dbPath;" );
-                writer.WriteLine( '}' );
-                writer.WriteLine();
-
-                // public Table properties
-
-                foreach( FileInfo fi in files )
-                {
-                    string tablename = fi.Name.Replace( dotExtension, string.Empty );
-                    // open the db file and get all the records
-                    writer.WriteLine( string.Format( "public FileDbNs.Table {0}", tablename ) );
-                    writer.WriteLine( '{' );
-                        writer.WriteLine( "  get" );
-                        writer.WriteLine( "  {" );
-                        writer.WriteLine( string.Format( "    FileDbNs.Table _{0};", tablename ) );
-                        writer.WriteLine( "    FileDbNs.FileDb db = new FileDbNs.FileDb();" );
-                        writer.WriteLine( "    try" );
-                        writer.WriteLine( "    {" );
-                        writer.WriteLine( string.Format( "      db.Open( System.IO.Path.Combine( _dbPath, @\"{0}\" ) );",  fi.Name ) );
-                        writer.WriteLine( string.Format( "      _{0} = db.GetAllRecords();", tablename ) );
-                        writer.WriteLine( "    }" );
-                        writer.WriteLine( "    finally" );
-                        writer.WriteLine( "    {" );
-                        writer.WriteLine( "      if( db.IsOpen )" );
-                        writer.WriteLine( "        db.Close();" );
-                        writer.WriteLine( "    }" );
-                        writer.WriteLine( string.Format( "    return _{0};", tablename ) );
-                        writer.WriteLine( "  }" );
-                        //writer.WriteLine( string.Format( "get {{ return _{0}; }}", tablename ) );
-                    writer.WriteLine( '}' );
-                    writer.WriteLine();
-                }
-
-            writer.WriteLine( '}' ); // class
-            writer.WriteLine( '}' ); // namespace
-
-            return writer.ToString();
-        }*/
 
         // Use the CSharpCodeProvider to compile the generated code
         //
