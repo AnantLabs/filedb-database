@@ -50,9 +50,6 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Utils\HexEncoding.cs">
-      <Link>HexEncoding.cs</Link>
-    </Compile>
     <Compile Include="..\..\Src\DB.cs">
       <Link>DB.cs</Link>
     </Compile>
@@ -73,6 +70,9 @@
     </Compile>
     <Compile Include="..\..\Src\FilterExpression.cs">
       <Link>FilterExpression.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\HexEncoding.cs">
+      <Link>HexEncoding.cs</Link>
     </Compile>
     <Compile Include="..\..\Src\Table.cs">
       <Link>Table.cs</Link>
