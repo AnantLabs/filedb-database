@@ -48,9 +48,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Utils\HexEncoding.cs">
-      <Link>HexEncoding.cs</Link>
-    </Compile>
     <Compile Include="..\..\Src\DB.cs">
       <Link>DB.cs</Link>
     </Compile>
@@ -75,6 +72,7 @@
     <Compile Include="..\..\Src\Table.cs">
       <Link>Table.cs</Link>
     </Compile>
+    <Compile Include="HexEncoding.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
