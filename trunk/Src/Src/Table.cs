@@ -140,29 +140,29 @@ namespace FileDbNs
     public class FieldValues : Dictionary<string, object> // note: switch to NameValueCollection someday when added to Silverlight/WP
     {
         public FieldValues() { }
-        public FieldValues( Int32 count ) : base( count ) { }
+        public FieldValues( Int32 count ) : base( count, StringComparer.OrdinalIgnoreCase ) { }
 
         public new object this[string idx]
         {
             get
             {
-                return base[idx.ToUpper()];
+                return base[idx];
             }
 
             set
             {
-                base[idx.ToUpper()] = value;
+                base[idx] = value;
             }
         }
 
         public new void Add( string fieldName, object value )
         {
-            base.Add( fieldName.ToUpper(), value );
+            base.Add( fieldName, value );
         }
 
         public new bool ContainsKey( string fieldName )
         {
-            return base.ContainsKey( fieldName.ToUpper() );
+            return base.ContainsKey( fieldName );
         }
     }
     
@@ -303,7 +303,7 @@ namespace FileDbNs
             //int idx = _values.Count;
             _values.Add( value );
             // we store the index of the value in the _values list
-            //_record.Add( fieldName.ToUpper(), idx );
+            //_record.Add( fieldName, idx );
         }*/
 
         public object this[string name]
@@ -311,7 +311,7 @@ namespace FileDbNs
             get
             {
                 /*
-                string upperName = name.ToUpper();
+                string upperName = name;
                 if( !_record.ContainsKey( upperName ) )
                     throw new FileDbException( string.Format( FileDbException.InvalidFieldName, name ), FileDbExceptions.InvalidFieldName );
                 return _values[_record[upperName]];
@@ -323,7 +323,7 @@ namespace FileDbNs
             set
             {
                 /*
-                string upperName = name.ToUpper();
+                string upperName = name;
                 if( !_record.ContainsKey( upperName ) )
                     throw new FileDbException( string.Format( FileDbException.InvalidFieldName, name ), FileDbExceptions.InvalidFieldName );
                 int idx = _record[upperName];
@@ -369,8 +369,7 @@ namespace FileDbNs
         /// 
         public bool ContainsField( string fieldName )
         {
-            //return _record.ContainsKey( fieldName.ToUpper() );
-            return _fields.ContainsKey( fieldName.ToUpper() );
+            return _fields.ContainsKey( fieldName );
         }
 
         public IList<string> FieldNames
@@ -693,19 +692,19 @@ namespace FileDbNs
 
         public Fields()
         {
-            _fields = new Dictionary<string, Field>();
+            _fields = new Dictionary<string, Field>( StringComparer.OrdinalIgnoreCase );
         }
 
         public Fields( int capacity )
             : base( capacity )
         {
-            _fields = new Dictionary<string, Field>( capacity );
+            _fields = new Dictionary<string, Field>( capacity, StringComparer.OrdinalIgnoreCase );
         }
 
         public Fields( Fields fields )
             : base( fields.Count )
         {
-            _fields = new Dictionary<string, Field>( fields.Count );
+            _fields = new Dictionary<string, Field>( fields.Count, StringComparer.OrdinalIgnoreCase );
             foreach( Field field in fields )
             {
                 this.Add( field );
@@ -715,13 +714,12 @@ namespace FileDbNs
         public new void Add( Field field )
         {
             base.Add( field );
-            _fields.Add( field.Name.ToUpper(), field );
+            _fields.Add( field.Name, field );
         }
 
         public bool Remove( string fieldName )
         {
             bool ret = false;
-            fieldName = fieldName.ToUpper();
             Field field = _fields[fieldName];
             if( field != null )
             {
@@ -736,7 +734,7 @@ namespace FileDbNs
             get
             {
                 if( _fields.Count > 0 )
-                    return _fields[fieldName.ToUpper()];
+                    return _fields[fieldName];
                 else
                     return null;
             }
@@ -744,7 +742,7 @@ namespace FileDbNs
 
         public bool ContainsKey( string fieldName )
         {
-            return _fields.ContainsKey( fieldName.ToUpper() );
+            return _fields.ContainsKey( fieldName );
         }
     }
 
