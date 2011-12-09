@@ -68,7 +68,8 @@ namespace FileDbNs
 
         bool _isOpen,
              _disposed,
-             _openReadOnly;
+             _openReadOnly,
+             _autoFlush;
 
         string _dbName;
 
@@ -195,12 +196,31 @@ namespace FileDbNs
             set { _isOpen = value; }
         }
 
-        internal bool AutoFlush { get; set; }
+        internal bool AutoFlush
+        {
+            get { return _autoFlush; }
+            set
+            {
+                // if transitioning from Off to On we must flush now because
+                // if anything has been done requiring flushing it won't happen otherwise
+                if( _isOpen && !_autoFlush && value == true )
+                {
+                    flush( true );
+                }
+            }
+        }
 
         internal object MetaData
         {
             get { return _metaData; }
-            set { _metaData = value; }
+            set
+            {
+                _metaData = value;
+                // if AutoFlush is true we must write the index because it won't happen if
+                // no other actions are taken before closing
+                if( AutoFlush )
+                    flush( true );
+            }
         }
 
         #endregion Properties
@@ -355,7 +375,8 @@ namespace FileDbNs
             {
                 try
                 {
-                    flush();
+                    // if AutoFlush is true then we shouldn't need to flush the index
+                    flush( !AutoFlush );
                     _dataStrm.Close();
                     _dataStrm.Dispose();
                 }
@@ -609,7 +630,6 @@ namespace FileDbNs
                 _dataStrm.Seek( newOffset, SeekOrigin.Begin );
 
                 writeRecord( _dataWriter, record, recordSize, nullmask, false );
-                _dataWriter.Flush();
 
                 if( newIndex < 0 )
                 {
@@ -651,7 +671,7 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
+                if( AutoFlush ) flush( true );
             }
             return newIndex;
         }
@@ -701,7 +721,7 @@ namespace FileDbNs
             bool indexUpdated;
             updateRecordByIndex( record, index, _index, true, true, out indexUpdated );
 
-            if( indexUpdated && AutoFlush ) flush();
+            if( AutoFlush ) flush( indexUpdated );
 
             // Do an auto-cleanup if required
             checkAutoClean();
@@ -872,7 +892,6 @@ namespace FileDbNs
                     _dataStrm.Seek( INDEX_DELETED_OFFSET, SeekOrigin.Begin );
                     _dataWriter.Write( _numDeleted );
                 }
-                _dataWriter.Flush();
             }
             finally
             {
@@ -955,7 +974,7 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
+                if( AutoFlush ) flush( indexUpdated );
             }
 
             if( updateCount > 0 )
@@ -1076,6 +1095,8 @@ namespace FileDbNs
                 _dataWriter.Write( _indexStartPos );
 
                 _index = index;
+
+                flush( true );
             }
             finally
             {
@@ -1176,6 +1197,8 @@ namespace FileDbNs
                 _index = newIndex;
                 tmpdb.Flush();
                 writeIndex( tmpdb, tmpDataWriter, _index );
+                tmpDataWriter.Flush();
+                tmpdb.Flush();
             }
             catch
             {
@@ -1270,6 +1293,8 @@ namespace FileDbNs
                 _deletedRecords.Clear();
 
                 writeSchema( _dataWriter );
+
+                flush( true );
             }
             finally
             {
@@ -1348,7 +1373,7 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
+                if( AutoFlush ) flush( true );
             }
 
             // Do an auto-cleanup if required
@@ -1402,11 +1427,10 @@ namespace FileDbNs
                 // Write the number of (unclean) deleted records
                 _dataWriter.Write( ++_numDeleted );
                 Debug.Assert( _deletedRecords.Count == _numDeleted );
-
             }
             finally
             {
-                //unlock( false, true );
+                if( AutoFlush ) flush( true );
             }
 
             // Do an auto-cleanup if required
@@ -1499,7 +1523,7 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
+                if( AutoFlush ) flush( true );
             }
 
             // Do an auto-cleanup if required
@@ -1569,7 +1593,7 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
+                if( AutoFlush ) flush( true );
             }
 
             // Do an auto-cleanup if required
@@ -2882,13 +2906,15 @@ namespace FileDbNs
         /// Flush the in-memory buffers to disk
         /// </summary>
         /// 
-        internal void flush()
+        internal void flush( bool saveIndex=false )
         {
             if( !_openReadOnly )
             {
+                if( saveIndex )
+                    writeIndex( _dataStrm, _dataWriter, _index );
+
                 _dataWriter.Flush();
                 _dataStrm.Flush();
-                writeIndex( _dataStrm, _dataWriter, _index );
             }
         }
 
@@ -3164,8 +3190,6 @@ namespace FileDbNs
                 Debug.Assert( false );
             }
 
-            readMetaData( _dataReader );
-
             _deletedRecords = new List<Int32>( _numDeleted );
             if( _numDeleted > 0 )
             {
@@ -3176,6 +3200,8 @@ namespace FileDbNs
                 }
                 catch { }
             }
+
+            readMetaData( _dataReader );
 
             return vIndex;
         }
@@ -3230,10 +3256,8 @@ namespace FileDbNs
             for( Int32 i = 0; i < Math.Min( _numDeleted, _deletedRecords.Count ); i++ )
                 writer.Write( _deletedRecords[i] );
 
-            // whenever we write the index we must write the MetaData
+            // whenever we write the index we must write the MetaData since it goes after the index
             writeMetaData( writer );
-
-            writer.Flush();
 
             fileStrm.SetLength( fileStrm.Position );
         }
@@ -3333,8 +3357,6 @@ namespace FileDbNs
             int actualSize = endPos - startPos;
             Debug.Assert( actualSize == proposedSize );
             #endif
-
-            if( AutoFlush ) flush();
         }
 
         /*enum BitFlags : byte

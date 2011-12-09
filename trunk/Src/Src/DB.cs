@@ -128,7 +128,12 @@ namespace FileDbNs
         #endregion Public Properties
 
         #region Constructors
-        // none yet
+
+        public FileDb()
+        {
+            AutoFlush = true;
+        }
+
         #endregion Constructors
 
         #region IDisposable
@@ -934,8 +939,8 @@ namespace FileDbNs
 
         //----------------------------------------------------------------------------------------
         /// <summary>
-        /// Call this to flush the stream buffer to disk and also write the index to disk.
-        /// This will be done automatically if AutoFlush is On and when the file is closed.
+        /// Call this to flush the both the index stream buffer to disk and also write the index to disk.
+        /// This will be done automatically if AutoFlush is On.
         /// You can use this to periodically write everything to disk rather than each time
         /// as with AutoFlush.
         /// </summary>
