@@ -85,11 +85,15 @@ namespace FileDbNs
         /// <summary>
         /// Specifies whether to automatically flush data buffers and write the index after each
         /// operation in which the file was updated.  When AutoFlush is not On, the index is not
-        /// written until the file is closed or Flush is called (AutoFlush calls Flush).
+        /// written until the file is closed or Flush is called.
         /// You can set AutoFlush to Off just before performing a bulk operation to dramatically
         /// increase performance, then set it back On after.  When you set it back On after it was
         /// Off, everything is flushed immediately because the assumption is that it was needed,
-        /// so you  don't need to call Flush in this case.
+        /// so you don't need to call Flush in this case.
+        /// 
+        /// Setting AutoFlush On is most useful for when you aren't able to guarantee that you will
+        /// be able to call Close before the program closes.  This way the file won't become corrupt
+        /// in this case.
         /// </summary>
         /// 
         public bool AutoFlush

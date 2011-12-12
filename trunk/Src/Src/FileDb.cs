@@ -207,6 +207,7 @@ namespace FileDbNs
                 {
                     flush( true );
                 }
+                _autoFlush = value;
             }
         }
 
@@ -233,7 +234,7 @@ namespace FileDbNs
             _autoCleanThreshold = -1;
             _isOpen = false;
             _openReadOnly = false;
-            AutoFlush = false;
+            _autoFlush = false;
         }
 
         internal void setEncryptionKey( string encryptionKey )
@@ -318,7 +319,6 @@ namespace FileDbNs
                 }
                 finally
                 {
-                    //unlock( false, false );
                 }
             }
             catch( FileDbException ex )
@@ -510,8 +510,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 _numRecords = 0;
                 _numDeleted = 0;
 
@@ -534,7 +532,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
             }
         }
 
@@ -545,17 +542,14 @@ namespace FileDbNs
             checkIsDbOpen();
             checkReadOnly();
 
-            //record = normalizeFieldNames( record );
-
             // Verify record as compared to the schema
             verifyRecordSchema( record );
 
             try
             {
                 // Add the item to the data file
-                //lockWrite( false );
-
                 // set the autoinc vals into the record
+
                 foreach( Field field in _fields )
                 {
                     if( field.IsAutoInc )
@@ -746,8 +740,6 @@ namespace FileDbNs
             {
                 Int32 oldSize = 0;
 
-                //lockWrite( false );
-                
                 if( !string.IsNullOrEmpty( _primaryKey ) && record.ContainsKey( _primaryKey ) )
                 {
                     // Do a binary search to find the index position of any other records that may already
@@ -895,7 +887,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
             }
         }
         
@@ -927,8 +918,6 @@ namespace FileDbNs
             bool isFullRecord = record.Count >= _fields.Count; // the index field may be in there
             Int32 updateCount = 0;
             bool indexUpdated = false;
-
-            //lockWrite( false );
 
             try
             {
@@ -1038,8 +1027,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 int numRecs = _numRecords + _numDeleted;
 
                 var index = new List<int>( numRecs );
@@ -1095,12 +1082,10 @@ namespace FileDbNs
                 _dataWriter.Write( _indexStartPos );
 
                 _index = index;
-
-                flush( true );
             }
             finally
             {
-                //unlock( false, true );
+                flush( true );
             }
         }
 
@@ -1116,8 +1101,6 @@ namespace FileDbNs
             // Don't bother if the database is clean
             if( !schemaChange && _numDeleted == 0 )
                 return;
-
-            //lockWrite( false );
 
             // Read in the index, and rebuild it along with the database data
             // into a separate file.  Then move that new file back over the old
@@ -1282,8 +1265,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                 _numRecords = _numDeleted = 0;
@@ -1298,7 +1279,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, true );
             }
 
             return numDeleted;
@@ -1324,8 +1304,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 Int32 pos = -1;
 
                 if( !string.IsNullOrEmpty( _primaryKey ) )
@@ -1406,8 +1384,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 // Ensure it is within range
                 if( (recordNum < 0) || (recordNum >= _numRecords) )
                 {
@@ -1471,10 +1447,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
-                //List<Int32> vIndex = readIndex2();
-
                 Regex regex = null;
 
                 // Read and delete selected records
@@ -1548,10 +1520,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
-                //List<Int32> vIndex = readIndex2();
-
                 // Read and delete selected records
                 for( Int32 recordNum = 0; recordNum < _numRecords; ++recordNum )
                 {
@@ -1680,7 +1648,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             // Return the record
@@ -1775,7 +1742,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             return record;
@@ -1839,7 +1805,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             return record;
@@ -1927,7 +1892,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             // Re-order as required
@@ -2001,7 +1965,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             // Re-order as required
@@ -2472,7 +2435,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             // Re-order as required
@@ -2524,7 +2486,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             return record;
@@ -2584,7 +2545,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
 
             return result;
@@ -2661,8 +2621,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 // Note that we attempt the file creation under the DB lock, so
                 // that another process doesn't try to create the same file at the
                 // same time.
@@ -2767,7 +2725,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false, false );
             }
         }
 #endif
@@ -2788,8 +2745,6 @@ namespace FileDbNs
 
             try
             {
-                //lockWrite( false );
-
                 // Note that we attempt the file creation under the DB lock, so
                 // that another process doesn't try to create the same file at the
                 // same time.
@@ -2895,7 +2850,6 @@ namespace FileDbNs
             }
             finally
             {
-                //unlock( false );
             }
 
             return true;
@@ -2922,18 +2876,6 @@ namespace FileDbNs
 
         ///////////////////////////////////////////////////////////////////////
         #region private methods
-
-        /* make all fieldnames uppercase
-        FieldValues normalizeFieldNames( FieldValues record )
-        {
-            var newRecord = new FieldValues( record.Count );
-
-            foreach( string fieldName in record.Keys )
-            {
-                newRecord.Add( fieldName.ToUpper(), record[fieldName] );
-            }
-            return newRecord;
-        }*/
 
         /// <summary>
         /// Helper
