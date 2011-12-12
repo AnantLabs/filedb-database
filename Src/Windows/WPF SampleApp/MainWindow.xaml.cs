@@ -471,6 +471,7 @@ namespace SampleApp
             }
             finally
             {
+                // Turn AutoFlush back On
                 _db.AutoFlush = true;
             }
         }

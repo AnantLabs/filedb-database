@@ -72,6 +72,8 @@ namespace SampleApp
         {
             try
             {
+                // set AutoFlush Off to improve performance for bulk operations
+                _db.AutoFlush = false;
 #if true
                 // Add records using the project XML file
 
@@ -112,28 +114,28 @@ namespace SampleApp
                     {
                         case "int":
                             dataType = DataTypeEnum.Int;
-                        break;
+                            break;
                         case "uint":
                             dataType = DataTypeEnum.UInt;
-                        break;
+                            break;
                         case "string":
                             dataType = DataTypeEnum.String;
-                        break;
+                            break;
                         case "datetime":
                             dataType = DataTypeEnum.DateTime;
-                        break;
+                            break;
                         case "bool":
                             dataType = DataTypeEnum.Bool;
-                        break;
+                            break;
                         case "float":
                             dataType = DataTypeEnum.Float;
-                        break;
+                            break;
                         case "double":
                             dataType = DataTypeEnum.Double;
-                        break;
+                            break;
                         case "byte":
                             dataType = DataTypeEnum.Byte;
-                        break;
+                            break;
                     }
 
                     field = new Field( name, dataType );
@@ -191,6 +193,11 @@ namespace SampleApp
             catch( Exception ex )
             {
                 MessageBox.Show( ex.Message );
+            }
+            finally
+            {
+                // set AutoFlush back On
+                _db.AutoFlush = true;
             }
         }
 

@@ -169,6 +169,11 @@ namespace SampleApp
         {
             try
             {
+                // turn off AutoFlush to improve performance when doing a group operation such as
+                // inserting records.  This way the index won't be written and flushed to disk
+                // each time through the loop
+
+                _db.AutoFlush = false;
 #if true
                 Stream s = this.GetType().Assembly.GetManifestResourceStream( this.GetType(), "data.xml" );
                 string xml;
@@ -396,6 +401,11 @@ namespace SampleApp
             catch( Exception ex )
             {
                 MessageBox.Show( ex.Message );
+            }
+            finally
+            {
+                // Turn AutoFlush back On
+                _db.AutoFlush = true;
             }
         }
 
