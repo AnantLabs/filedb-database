@@ -30,6 +30,22 @@ namespace FileDbNs
 
         //----------------------------------------------------------------------------------------
         /// <summary>
+        /// A string value which can be used to keep track of the database version for changes
+        /// </summary>
+        public string UserVersion
+        {
+            get
+            {
+                return _db.UserVersion;
+            }
+            set
+            {
+                _db.UserVersion = value;
+            }
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
         /// The fields of the database (table).
         /// </summary>
         /// 
