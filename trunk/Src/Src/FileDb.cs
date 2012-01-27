@@ -38,10 +38,9 @@ namespace FileDbNs
         internal const Int32 ArrayField = 0x2;       
 
         // Major version of the FileDb assembly
-        const byte VERSION_MAJOR = 2;
-
+        const byte VERSION_MAJOR = 3;
         // Minor version of the FileDb assembly
-        const byte VERSION_MINOR = 2;
+        const byte VERSION_MINOR = 0;
 
         // Signature to help validate file
         const Int32 SIGNATURE = 0x0123BABE;
@@ -100,7 +99,8 @@ namespace FileDbNs
 
         Fields _fields;
 
-        string _primaryKey;
+        string _primaryKey,
+               _userVersion;
 
         Field _primaryKeyField;
 
@@ -172,6 +172,12 @@ namespace FileDbNs
         #region internal
 
         #region Properties
+
+        internal string UserVersion
+        {
+            get { return _userVersion; }
+            set { _userVersion = value; }
+        }
 
         internal Fields Fields
         {
@@ -4626,6 +4632,11 @@ namespace FileDbNs
             writer.Write( _numDeleted );
             writer.Write( _indexStartPos );
 
+            string userVersion = _userVersion;
+            if( userVersion == null )
+                userVersion = string.Empty;
+            writer.Write( userVersion );
+
             // Write the schema
             //
             // Schema format:
@@ -4855,7 +4866,6 @@ namespace FileDbNs
         void readSchema( BinaryReader reader )
         {
             _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
-
             // Read the database statistics
             //
             // Statistics format:
@@ -4865,6 +4875,9 @@ namespace FileDbNs
             _numRecords = reader.ReadInt32();
             _numDeleted = reader.ReadInt32();
             _indexStartPos = reader.ReadInt32();
+
+            if( _ver >= 300 )
+                _userVersion = reader.ReadString();
 
             // Read the schema
             //

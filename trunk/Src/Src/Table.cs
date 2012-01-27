@@ -424,7 +424,7 @@ namespace FileDbNs
         /// 
         public Int32? GetInt( string fieldName )
         {
-            return (Int32) this[fieldName];
+            return (Int32?) this[fieldName];
         }
 
         /// <summary>
@@ -435,7 +435,7 @@ namespace FileDbNs
         /// 
         public Int32? GetInt( int index )
         {
-            return (Int32) this[index];
+            return (Int32?) this[index];
         }
 
         /// <summary>
@@ -446,7 +446,7 @@ namespace FileDbNs
         /// 
         public UInt32? GetUInt( string fieldName )
         {
-            return (UInt32) this[fieldName];
+            return (UInt32?) this[fieldName];
         }
 
         /// <summary>
@@ -457,7 +457,7 @@ namespace FileDbNs
         /// 
         public UInt32? GetUInt( int index )
         {
-            return (UInt32) this[index];
+            return (UInt32?) this[index];
         }
 
         /// <summary>
@@ -490,7 +490,7 @@ namespace FileDbNs
         /// 
         public Byte? GetByte( string fieldName )
         {
-            return (Byte) this[fieldName];
+            return (Byte?) this[fieldName];
         }
 
         /// <summary>
@@ -501,7 +501,7 @@ namespace FileDbNs
         /// 
         public Byte? GetByte( int index )
         {
-            return (Byte) this[index];
+            return (Byte?) this[index];
         }
 
         /// <summary>
@@ -512,7 +512,7 @@ namespace FileDbNs
         /// 
         public Single? GetSingle( string fieldName )
         {
-            return (Single) this[fieldName];
+            return (Single?) this[fieldName];
         }
 
         /// <summary>
@@ -523,7 +523,7 @@ namespace FileDbNs
         /// 
         public Single? GetSingle( int index )
         {
-            return (Single) this[index];
+            return (Single?) this[index];
         }
 
         /// <summary>
@@ -534,7 +534,7 @@ namespace FileDbNs
         /// 
         public Double? GetDouble( string fieldName )
         {
-            return (Double) this[fieldName];
+            return (Double?) this[fieldName];
         }
 
         /// <summary>
@@ -545,7 +545,7 @@ namespace FileDbNs
         /// 
         public Double? GetDouble( int index )
         {
-            return (Double) this[index];
+            return (Double?) this[index];
         }
 
         /// <summary>
@@ -556,7 +556,7 @@ namespace FileDbNs
         /// 
         public Boolean? GetBoolean( string fieldName )
         {
-            return (Boolean) this[fieldName];
+            return (Boolean?) this[fieldName];
         }
 
         /// <summary>
@@ -567,7 +567,7 @@ namespace FileDbNs
         /// 
         public Boolean? GetBoolean( int index )
         {
-            return (Boolean) this[index];
+            return (Boolean?) this[index];
         }
 
         /// <summary>
@@ -578,7 +578,7 @@ namespace FileDbNs
         /// 
         public DateTime? GetDateTime( string fieldName )
         {
-            return (DateTime) this[fieldName];
+            return (DateTime?) this[fieldName];
         }
 
         /// <summary>
@@ -589,7 +589,7 @@ namespace FileDbNs
         /// 
         public DateTime? GetDateTime( int index )
         {
-            return (DateTime) this[index];
+            return (DateTime?) this[index];
         }
         #endregion Get helpers
     }
