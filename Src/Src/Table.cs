@@ -139,7 +139,7 @@ namespace FileDbNs
     
     public class FieldValues : Dictionary<string, object> // note: switch to NameValueCollection someday when added to Silverlight/WP
     {
-        public FieldValues() { }
+        public FieldValues() : base( StringComparer.OrdinalIgnoreCase ) { }
         public FieldValues( Int32 count ) : base( count, StringComparer.OrdinalIgnoreCase ) { }
 
         public new object this[string idx]
