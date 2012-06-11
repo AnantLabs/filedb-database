@@ -105,31 +105,33 @@ namespace FileDbNs
                 }
             }
             
-            List<T> table = new List<T>( records.Length );
+            List<T> table = new List<T>( records != null ? records.Length : 0 );
 
-            foreach( object[] record in records )
+            if( records != null )
             {
-                T obj = new T();
-
-                for( int n=0; n < fields.Count; n++ )
+                foreach( object[] record in records )
                 {
-                    Field field = fields[n];
+                    T obj = new T();
 
-                    if( propsMap.ContainsKey( field.Name ) )
+                    for( int n = 0; n < fields.Count; n++ )
                     {
-                        PropertyInfo prop = propsMap[field.Name];
+                        Field field = fields[n];
 
-                        if( prop.CanWrite )
+                        if( propsMap.ContainsKey( field.Name ) )
                         {
-                            object value = record[n];
-                            prop.SetValue( obj, value, null );
+                            PropertyInfo prop = propsMap[field.Name];
+
+                            if( prop.CanWrite )
+                            {
+                                object value = record[n];
+                                prop.SetValue( obj, value, null );
+                            }
                         }
                     }
-                }
 
-                table.Add( obj );
+                    table.Add( obj );
+                }
             }
-            
             return table;
         }
 
