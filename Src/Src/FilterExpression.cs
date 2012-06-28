@@ -111,10 +111,11 @@ namespace FileDbNs
 
             var hashSet = new HashSet<object>();
 
-            PropertyInfo prop = typeof( T ).GetProperty( propertyName );
+            Type type = typeof( T );
+            PropertyInfo prop = type.GetProperty( propertyName );
 
             if( prop == null )
-                throw new Exception( string.Format( "Field {0} is not a property", propertyName ) );
+                throw new Exception( string.Format( "Field {0} is not a property of {1}", propertyName, type.Name ) );
 
             foreach( T obj in list )
             {
