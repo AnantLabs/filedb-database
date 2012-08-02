@@ -577,7 +577,7 @@ namespace FileDbNs
 
                 if( !string.IsNullOrEmpty( _primaryKey ) )
                 {
-                    if( _numRecords > 1 )
+                    if( _numRecords > 0 ) // Bug fix 2/8/12: was > 1
                     {
                         // Do a binary search to find the insertion position
                         object data = null;
