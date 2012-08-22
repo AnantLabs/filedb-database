@@ -758,6 +758,30 @@ namespace FileDbNs
 
 
         /// <summary>
+        /// Create a table with the indicated Fields.
+        /// </summary>
+        /// <param name="fields">The Fields list to use (a copy is made)</param>
+        /// 
+        public Table( Fields fields )
+        {
+            Create( fields, null, true );
+        }
+
+        /// <summary>
+        /// Create a table with the indicated Fields and records.  If copyFields is true, a new
+        /// Fields list is created and a copy of each field is made and its ordinal adjusted.
+        /// Otherwise the original Fields object is adopted.  You should pass false for copyFields
+        /// only if you created the Fields list and its Field objects yourself.
+        /// </summary>
+        /// <param name="fields">The Fields list to use</param>
+        /// <param name="copyFields">Indicates whether to make a copy of the Fields object and each Field.</param>
+        /// 
+        public Table( Fields fields, bool copyFields )
+        {
+            Create( fields, null, copyFields );
+        }
+
+        /// <summary>
         /// Create a table with the indicated Fields and records.  If copyFields is true, a new
         /// Fields list is created and a copy of each field is made and its ordinal adjusted.
         /// Otherwise the original Fields object is adopted.  You should pass false for copyFields
@@ -788,9 +812,12 @@ namespace FileDbNs
         {
             initFields( fields, copyFields );
 
-            foreach( Record record in records )
+            if( records != null )
             {
-                this.Add( record );
+                foreach( Record record in records )
+                {
+                    this.Add( record );
+                }
             }
         }
 
