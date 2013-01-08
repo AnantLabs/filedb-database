@@ -2866,7 +2866,7 @@ namespace FileDbNs
         /// Flush the in-memory buffers to disk
         /// </summary>
         /// 
-        internal void flush( bool saveIndex=false )
+        internal void flush( bool saveIndex )
         {
             if( !_openReadOnly )
             {

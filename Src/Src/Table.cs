@@ -164,6 +164,11 @@ namespace FileDbNs
         {
             return base.ContainsKey( fieldName );
         }
+
+        public object GetValueOrNull( string fieldName )
+        {
+            return base.ContainsKey( fieldName ) ? base[fieldName] : null;
+        }
     }
     
     //=====================================================================
