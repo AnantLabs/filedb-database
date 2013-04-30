@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle( "FileDb Database Engine Windows version" )]
 [assembly: AssemblyDescription( "Local database for .NET" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "EzTools Software" )]
+[assembly: AssemblyCompany( "EzTools Software (www.eztools-software.com)" )]
 [assembly: AssemblyProduct( "FileDb Database Engine" )]
-[assembly: AssemblyCopyright( "Copyright © EzTools Software 2010-2012" )]
+[assembly: AssemblyCopyright( "Copyright © EzTools Software.  All rights reserved." )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion( "3.11.0.0" )]
-[assembly: AssemblyFileVersion( "3.11.0.0" )]
+[assembly: AssemblyVersion( "3.12.0.0" )]
+[assembly: AssemblyFileVersion( "3.12.0.0" )]
