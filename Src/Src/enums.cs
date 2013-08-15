@@ -22,6 +22,7 @@ namespace FileDbNs
         UInt = TypeCode.UInt32,
         Int64 = TypeCode.Int64,
         Float = TypeCode.Single,
+        Single = TypeCode.Single,
         Double = TypeCode.Double,
         Decimal = TypeCode.Decimal,
         DateTime = TypeCode.DateTime,
