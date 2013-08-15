@@ -32,7 +32,7 @@ namespace FileDbNs
         /// <summary>
         /// A string value which can be used to keep track of the database version for changes
         /// </summary>
-        public string UserVersion
+        public float UserVersion
         {
             get
             {

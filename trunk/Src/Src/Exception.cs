@@ -32,7 +32,8 @@ namespace FileDbNs
         DatabaseReadOnlyMode,
         InvalidMetaDataType,
         CantConvertTypeToGuid,
-        GuidTypeMustBeGuidOrByteArray
+        GuidTypeMustBeGuidOrByteArray,
+        ErrorConvertingValueForField
     }
 
     // This exception is raised whenever a statement cannot be compiled.
@@ -104,6 +105,8 @@ namespace FileDbNs
         internal const string CantConvertTypeToGuid = "Cannot convert type {0} to Guid";
 
         internal const string GuidTypeMustBeGuidOrByteArray = "Guid type must be Guid or Byte array";
+
+        internal const string ErrorConvertingValueForField = "Error converting value for field name: {0}  value: {1}";
 
         #endregion Strings
 

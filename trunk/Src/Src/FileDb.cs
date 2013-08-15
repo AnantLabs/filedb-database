@@ -38,7 +38,7 @@ namespace FileDbNs
         internal const Int32 ArrayField = 0x2;       
 
         // Major version of the FileDb assembly
-        const byte VERSION_MAJOR = 3;
+        const byte VERSION_MAJOR = 4;
         // Minor version of the FileDb assembly
         const byte VERSION_MINOR = 0;
 
@@ -56,6 +56,9 @@ namespace FileDbNs
 
         // Location of the Index offset, which is always written at the end of the data file
         const Int32 INDEX_OFFSET = INDEX_DELETED_OFFSET + 4;
+
+        // Location of the Index offset, which is always written at the end of the data file
+        const Int32 USER_VERSION_OFFSET = INDEX_OFFSET + 4;
 
         // Size of the field specifing the size of a record in the index
         const Int32 INDEX_RBLOCK_SIZE = 4;
@@ -99,8 +102,9 @@ namespace FileDbNs
 
         Fields _fields;
 
-        string _primaryKey,
-               _userVersion;
+        string _primaryKey;
+
+        float _userVersion;
 
         Field _primaryKeyField;
 
@@ -173,7 +177,7 @@ namespace FileDbNs
 
         #region Properties
 
-        internal string UserVersion
+        internal float UserVersion
         {
             get { return _userVersion; }
             set { _userVersion = value; }
@@ -2933,144 +2937,152 @@ namespace FileDbNs
                     throw new FileDbException( string.Format( FileDbException.NonArrayValue, field.Name ), FileDbExceptionsEnum.NonArrayValue );
 
                 // Verify the type
-                switch( field.DataType )
+                try
                 {
-                    // hopefully these will throw err if wrong type
+                    switch( field.DataType )
+                    {
+                        // hopefully these will throw err if wrong type
 
-                    case DataTypeEnum.Byte:
-                        if( field.IsArray )
-                        {
-                            value = (Byte[]) value;
-                        }
-                        else
-                        {
-                            Byte b = (value == null? (Byte) 0 : Convert.ToByte( value ));
-                        }
-                    break;
-
-                    case DataTypeEnum.Int:
-                        if( field.IsArray )
-                        {
-                            value = (Int32[]) value;
-                        }
-                        else
-                        {
-                            Int32 n = (value == null ? 0 : Convert.ToInt32( value ));
-                        }
-                        break;
-
-                    case DataTypeEnum.UInt:
-                        if( field.IsArray )
-                        {
-                            value = (UInt32[]) value;
-                        }
-                        else
-                        {
-                            UInt32 n = (value == null? (uint) 0 : Convert.ToUInt32( value ));
-                        }
-                        break;
-
-                    case DataTypeEnum.String:
-                        if( field.IsArray )
-                        {
-                            value = (string[]) value;
-                        }
-                        else
-                        {
-                            // any object can be converted to string
-                            string s = (value == null? string.Empty : value.ToString());
-                        }
-                        break;
-
-                    case DataTypeEnum.Float:
-                        if( field.IsArray )
-                        {
-                            value = (float[]) value;
-                        }
-                        else
-                        {
-                            float f = (value == null ? (float) 0 : Convert.ToSingle( value ));
-                        }
-                        break;
-
-                    case DataTypeEnum.Double:
-                        if( field.IsArray )
-                        {
-                            value = (double[]) value;
-                        }
-                        else
-                        {
-                            double f = (value == null? 0d : Convert.ToDouble( value ));
-                        }
-                        break;
-
-                    case DataTypeEnum.Bool:
-                        if( field.IsArray )
-                        {
-                            // can be Byte[] or bool[]
-                            if( value.GetType() == typeof( Byte[] ) )                            
+                        case DataTypeEnum.Byte:
+                            if( field.IsArray )
+                            {
                                 value = (Byte[]) value;
+                            }
                             else
-                                value = (bool[]) value;
-                        }
-                        else
-                        {
-                            bool b = (value == null? false : Convert.ToBoolean( value )); // brettg: should be 1 or 0
-                        }
-                        break;
+                            {
+                                Byte b = (value == null ? (Byte) 0 : Convert.ToByte( value ));
+                            }
+                            break;
 
-                    case DataTypeEnum.DateTime:
-                        if( field.IsArray )
-                        {
-                            // can be string[] or DateTime[]
-                            if( value.GetType() == typeof( String[] ) )                            
-                                value = (String[]) value;
+                        case DataTypeEnum.Int:
+                            if( field.IsArray )
+                            {
+                                value = (Int32[]) value;
+                            }
                             else
-                                value = (DateTime[]) value;
-                        }
-                        else
-                        {
-                            DateTime d = (value == null? DateTime.MinValue : Convert.ToDateTime( value ));
-                        }
-                        break;
+                            {
+                                Int32 n = (value == null ? 0 : Convert.ToInt32( value ));
+                            }
+                            break;
 
-                    case DataTypeEnum.Int64:
-                        if( field.IsArray )
-                        {
-                            value = (Int64[]) value;
-                        }
-                        else
-                        {
-                            Int64 f = (value == null ? (Int64) 0 : Convert.ToInt64( value ));
-                        }
-                        break;
+                        case DataTypeEnum.UInt:
+                            if( field.IsArray )
+                            {
+                                value = (UInt32[]) value;
+                            }
+                            else
+                            {
+                                UInt32 n = (value == null ? (uint) 0 : Convert.ToUInt32( value ));
+                            }
+                            break;
 
-                    case DataTypeEnum.Decimal:
-                        if( field.IsArray )
-                        {
-                            value = (Decimal[]) value;
-                        }
-                        else
-                        {
-                            Decimal f = (value == null ? (Decimal) 0 : Convert.ToDecimal( value ));
-                        }
-                        break;
+                        case DataTypeEnum.String:
+                            if( field.IsArray )
+                            {
+                                value = (string[]) value;
+                            }
+                            else
+                            {
+                                // any object can be converted to string
+                                string s = (value == null ? string.Empty : value.ToString());
+                            }
+                            break;
 
-                    case DataTypeEnum.Guid:
-                        if( field.IsArray )
-                        {
-                            value = (Guid[]) value;
-                        }
-                        else
-                        {
-                            Guid g = value == null ? Guid.NewGuid() : convertToGuid( value );
-                        }
-                        break;
+                        case DataTypeEnum.Float:
+                            if( field.IsArray )
+                            {
+                                value = (float[]) value;
+                            }
+                            else
+                            {
+                                float f = (value == null ? (float) 0 : Convert.ToSingle( value ));
+                            }
+                            break;
 
-                    default:
-                        // Unknown type...!
-                        throw new FileDbException( string.Format( FileDbException.StrInvalidDataType2, field.Name, field.DataType.ToString(), value.GetType().Name ),
-                            FileDbExceptionsEnum.InvalidDataType );
+                        case DataTypeEnum.Double:
+                            if( field.IsArray )
+                            {
+                                value = (double[]) value;
+                            }
+                            else
+                            {
+                                double f = (value == null ? 0d : Convert.ToDouble( value ));
+                            }
+                            break;
+
+                        case DataTypeEnum.Bool:
+                            if( field.IsArray )
+                            {
+                                // can be Byte[] or bool[]
+                                if( value.GetType() == typeof( Byte[] ) )
+                                    value = (Byte[]) value;
+                                else
+                                    value = (bool[]) value;
+                            }
+                            else
+                            {
+                                bool b = (value == null ? false : Convert.ToBoolean( value )); // brettg: should be 1 or 0
+                            }
+                            break;
+
+                        case DataTypeEnum.DateTime:
+                            if( field.IsArray )
+                            {
+                                // can be string[] or DateTime[]
+                                if( value.GetType() == typeof( String[] ) )
+                                    value = (String[]) value;
+                                else
+                                    value = (DateTime[]) value;
+                            }
+                            else
+                            {
+                                DateTime d = (value == null ? DateTime.MinValue : Convert.ToDateTime( value ));
+                            }
+                            break;
+
+                        case DataTypeEnum.Int64:
+                            if( field.IsArray )
+                            {
+                                value = (Int64[]) value;
+                            }
+                            else
+                            {
+                                Int64 f = (value == null ? (Int64) 0 : Convert.ToInt64( value ));
+                            }
+                            break;
+
+                        case DataTypeEnum.Decimal:
+                            if( field.IsArray )
+                            {
+                                value = (Decimal[]) value;
+                            }
+                            else
+                            {
+                                Decimal f = (value == null ? (Decimal) 0 : Convert.ToDecimal( value ));
+                            }
+                            break;
+
+                        case DataTypeEnum.Guid:
+                            if( field.IsArray )
+                            {
+                                value = (Guid[]) value;
+                            }
+                            else
+                            {
+                                Guid g = value == null ? Guid.NewGuid() : convertToGuid( value );
+                            }
+                            break;
+
+                        default:
+                            // Unknown type...!
+                            throw new FileDbException( string.Format( FileDbException.StrInvalidDataType2, field.Name, field.DataType.ToString(), value.GetType().Name ),
+                                FileDbExceptionsEnum.InvalidDataType );
+                    }
+                }
+                catch( Exception ex )
+                {
+                    throw new FileDbException( string.Format( FileDbException.ErrorConvertingValueForField, field.Name, value != null ? value.ToString() : "null" ),
+                        FileDbExceptionsEnum.ErrorConvertingValueForField );
                 }
             }
         }
@@ -4631,11 +4643,7 @@ namespace FileDbNs
             writer.Write( _numRecords );
             writer.Write( _numDeleted );
             writer.Write( _indexStartPos );
-
-            string userVersion = _userVersion;
-            if( userVersion == null )
-                userVersion = string.Empty;
-            writer.Write( userVersion );
+            writer.Write( _userVersion );
 
             // Write the schema
             //
@@ -4877,8 +4885,19 @@ namespace FileDbNs
             _indexStartPos = reader.ReadInt32();
 
             if( _ver >= 300 )
-                _userVersion = reader.ReadString();
-
+            {
+                if( _ver < 400 )
+                {
+                    // used to be string, but it was causing a bug here because we were overwriting part of the 1st record!
+                    string userVer = reader.ReadString();
+                    if( userVer.Length > 0 )
+                        float.TryParse( userVer, out _userVersion );
+                }
+                else
+                {
+                    _userVersion = reader.ReadSingle();
+                }
+            }
             // Read the schema
             //
             // Schema format:
