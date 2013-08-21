@@ -115,7 +115,6 @@ namespace FileDbNs
         /// </summary>
         public object Tag { get; set; }
 
-
         public Field Clone()
         {
             Field newField = new Field( this.Name, this.DataType, this.Ordinal );
@@ -267,10 +266,10 @@ namespace FileDbNs
                     case DataTypeEnum.Byte:
                         type = typeof( Byte );
                         break;
-                    case DataTypeEnum.Int:
+                    case DataTypeEnum.Int32:
                         type = typeof( Int32 );
                         break;
-                    case DataTypeEnum.UInt:
+                    case DataTypeEnum.UInt32:
                         type = typeof( UInt32 );
                         break;
                     case DataTypeEnum.Float:

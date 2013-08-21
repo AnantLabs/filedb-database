@@ -30,7 +30,17 @@ namespace FileDbNs
 
         //----------------------------------------------------------------------------------------
         /// <summary>
-        /// A string value which can be used to keep track of the database version for changes
+        /// The full filename of the DB file
+        /// </summary>
+        /// 
+        public string DbFileName
+        {
+            get { return _db.DbFileName; }
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// A value which can be used to keep track of the database version for changes
         /// </summary>
         public float UserVersion
         {
@@ -260,7 +270,7 @@ namespace FileDbNs
             }
 
             if( includeIndex )
-                fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) ); // TODO: check the ordinal
+                fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) ); // TODO: check the ordinal
 
             table = new Table( fields, records, true );
 
@@ -330,6 +340,21 @@ namespace FileDbNs
             lock( this )
             {
                 _db.create( dbName, fields );
+            }
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Create a new database file. If the file exists, it will be overwritten.
+        /// </summary>
+        /// <param name="dbName">The full pathname of the file.</param>
+        /// <param name="fields">List of Fields for the new database.</param>
+        /// 
+        public void Create( string dbName, Fields fields )
+        {
+            lock( this )
+            {
+                _db.create( dbName, fields.ToArray() );
             }
         }
 
@@ -733,7 +758,7 @@ namespace FileDbNs
                 }
 
                 if( includeIndex )
-                    fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) ); // TODO: check the ordinal
+                    fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) ); // TODO: check the ordinal
 
                 row = new Record( fields, record );
             }
@@ -993,33 +1018,66 @@ namespace FileDbNs
         }
 
         //----------------------------------------------------------------------------------------
-        /* TODO: implement
         /// <summary>
         /// Add the specified Field to the database.
         /// </summary>
-        /// <param name="newField">The new Field to add.</param>
+        /// <param name="newField">The new Field to add</param>
+        /// <param name="defaultVal">A default value to use for the values of existing records for the new Field</param>
         /// 
         public void AddField( Field newField, object defaultVal )
         {
             lock( this )
             {
-                _db.addfield( newField, defaultVal );
+                object[] defaultVals = null;
+                if( defaultVal != null )
+                    defaultVals = new object[] { defaultVal };
+                this.AddFields( new Field[] { newField }, defaultVals );
             }
         }
 
         //----------------------------------------------------------------------------------------
         /// <summary>
-        /// Remove the specified Field from the database.
+        /// Add the specified Field to the database.
         /// </summary>
-        /// <param name="fieldName">The name of the Field to remove</param>
+        /// <param name="newFields">The new Fields to add</param>
+        /// <param name="defaultVals">Default values to use for the values of existing records for the new Fields.
+        /// Can be null but if not then you must provide a value for each field in the Fields array</param>
         /// 
-        public void RemoveField( string fieldName )
+        public void AddFields( Field[] newFields, object[] defaultVals )
         {
             lock( this )
             {
-                _db.removeRemoveField();
+                _db.addFields( this, newFields, defaultVals );
             }
-        }*/
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Delete the specified Field from the database.
+        /// </summary>
+        /// <param name="fieldName">The name of the Field to delete</param>
+        /// 
+        public void DeleteField( string removeField )
+        {
+            lock( this )
+            {
+                this.DeleteFields( new string[] { removeField } );
+            }
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Delete the specified Fields from the database.
+        /// </summary>
+        /// <param name="removeFields">The Fields to delete</param>
+        /// 
+        public void DeleteFields( string[] removeFields )
+        {
+            lock( this )
+            {
+                _db.deleteFields( this, removeFields );
+            }
+        }
 
         #endregion Maintenance
 

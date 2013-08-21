@@ -18,8 +18,8 @@ namespace FileDbNs
     {
         Bool = TypeCode.Boolean,
         Byte = TypeCode.Byte,
-        Int = TypeCode.Int32,
-        UInt = TypeCode.UInt32,
+        Int32 = TypeCode.Int32,
+        UInt32 = TypeCode.UInt32,
         Int64 = TypeCode.Int64,
         Float = TypeCode.Single,
         Single = TypeCode.Single,
