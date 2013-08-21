@@ -33,7 +33,9 @@ namespace FileDbNs
         InvalidMetaDataType,
         CantConvertTypeToGuid,
         GuidTypeMustBeGuidOrByteArray,
-        ErrorConvertingValueForField
+        ErrorConvertingValueForField,
+        CannotDeletePrimaryKeyField,
+        FieldListIsEmpty
     }
 
     // This exception is raised whenever a statement cannot be compiled.
@@ -92,11 +94,15 @@ namespace FileDbNs
 
         internal const string CantAddOrRemoveFieldWithDeletedRecords = "Cannot add or remove fields with deleted records in the database - call Clean first";
 
+        internal const string CannotDeletePrimaryKeyField = "You cannot delete the primary key field ({0})";
+
+        internal const string FieldListIsEmpty = "The field list is null or empty";
+
         internal const string DatabaseAlreadyHasPrimaryKey = "This database already has a primary key field ({0})";
 
-        internal const string PrimaryKeyCannotBeAdded = "Primary key fields can only be added if there are no records in the database";
+        internal const string PrimaryKeyCannotBeAdded = "Primary key fields can only be added if there are no records in the database: {0}";
 
-        internal const string FieldNameAlreadyExists = "Cannot add field because the field name already exists";
+        internal const string FieldNameAlreadyExists = "Cannot add field because the field name already exists: {0}";
 
         internal const string DatabaseReadOnlyMode = "Database is open in read-only mode";
 

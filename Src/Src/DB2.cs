@@ -48,7 +48,7 @@ namespace FileDbNs
             }
 
             if( includeIndex )
-                fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) );
+                fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
             // use reflection to populate the Field properties
 
@@ -76,10 +76,10 @@ namespace FileDbNs
                         case DataTypeEnum.Byte:
                             fieldType = field.IsArray ? typeof( Byte[] ) : typeof( Byte );
                         break;
-                        case DataTypeEnum.Int:
+                        case DataTypeEnum.Int32:
                             fieldType = field.IsArray ? typeof( Int32[] ) : typeof( Int32 );
                         break;
-                        case DataTypeEnum.UInt:
+                        case DataTypeEnum.UInt32:
                             fieldType = field.IsArray ? typeof( UInt32[] ) : typeof( UInt32 );
                         break;
                         case DataTypeEnum.Float:
@@ -524,7 +524,7 @@ namespace FileDbNs
                 }
 
                 if( includeIndex )
-                    fields.Add( new Field( StrIndex, DataTypeEnum.Int, fields.Count ) );
+                    fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
                 obj = new T();
                 PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );

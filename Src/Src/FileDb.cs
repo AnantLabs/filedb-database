@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO.IsolatedStorage;
 using System.IO;
 using System.Text;
+using System.Linq;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -176,6 +177,11 @@ namespace FileDbNs
         #region internal
 
         #region Properties
+
+        public string DbFileName
+        {
+            get { return _dbName; }
+        }
 
         internal float UserVersion
         {
@@ -464,8 +470,8 @@ namespace FileDbNs
                 switch( field.DataType )
                 {
                     case DataTypeEnum.Byte:
-                    case DataTypeEnum.Int:
-                    case DataTypeEnum.UInt:
+                    case DataTypeEnum.Int32:
+                    case DataTypeEnum.UInt32:
                     case DataTypeEnum.String:
                     case DataTypeEnum.Float:
                     case DataTypeEnum.Double:
@@ -487,7 +493,7 @@ namespace FileDbNs
                     // Is the key an array or boolean?  
                     // If so, don't allow them to be primary keys...
                     
-                    if( !(field.DataType == DataTypeEnum.Int || field.DataType == DataTypeEnum.String) )
+                    if( !(field.DataType == DataTypeEnum.Int32 || field.DataType == DataTypeEnum.String) )
                     {
                         throw new FileDbException( string.Format( FileDbException.InvalidPrimaryKeyType, field.Name ),
                                         FileDbExceptionsEnum.InvalidPrimaryKeyType );
@@ -518,8 +524,8 @@ namespace FileDbNs
             _ver_minor = VERSION_MINOR;
             _ver = _ver_major * 100 + _ver_minor;
 
-            try
-            {
+            //try
+            //{
                 _numRecords = 0;
                 _numDeleted = 0;
 
@@ -539,10 +545,10 @@ namespace FileDbNs
 
                 _index = new List<int>(100);
                 _deletedRecords = new List<int>(3);
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
         }
 
         internal int addRecord( FieldValues record )
@@ -746,8 +752,8 @@ namespace FileDbNs
             if( bVerifyRecordSchema )
                 verifyRecordSchema( record );
 
-            try
-            {
+            //try
+            //{
                 Int32 oldSize = 0;
 
                 if( !string.IsNullOrEmpty( _primaryKey ) && record.ContainsKey( _primaryKey ) )
@@ -894,10 +900,10 @@ namespace FileDbNs
                     _dataStrm.Seek( INDEX_DELETED_OFFSET, SeekOrigin.Begin );
                     _dataWriter.Write( _numDeleted );
                 }
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
         }
         
         // Update selected records
@@ -1141,7 +1147,7 @@ namespace FileDbNs
                 var tmpDataWriter = new BinaryWriter( tmpdb );
 
                 // create a new index list
-                var newIndex = new List<Int32>( _numRecords );
+                var newIndex = new List<Int32>( _index.Count );
 
                 // Set the number of (unclean) deleted items to zero and write the schema
                 _numDeleted = 0;
@@ -1152,8 +1158,7 @@ namespace FileDbNs
 
                 var dicRecord = new FieldValues();
 
-                // For each item in the index, move it from the current database
-                // file to the new one.
+                // For each item in the index, move it from the current database file to the new one
 
                 for( Int32 idx = 0; idx < _index.Count; ++idx )
                 {
@@ -1273,8 +1278,8 @@ namespace FileDbNs
             if( _numRecords == 0 )
                 return numDeleted;
 
-            try
-            {
+            //try
+            //{
                 _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                 _numRecords = _numDeleted = 0;
@@ -1286,10 +1291,10 @@ namespace FileDbNs
                 writeSchema( _dataWriter );
 
                 flush( true );
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             return numDeleted;
         }
@@ -1637,8 +1642,8 @@ namespace FileDbNs
 
             object[] record = null;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // No more records left?
@@ -1655,10 +1660,10 @@ namespace FileDbNs
                     // set the index into the record
                     record[record.Length - 1] = _iteratorIndex;
                 }
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             // Return the record
             return record;
@@ -1684,8 +1689,8 @@ namespace FileDbNs
 
             object[] record = null;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // Read the index
@@ -1749,10 +1754,10 @@ namespace FileDbNs
                     // set the index into the record
                     record[record.Length - 1] = idx++;
                 }
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             return record;
         }
@@ -1779,8 +1784,8 @@ namespace FileDbNs
 
             object[] record = null;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // Read the index
@@ -1812,10 +1817,10 @@ namespace FileDbNs
                     // set the index into the record
                     record[record.Length - 1] = idx++;
                 }
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             return record;
         }
@@ -1843,8 +1848,8 @@ namespace FileDbNs
 
             object[][] result = null;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // Read the index
@@ -1899,10 +1904,10 @@ namespace FileDbNs
                 }
 
                 result = lstResults.ToArray();
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             // Re-order as required
             if( result != null && orderByList != null )
@@ -1921,8 +1926,8 @@ namespace FileDbNs
 
             object[][] result = null;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // Read the index
@@ -1972,10 +1977,10 @@ namespace FileDbNs
                 }
 
                 result = lstResults.ToArray();
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             // Re-order as required
             if( result != null && orderByList != null )
@@ -2225,7 +2230,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataTypeEnum.Int:
+                case DataTypeEnum.Int32:
                 {
                     Int32 i1 = Convert.ToInt32( val1 ),
                           i2 = Convert.ToInt32( val2 );
@@ -2238,7 +2243,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataTypeEnum.UInt:
+                case DataTypeEnum.UInt32:
                 {
                     UInt32 i1 = Convert.ToUInt32( val1 ),
                            i2 = Convert.ToUInt32( val2 );
@@ -2342,13 +2347,13 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataTypeEnum.Int:
+                case DataTypeEnum.Int32:
                 {
                     retVal = Convert.ToInt32( value );
                 }
                 break;
 
-                case DataTypeEnum.UInt:
+                case DataTypeEnum.UInt32:
                 {
                     retVal = Convert.ToUInt32( value );
                 }
@@ -2397,8 +2402,8 @@ namespace FileDbNs
 
             object[][] result = null;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // Read the index
@@ -2442,10 +2447,10 @@ namespace FileDbNs
                     // Add it to the result
                     result[nRow++] = record;
                 }
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             // Re-order as required
             if( result != null && orderByList != null )
@@ -2515,8 +2520,8 @@ namespace FileDbNs
             // Assume we won't find it until proven otherwise
             bool result = false;
 
-            try
-            {
+            //try
+            //{
                 //lockRead( false );
 
                 // Read the index
@@ -2552,10 +2557,10 @@ namespace FileDbNs
                     // ... must be found!
                     result = true;
                 }
-            }
-            finally
-            {
-            }
+            //}
+            //finally
+            //{
+            //}
 
             return result;
         }
@@ -2594,49 +2599,148 @@ namespace FileDbNs
             return _fields.ToArray();
         }
 
-#if false
-        // TODO: implement
-        internal void addfield( Field fieldToAdd, object defaultVal )
+        internal void addFields( FileDb thisDb, Field[] fieldsToAdd, object[] defaultVals )
         {
+            if( fieldsToAdd == null || fieldsToAdd.Length == 0 )
+                throw new FileDbException( FileDbException.FieldListIsEmpty, FileDbExceptionsEnum.FieldListIsEmpty );
+
             checkIsDbOpen();
             checkReadOnly();
 
-            if( fieldToAdd.IsPrimaryKey && ( !string.IsNullOrEmpty(_primaryKey) ) )
-                throw new FileDbException( string.Format( FileDbException.DatabaseAlreadyHasPrimaryKey, _primaryKey ),
-                    FileDbExceptions.DatabaseAlreadyHasPrimaryKey );
+            Fields newFields = new Fields( _fields );
 
-            // Only allow keys if the database has no records
-            if( fieldToAdd.IsPrimaryKey && (_numRecords > 0) )
-                throw new FileDbException( FileDbException.PrimaryKeyCannotBeAdded, FileDbExceptions.PrimaryKeyCannotBeAdded );
-
-            // ensure no deleted records either
-            if( _numDeleted > 0 )
-                throw new FileDbException( FileDbException.CantAddOrRemoveFieldWithDeletedRecords, FileDbExceptions.PrimaryKeyCannotBeAdded );
-
-            // Make sure the name of the field is unique
-            foreach( Field f in _fields )
+            for( int n = 0; n < fieldsToAdd.Length; n++ )
             {
-                if( string.Compare( fieldToAdd.Name, f.Name, StringComparison.CurrentCultureIgnoreCase ) == 0 )
-                    throw new FileDbException( FileDbException.FieldNameAlreadyExists, FileDbExceptions.FieldNameAlreadyExists );
+                var fld = fieldsToAdd[n];
+                object defaultVal = null;
+                if( defaultVals != null )
+                    defaultVal = defaultVals[n];
+
+                if( fld.IsPrimaryKey && (!string.IsNullOrEmpty( _primaryKey )) )
+                    throw new FileDbException( string.Format( FileDbException.DatabaseAlreadyHasPrimaryKey, fld.Name ),
+                        FileDbExceptionsEnum.DatabaseAlreadyHasPrimaryKey );
+
+                // Only allow keys if the database has no records
+                if( fld.IsPrimaryKey && (_numRecords > 0) )
+                    throw new FileDbException( string.Format( FileDbException.PrimaryKeyCannotBeAdded, fld.Name ),
+                            FileDbExceptionsEnum.PrimaryKeyCannotBeAdded );
+
+                // ensure no deleted records either
+                //if( _numDeleted > 0 )
+                //throw new FileDbException( FileDbException.CantAddOrRemoveFieldWithDeletedRecords, FileDbExceptionsEnum.CantAddOrRemoveFieldWithDeletedRecords );
+
+                // Make sure the name of the field is unique
+                if( _fields.Any( f => string.Compare( fld.Name, f.Name, StringComparison.CurrentCultureIgnoreCase ) == 0 ) )
+                    throw new FileDbException( string.Format( FileDbException.FieldNameAlreadyExists, fld.Name ),
+                        FileDbExceptionsEnum.FieldNameAlreadyExists );
+
+                // Make sure that the array or boolean value is NOT the key
+                if( fld.IsPrimaryKey &&
+                        (fld.IsArray ||
+                            !(fld.DataType == DataTypeEnum.Int32 || fld.DataType == DataTypeEnum.String)) )
+                    throw new FileDbException( string.Format( FileDbException.InvalidPrimaryKeyType, fld.Name ),
+                        FileDbExceptionsEnum.InvalidPrimaryKeyType );
+
+                if( defaultVal != null )
+                    verifyFieldSchema( fld, defaultVal );
+
+                newFields.Add( fld );
             }
 
-            // Make sure that the array or boolean value is NOT the key
-            if( fieldToAdd.IsPrimaryKey && 
-                    (fieldToAdd.IsArray ||
-                        !(fieldToAdd.DataType == DataType.Int || fieldToAdd.DataType == DataType.String)) )
-                throw new FileDbException( string.Format( FileDbException.InvalidPrimaryKeyType, fieldToAdd.Name ),
-                    FileDbExceptions.InvalidPrimaryKeyType );
+            // Create a new FileDb
+            string tmpFullFilename, fullFilenameBak;
 
-            verifyFieldSchema( fieldToAdd, defaultVal );
+            #if SILVERLIGHT
+            tmpFullFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
+            tmpFullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
+            #else
+            tmpFullFilename = _dbName + ".tmp";
+            fullFilenameBak = _dbName + ".bak";
+            #endif
 
+            FileDb tempDb = new FileDb();
+            tempDb.Create( tmpFullFilename, newFields );
+
+            try
+            {
+                assignPublicProperties( tempDb, thisDb );
+
+                FieldValues values = new FieldValues( newFields.Count );
+
+                if( moveFirst() )
+                {
+                    do
+                    {
+                        object[] row = getCurrentRecord( false );
+                        object val;
+                        Field fld;
+
+                        for( int n = 0; n < row.Length; n++ )
+                        {
+                            val = row[n];
+                            fld = _fields[n];
+                            values.Add( fld.Name, val );
+                        }
+
+                        // add the new Field default values, if any
+                        if( defaultVals != null )
+                        {
+                            for( int n = 0; n < fieldsToAdd.Length; n++ )
+                            {
+                                val = defaultVals[n];
+                                fld = fieldsToAdd[n];
+                                values.Add( fld.Name, val );
+                            }
+                        }
+
+                        tempDb.AddRecord( values );
+                        values.Clear();
+
+                    } while( moveNext() );
+                }
+                tempDb.Close();
+            }
+            catch
+            {
+                // cleanup
+                if( tempDb.IsOpen )
+                    tempDb.Close();
+                File.Delete( tmpFullFilename );
+                throw;
+            }
+
+            // must close DB, rename files and reopen
+            string origDbFilename = _dbName;
+            thisDb.Close();
+
+            File.Move( origDbFilename, fullFilenameBak );
+            File.Move( tmpFullFilename, origDbFilename );
+
+            // reopen the DB
+            open( origDbFilename, null, _encryptor, false );
+
+            File.Delete( fullFilenameBak );
+
+            #if false
+            // started to do it this way, but the above is much simpler
+            // leaving this here in case I must do it this way later for some reason
             try
             {
                 // Note that we attempt the file creation under the DB lock, so
                 // that another process doesn't try to create the same file at the
                 // same time.
-                IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
                 string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
-                var tmpdb = new IsolatedStorageFileStream( tmpFilename, FileMode.CreateNew, FileAccess.Write, isoFile );
+
+                #if SILVERLIGHT
+                IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
+                    #if true // !WINDOWS_PHONE
+                    var tmpdb = new IsolatedStorageFileStream( tmpFilename, FileMode.OpenOrCreate, FileAccess.Write, isoFile );
+                    #else
+                    var tmpdb = new MemoryStream( (int) _dataStrm.Length );
+                    #endif
+                #else
+                var tmpdb = File.Open( tmpFilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None );
+                #endif
 
                 fieldToAdd.Ordinal = _fields.Count;
 
@@ -2733,11 +2837,105 @@ namespace FileDbNs
                 // Re-open the database data file
                 _dataStrm = new IsolatedStorageFileStream( _dbName, FileMode.Open, FileAccess.ReadWrite, isoFile );
             }
-            finally
-            {
-            }
+            #endif
         }
-#endif
+
+        private void assignPublicProperties( FileDb tempDb, FileDb db )
+        {
+            tempDb.AutoCleanThreshold = db.AutoCleanThreshold;
+            tempDb.AutoFlush = db.AutoFlush;
+            tempDb.MetaData = db.MetaData;
+            tempDb.UserVersion = db.UserVersion;
+        }
+
+        internal void deleteFields( FileDb thisDb, string[] fieldsToRemove )
+        {
+            if( fieldsToRemove == null || fieldsToRemove.Length == 0 )
+                throw new FileDbException( FileDbException.FieldListIsEmpty, FileDbExceptionsEnum.FieldListIsEmpty );
+
+            checkIsDbOpen();
+            checkReadOnly();
+
+            Fields newFields = new Fields( _fields.Count );
+
+            foreach( var fldName in fieldsToRemove )
+            {
+                if( _primaryKey != null && string.Compare( fldName, _primaryKey ) == 0 )
+                    throw new FileDbException( string.Format( FileDbException.CannotDeletePrimaryKeyField, fldName ),
+                        FileDbExceptionsEnum.CannotDeletePrimaryKeyField );
+            }
+            
+            // add only fields not in the delete list
+            foreach( var fld in _fields )
+            {
+                if( !fieldsToRemove.Any( f => string.Compare( f, fld.Name, StringComparison.CurrentCultureIgnoreCase ) == 0 ) )
+                    newFields.Add( fld );
+            }
+
+            // Create a new FileDb
+            string tmpFullFilename, fullFilenameBak;
+
+            #if SILVERLIGHT
+            tmpFullFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
+            tmpFullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
+            #else
+            tmpFullFilename = _dbName + ".tmp";
+            fullFilenameBak = _dbName + ".bak";
+            #endif
+
+            FileDb tempDb = new FileDb();
+            tempDb.Create( tmpFullFilename, newFields );
+
+            try
+            {
+                assignPublicProperties( tempDb, thisDb );
+
+                FieldValues values = new FieldValues( newFields.Count );
+
+                if( moveFirst() )
+                {
+                    do
+                    {
+                        object[] row = getCurrentRecord( false );
+                        object val;
+                        Field fld;
+
+                        for( int n = 0; n < row.Length; n++ )
+                        {
+                            val = row[n];
+                            fld = _fields[n];
+                            if( !fieldsToRemove.Any( f => string.Compare( f, fld.Name, StringComparison.CurrentCultureIgnoreCase ) == 0 ) )
+                                values.Add( fld.Name, val );
+                        }
+
+                        tempDb.AddRecord( values );
+                        values.Clear();
+
+                    } while( moveNext() );
+                }
+                tempDb.Close();
+            }
+            catch
+            {
+                // cleanup
+                if( tempDb.IsOpen )
+                    tempDb.Close();
+                File.Delete( tmpFullFilename );
+                throw;
+            }
+
+            // must close DB, rename files and reopen
+            string origDbFilename = _dbName;
+            thisDb.Close();
+
+            File.Move( origDbFilename, fullFilenameBak );
+            File.Move( tmpFullFilename, origDbFilename );
+
+            // reopen the DB
+            open( origDbFilename, null, _encryptor, false );
+
+            File.Delete( fullFilenameBak );
+        }
 
 #if false
         // TODO: implement
@@ -2954,7 +3152,7 @@ namespace FileDbNs
                             }
                             break;
 
-                        case DataTypeEnum.Int:
+                        case DataTypeEnum.Int32:
                             if( field.IsArray )
                             {
                                 value = (Int32[]) value;
@@ -2965,7 +3163,7 @@ namespace FileDbNs
                             }
                             break;
 
-                        case DataTypeEnum.UInt:
+                        case DataTypeEnum.UInt32:
                             if( field.IsArray )
                             {
                                 value = (UInt32[]) value;
@@ -3476,7 +3674,7 @@ namespace FileDbNs
                         size = 1;
                 break;
 
-                case DataTypeEnum.Int:
+                case DataTypeEnum.Int32:
                     if( field.IsArray )
                     {
                         size = sizeof( Int32 );
@@ -3488,7 +3686,7 @@ namespace FileDbNs
                         size = sizeof( Int32 );
                 break;
 
-                case DataTypeEnum.UInt:
+                case DataTypeEnum.UInt32:
                     if( field.IsArray )
                     {
                         size = sizeof( UInt32 );
@@ -3796,7 +3994,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataTypeEnum.Int:
+                case DataTypeEnum.Int32:
                     if( field.IsArray )
                     {
                         Int32[] arr = (Int32[]) data;
@@ -3816,7 +4014,7 @@ namespace FileDbNs
                     }
                     break;
 
-                case DataTypeEnum.UInt:
+                case DataTypeEnum.UInt32:
                     if( field.IsArray )
                     {
                         UInt32[] arr = (UInt32[]) data;
@@ -4426,7 +4624,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadByte();
 
-                case DataTypeEnum.Int:
+                case DataTypeEnum.Int32:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4442,7 +4640,7 @@ namespace FileDbNs
                     else
                         return dataReader.ReadInt32();
 
-                case DataTypeEnum.UInt:
+                case DataTypeEnum.UInt32:
                     if( field.IsArray )
                     {
                         Int32 elements = dataReader.ReadInt32();
@@ -4938,9 +5136,9 @@ namespace FileDbNs
                     else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Byte )
                         dataType = DataTypeEnum.Byte;
                     else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Int )
-                        dataType = DataTypeEnum.Int;
+                        dataType = DataTypeEnum.Int32;
                     else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.UInt )
-                        dataType = DataTypeEnum.UInt;
+                        dataType = DataTypeEnum.UInt32;
                     else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Int64 )
                         dataType = DataTypeEnum.Int64;
                     else if( (DataTypeEnum_old) dataType == DataTypeEnum_old.Float )
@@ -5072,7 +5270,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataTypeEnum.Int:
+                case DataTypeEnum.Int32:
                 {
                     Int32 i1 = (Int32) v1,
                         i2 = (Int32) v2;
@@ -5080,7 +5278,7 @@ namespace FileDbNs
                 }
                 break;
 
-                case DataTypeEnum.UInt:
+                case DataTypeEnum.UInt32:
                 {
                     UInt32 i1 = (UInt32) v1,
                            i2 = (UInt32) v2;
