@@ -542,6 +542,28 @@ namespace FileDbNs
         }
 
         /// <summary>
+        /// Return the Decimal field value.
+        /// </summary>
+        /// <param name="index">The ordinal index of the field</param>
+        /// <returns>The Decimal field value</returns>
+        /// 
+        public Decimal? GetDecimal( int index )
+        {
+            return (Decimal?) this[index];
+        }
+
+        /// <summary>
+        /// Return the Decimal field value.
+        /// </summary>
+        /// <param name="fieldName">The name of the field</param>
+        /// <returns>The Decimal field value</returns>
+        /// 
+        public Decimal? GetDecimal( string fieldName )
+        {
+            return (Decimal?) this[fieldName];
+        }
+
+        /// <summary>
         /// Return the Double field value.
         /// </summary>
         /// <param name="index">The ordinal index of the field</param>
