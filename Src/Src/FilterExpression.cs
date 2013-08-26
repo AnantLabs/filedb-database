@@ -105,7 +105,7 @@ namespace FileDbNs
         /// used to build the IN FilterExpression</param>
         /// <returns>A new FilterExpression</returns>
         /// 
-        public static FilterExpression CreateInExpressionFromTable<T>( string fieldName, IList<T> list, string propertyName )
+        public static FilterExpression CreateInExpressionFromList<T>( string fieldName, IList<T> list, string propertyName )
         {
             FilterExpression fexp = null;
 
@@ -121,6 +121,54 @@ namespace FileDbNs
             {
                 object val = prop.GetValue( obj, null );
                 hashSet.Add( val );
+            }
+
+            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
+
+            return fexp;
+        }
+
+        /// <summary>
+        /// Create a FilterExpression of type "IN". This type is a HashSet of the values which will be used
+        /// to filter the query.
+        /// </summary>
+        /// <param name="fieldName">The name of the Field which will be used in the FilterExpressions</param>
+        /// <param name="list">A List of strings to use to build the IN FilterExpression</param>
+        /// <returns>A new FilterExpression</returns>
+        /// 
+        public static FilterExpression CreateInExpressionFromList( string fieldName, IList<string> list )
+        {
+            FilterExpression fexp = null;
+
+            var hashSet = new HashSet<object>();
+
+            foreach( string s in list )
+            {
+                hashSet.Add( s );
+            }
+
+            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
+
+            return fexp;
+        }
+
+        /// <summary>
+        /// Create a FilterExpression of type "IN". This type is a HashSet of the values which will be used
+        /// to filter the query.
+        /// </summary>
+        /// <param name="fieldName">The name of the Field which will be used in the FilterExpressions</param>
+        /// <param name="list">A List of strings to use to build the IN FilterExpression</param>
+        /// <returns>A new FilterExpression</returns>
+        /// 
+        public static FilterExpression CreateInExpressionFromList( string fieldName, IList<Int32> list )
+        {
+            FilterExpression fexp = null;
+
+            var hashSet = new HashSet<object>();
+
+            foreach( Int32 id in list )
+            {
+                hashSet.Add( id );
             }
 
             fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
