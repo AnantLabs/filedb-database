@@ -14,6 +14,86 @@ namespace FileDbNs
     /// 
     public partial class FileDb : IDisposable
     {
+        #region static Events
+        //
+        /// <summary>
+        /// Handler for static DbRecordUpdated event.
+        /// </summary>
+        /// <param name="dbName">The name of the updated database</param>
+        /// <param name="index">The record index</param>
+        /// <param name="fieldValues">The fields and new values which were updated</param>
+        /// 
+        public delegate void DbRecordUpdatedHandler( string dbName, int index, FieldValues fieldValues );
+        /// <summary>
+        /// Static event fired when a record has been updated.
+        /// </summary>
+        public static event DbRecordUpdatedHandler DbRecordUpdated;
+
+        /// <summary>
+        /// Handler for static DbRecordAdded event.
+        /// </summary>
+        /// <param name="dbName">The name of the updated database</param>
+        /// <param name="index">The record index</param>
+        public delegate void DbRecordAddedHandler( string dbName, int index );
+        /// <summary>
+        /// Static event fired when a record has been inserted.
+        /// </summary>
+        public static event DbRecordAddedHandler DbRecordAdded;
+
+        /// <summary>
+        /// Handler for static DbRecordDeleted event.
+        /// </summary>
+        /// <param name="dbName">The name of the updated database</param>
+        /// <param name="index">The record index</param>
+        public delegate void DbRecordDeletedHandler( string dbName, int index );
+        /// <summary>
+        /// Static event fired when a record has been deleted.
+        /// </summary>
+        public static event DbRecordDeletedHandler DbRecordDeleted;
+        //
+        #endregion static Events
+
+        #region non-static Events
+        //
+        /// <summary>
+        /// Handler for RecordUpdated event.
+        /// </summary>
+        /// <param name="index">The record index</param>
+        /// <param name="fieldValues">The fields and new values which were updated</param>
+        /// 
+        public delegate void RecordUpdatedHandler( int index, FieldValues fieldValues );
+        /// <summary>
+        /// Fired when a record has been updated.
+        /// </summary>
+        /// 
+        public static event RecordUpdatedHandler RecordUpdated;
+
+        /// <summary>
+        /// Handler for RecordAdded event.
+        /// </summary>
+        /// <param name="index">The record index</param>
+        /// 
+        public delegate void RecordAddedHandler( int index );
+        /// <summary>
+        /// Fired when a record has been inserted.
+        /// </summary>
+        /// 
+        public static event RecordAddedHandler RecordAdded;
+
+        /// <summary>
+        /// Handler for RecordDeleted event.
+        /// </summary>
+        /// <param name="index">The record index</param>
+        /// 
+        public delegate void RecordDeletedHandler( int index );
+        /// <summary>
+        /// Fired when a record has been deleted.
+        /// </summary>
+        /// 
+        public static event RecordDeletedHandler RecordDeleted;
+        //
+        #endregion non-static Events
+
         #region Fields
         const string StrIndex = "index";
 
@@ -166,6 +246,36 @@ namespace FileDbNs
         public FileDb()
         {
             AutoFlush = true;
+            _db.RecordUpdated += onDbUpdated;
+            _db.RecordAdded += onRecordAdded;
+            _db.RecordDeleted += onRecordDeleted;
+        }
+
+        void onDbUpdated( int index, FieldValues fieldValues )
+        {
+            if( RecordUpdated != null )
+                RecordUpdated( index, fieldValues );
+
+            if( DbRecordUpdated != null )
+                DbRecordUpdated( _db.DbFileName, index, fieldValues );
+        }
+
+        void onRecordAdded( int index )
+        {
+            if( RecordAdded != null )
+                RecordAdded( index );
+
+            if( DbRecordAdded != null )
+                DbRecordAdded( _db.DbFileName, index );
+        }
+
+        void onRecordDeleted( int index )
+        {
+            if( RecordDeleted != null )
+                RecordDeleted( index );
+
+            if( DbRecordDeleted != null )
+                DbRecordDeleted( _db.DbFileName, index );
         }
 
         #endregion Constructors

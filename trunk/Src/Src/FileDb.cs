@@ -18,6 +18,11 @@ namespace FileDbNs
     //=====================================================================
     internal class FileDbEngine
     {
+        internal event FileDb.RecordUpdatedHandler RecordUpdated;
+        internal event FileDb.RecordAddedHandler RecordAdded;
+        internal event FileDb.RecordDeletedHandler RecordDeleted;
+
+
         ///////////////////////////////////////////////////////////////////////
         #region Consts
 
@@ -683,6 +688,16 @@ namespace FileDbNs
             {
                 if( AutoFlush ) flush( true );
             }
+
+            if( RecordAdded != null )
+            {
+                try
+                {
+                    RecordAdded( newIndex );
+                }
+                catch { }
+            }
+
             return newIndex;
         }
         
@@ -752,158 +767,161 @@ namespace FileDbNs
             if( bVerifyRecordSchema )
                 verifyRecordSchema( record );
 
-            //try
-            //{
-                Int32 oldSize = 0;
+            Int32 oldSize = 0;
 
-                if( !string.IsNullOrEmpty( _primaryKey ) && record.ContainsKey( _primaryKey ) )
+            if( !string.IsNullOrEmpty( _primaryKey ) && record.ContainsKey( _primaryKey ) )
+            {
+                // Do a binary search to find the index position of any other records that may already
+                // have this key so as to not allow duplicate keys
+
+                Int32 pos = bsearch( lstIndex, 0, _numRecords - 1, record[_primaryKey] );
+
+                // Ensure the item to edit IS in the database, 
+                // as the new one takes its place.
+
+                if( pos >= 0 )
                 {
-                    // Do a binary search to find the index position of any other records that may already
-                    // have this key so as to not allow duplicate keys
+                    pos -= 1;
 
-                    Int32 pos = bsearch( lstIndex, 0, _numRecords - 1, record[_primaryKey] );
-
-                    // Ensure the item to edit IS in the database, 
-                    // as the new one takes its place.
-
-                    if( pos >= 0 )
+                    // a record was found - check if its the same one
+                    if( pos != index )
                     {
-                        pos -= 1;
-
-                        // a record was found - check if its the same one
-                        if( pos != index )
-                        {
-                            // its not the same record and we cannot allow a duplicate key
-                            throw new FileDbException( string.Format( FileDbException.DuplicatePrimaryKey,
-                                            _primaryKey, record[_primaryKey].ToString() ), FileDbExceptionsEnum.DuplicatePrimaryKey );
-                        }
+                        // its not the same record and we cannot allow a duplicate key
+                        throw new FileDbException( string.Format( FileDbException.DuplicatePrimaryKey,
+                                        _primaryKey, record[_primaryKey].ToString() ), FileDbExceptionsEnum.DuplicatePrimaryKey );
                     }
+                }
 
-                    // Revert the result from bsearch to the proper position
-                    //recordNum = pos;
+                // Revert the result from bsearch to the proper position
+                //recordNum = pos;
+            }
+            else
+            {
+                // Ensure the record number is a number within range
+                if( (index < 0) || (index > _numRecords - 1) )
+                {
+                    throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, index ), FileDbExceptionsEnum.IndexOutOfRange );
+                }
+            }
+
+            // Read the size of the record.  If it is the same or bigger than 
+            // the new one, then we can just place it in its original position
+            // and not worry about a deleted record.
+
+            int origRecordOffset = lstIndex[index];
+            _dataStrm.Seek( origRecordOffset, SeekOrigin.Begin );
+            oldSize = _dataReader.ReadInt32();
+            Debug.Assert( oldSize >= 0 );
+
+            // fill in any field values from the DB that were not supplied
+            FieldValues fullRecord = record;
+            bool isFullRecord = record.Count >= _fields.Count; // the index field may be in there
+
+            if( !isFullRecord )
+            {
+                object[] row = readRecord( origRecordOffset, false );
+
+                fullRecord = new FieldValues( row.Length );
+
+                // copy record to fullRecord
+                foreach( string fieldName in record.Keys )
+                {
+                    fullRecord.Add( fieldName, record[fieldName] );
+                }
+
+                foreach( Field field in _fields )
+                {
+                    if( !fullRecord.ContainsKey( field.Name ) )
+                    {
+                        fullRecord.Add( field.Name, row[field.Ordinal] );
+                    }
+                }
+            }
+
+            // Get the size of the new record for calculations below
+            byte[] nullmask;
+            Int32 newSize = getRecordSize( fullRecord, out nullmask ),
+                    deletedIndex = -1,
+                    newPos = _indexStartPos;
+
+            if( newSize > oldSize )
+            {
+                // Record is too big for the "hole" - look through the deleted records
+                // for a hole large enough to hold the new record
+
+                int ndx = 0;
+                foreach( Int32 holePos in _deletedRecords )
+                {
+                    _dataStrm.Seek( holePos, SeekOrigin.Begin );
+                    Int32 holeSize = _dataReader.ReadInt32();
+                    Debug.Assert( holeSize < 0 );
+                    holeSize = -holeSize;
+                    if( holeSize >= newSize )
+                    {
+                        newPos = holePos;
+                        deletedIndex = ndx;
+                        break;
+                    }
+                    ndx++;
+                }
+            }
+            else
+                newPos = origRecordOffset;
+
+            // Write the record to the database file
+            _dataStrm.Seek( newPos, SeekOrigin.Begin );
+            writeRecord( _dataWriter, fullRecord, newSize, nullmask, false );
+
+            // check to see if we went past the previous _indexStartPos
+            int newDataEndPos = (int) _dataStrm.Position;
+            if( newDataEndPos > _indexStartPos )
+            {
+                // capture the new index pos - the end of the last record is the start of the index
+                _indexStartPos = newDataEndPos;
+                writeIndexStart( _dataWriter );
+            }
+
+            if( newSize > oldSize )
+            {
+                // add the previous offset to the deleted collection
+                _deletedRecords.Add( origRecordOffset );
+
+                // did we find a hole?
+                if( deletedIndex < 0 )
+                {
+                    // no hole
+                    // this means we have a new deleted entry (the old record) because we couldn't
+                    // find a large enough hole and we are writing to the end of the data section
+                    ++_numDeleted;
                 }
                 else
                 {
-                    // Ensure the record number is a number within range
-                    if( (index < 0) || (index > _numRecords - 1) )
-                    {
-                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, index ), FileDbExceptionsEnum.IndexOutOfRange );
-                    }
+                    // found a hole - remove the old deleted index
+                    _deletedRecords.RemoveAt( deletedIndex );
                 }
 
-                // Read the size of the record.  If it is the same or bigger than 
-                // the new one, then we can just place it in its original position
-                // and not worry about a deleted record.
+                // update the index with new pos
 
-                int origRecordOffset = lstIndex[index];
+                lstIndex[index] = newPos;
+                indexUpdated = true;
+
+                // make the old record's size be negative to indicate deleted
                 _dataStrm.Seek( origRecordOffset, SeekOrigin.Begin );
-                oldSize = _dataReader.ReadInt32();
-                Debug.Assert( oldSize >= 0 );
+                _dataWriter.Write( -oldSize );
 
-                // fill in any field values from the DB that were not supplied
-                FieldValues fullRecord = record;
-                bool isFullRecord = record.Count >= _fields.Count; // the index field may be in there
+                // Write the number of deleted records                    
+                _dataStrm.Seek( INDEX_DELETED_OFFSET, SeekOrigin.Begin );
+                _dataWriter.Write( _numDeleted );
+            }
 
-                if( !isFullRecord )
+            if( RecordUpdated != null )
+            {
+                try
                 {
-                    object[] row = readRecord( origRecordOffset, false );
-
-                    fullRecord = new FieldValues( row.Length );
-
-                    // copy record to fullRecord
-                    foreach( string fieldName in record.Keys )
-                    {
-                        fullRecord.Add( fieldName, record[fieldName] );
-                    }
-
-                    foreach( Field field in _fields )
-                    {
-                        if( !fullRecord.ContainsKey( field.Name ) )
-                        {
-                            fullRecord.Add( field.Name, row[field.Ordinal] );
-                        }
-                    }
+                    RecordUpdated( index, record );
                 }
-
-                // Get the size of the new record for calculations below
-                byte[] nullmask;
-                Int32 newSize = getRecordSize( fullRecord, out nullmask ),
-                      deletedIndex = -1,
-                      newPos = _indexStartPos;
-
-                if( newSize > oldSize )
-                {
-                    // Record is too big for the "hole" - look through the deleted records
-                    // for a hole large enough to hold the new record
-
-                    int ndx = 0;
-                    foreach( Int32 holePos in _deletedRecords )
-                    {
-                        _dataStrm.Seek( holePos, SeekOrigin.Begin );
-                        Int32 holeSize = _dataReader.ReadInt32();
-                        Debug.Assert( holeSize < 0 );
-                        holeSize = -holeSize;
-                        if( holeSize >= newSize )
-                        {
-                            newPos = holePos;
-                            deletedIndex = ndx;
-                            break;
-                        }
-                        ndx++;
-                    }
-                }
-                else
-                    newPos = origRecordOffset;
-
-                // Write the record to the database file
-                _dataStrm.Seek( newPos, SeekOrigin.Begin );
-                writeRecord( _dataWriter, fullRecord, newSize, nullmask, false );
-
-                // check to see if we went past the previous _indexStartPos
-                int newDataEndPos = (int) _dataStrm.Position;
-                if( newDataEndPos > _indexStartPos )
-                {
-                    // capture the new index pos - the end of the last record is the start of the index
-                    _indexStartPos = newDataEndPos;
-                    writeIndexStart( _dataWriter );
-                }
-
-                if( newSize > oldSize )
-                {
-                    // add the previous offset to the deleted collection
-                    _deletedRecords.Add( origRecordOffset );
-
-                    // did we find a hole?
-                    if( deletedIndex < 0 )
-                    {
-                        // no hole
-                        // this means we have a new deleted entry (the old record) because we couldn't
-                        // find a large enough hole and we are writing to the end of the data section
-                        ++_numDeleted;
-                    }
-                    else
-                    {
-                        // found a hole - remove the old deleted index
-                        _deletedRecords.RemoveAt( deletedIndex );
-                    }
-
-                    // update the index with new pos
-
-                    lstIndex[index] = newPos;
-                    indexUpdated = true;
-
-                    // make the old record's size be negative to indicate deleted
-                    _dataStrm.Seek( origRecordOffset, SeekOrigin.Begin );
-                    _dataWriter.Write( -oldSize );
-
-                    // Write the number of deleted records                    
-                    _dataStrm.Seek( INDEX_DELETED_OFFSET, SeekOrigin.Begin );
-                    _dataWriter.Write( _numDeleted );
-                }
-            //}
-            //finally
-            //{
-            //}
+                catch { }
+            }
         }
         
         // Update selected records
@@ -1317,23 +1335,23 @@ namespace FileDbNs
             if( _numRecords == 0 )
                 return false;
 
+            Int32 index = -1;
+
             try
             {
-                Int32 pos = -1;
-
                 if( !string.IsNullOrEmpty( _primaryKey ) )
                 {
                     // Do a binary search to find the item
-                    pos = bsearch( _index, 0, _numRecords - 1, key );
+                    index = bsearch( _index, 0, _numRecords - 1, key );
 
-                    if( pos < 0 )
+                    if( index < 0 )
                     {
                         // Not found!
                         return false;
                     }
 
                     // Revert the result from bsearch to the proper insertion position
-                    --pos;
+                    --index;
                 }
                 else
                 {
@@ -1342,18 +1360,18 @@ namespace FileDbNs
                         throw new FileDbException( FileDbException.InvalidKeyFieldType, FileDbExceptionsEnum.InvalidKeyFieldType );
                     }
 
-                    pos = (Int32) key;
+                    index = (Int32) key;
 
                     // Ensure the "key" is the item number within range
-                    if( pos < 0 || pos >= _numRecords )
+                    if( index < 0 || index >= _numRecords )
                     {
-                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, pos ), FileDbExceptionsEnum.IndexOutOfRange );
+                        throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, index ), FileDbExceptionsEnum.IndexOutOfRange );
                     }
                 }
 
-                setRecordDeleted( _index[pos], true );
-                _deletedRecords.Add( _index[pos] );
-                _index.RemoveAt( pos );
+                setRecordDeleted( _index[index], true );
+                _deletedRecords.Add( _index[index] );
+                _index.RemoveAt( index );
                 
                 _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
@@ -1372,6 +1390,15 @@ namespace FileDbNs
             // Do an auto-cleanup if required
             checkAutoClean();
 
+            if( RecordDeleted != null )
+            {
+                try
+                {
+                    RecordDeleted( index );
+                }
+                catch { }
+            }
+
             return true;
         }
 
@@ -1380,10 +1407,10 @@ namespace FileDbNs
         /// deleted, but the actual data is only removed from the file when a 
         /// cleanup() is called.
         /// </summary>
-        /// <param name="recordNum">The record number (zero based) in the table to remove</param>
+        /// <param name="index">The record number (zero based) in the table to remove</param>
         /// <returns>true on success, false otherwise</returns>
         /// 
-        internal bool removeByIndex( Int32 recordNum )
+        internal bool removeByIndex( Int32 index )
         {
             checkIsDbOpen();
             checkReadOnly();
@@ -1400,15 +1427,15 @@ namespace FileDbNs
             try
             {
                 // Ensure it is within range
-                if( (recordNum < 0) || (recordNum >= _numRecords) )
+                if( (index < 0) || (index >= _numRecords) )
                 {
-                    throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, recordNum ), FileDbExceptionsEnum.IndexOutOfRange );
+                    throw new FileDbException( string.Format( FileDbException.RecordNumOutOfRange, index ), FileDbExceptionsEnum.IndexOutOfRange );
                 }
 
-                setRecordDeleted( _index[recordNum], true );
-                _deletedRecords.Add( _index[recordNum] );
+                setRecordDeleted( _index[index], true );
+                _deletedRecords.Add( _index[index] );
 
-                _index.RemoveAt( recordNum );
+                _index.RemoveAt( index );
 
                 _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
@@ -1426,6 +1453,15 @@ namespace FileDbNs
 
             // Do an auto-cleanup if required
             checkAutoClean();
+
+            if( RecordDeleted != null )
+            {
+                try
+                {
+                    RecordDeleted( index );
+                }
+                catch { }
+            }
 
             return true;
         }
@@ -1465,11 +1501,11 @@ namespace FileDbNs
                 Regex regex = null;
 
                 // Read and delete selected records
-                for( Int32 recordNum = 0; recordNum < _numRecords; ++recordNum )
+                for( Int32 index = 0; index < _numRecords; ++index )
                 {
                     // Read the record
                     bool deleted;
-                    object[] record = readRecord( _index[recordNum], false, out deleted );
+                    object[] record = readRecord( _index[index], false, out deleted );
                     Debug.Assert( !deleted );
 
                     object val = record[field.Ordinal].ToString();
@@ -1481,17 +1517,26 @@ namespace FileDbNs
                     
                     if( isMatch )
                     {
-                        setRecordDeleted( _index[recordNum], true );
-                        _deletedRecords.Add( _index[recordNum] );
+                        setRecordDeleted( _index[index], true );
+                        _deletedRecords.Add( _index[index] );
 
-                        _index.RemoveAt( recordNum );
+                        _index.RemoveAt( index );
 
                         --_numRecords;
                         ++_numDeleted;
 
                         // Make sure we don't skip over the next item in the for() loop
-                        --recordNum;
+                        --index;
                         ++deleteCount;
+
+                        if( RecordDeleted != null )
+                        {
+                            try
+                            {
+                                RecordDeleted( index );
+                            }
+                            catch { }
+                        }
                     }
                 }
 
@@ -1558,6 +1603,12 @@ namespace FileDbNs
                         // Make sure we don't skip over the next item in the for() loop
                         --recordNum;
                         ++deleteCount;
+
+                        try
+                        {
+                            RecordDeleted( recordNum );
+                        }
+                        catch { }
                     }
                 }
 
