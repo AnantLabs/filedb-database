@@ -426,7 +426,7 @@ namespace FileDbNs
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The integer field value</returns>
         /// 
-        public Int32? GetInt( string fieldName )
+        public Int32? GetInt32( string fieldName )
         {
             return (Int32?) this[fieldName];
         }
@@ -437,7 +437,7 @@ namespace FileDbNs
         /// <param name="index">The ordinal index of the field</param>
         /// <returns>The integer field value</returns>
         /// 
-        public Int32? GetInt( int index )
+        public Int32? GetInt32( int index )
         {
             return (Int32?) this[index];
         }
@@ -448,7 +448,7 @@ namespace FileDbNs
         /// <param name="fieldName">The name of the field</param>
         /// <returns>The unsigned integer field value</returns>
         /// 
-        public UInt32? GetUInt( string fieldName )
+        public UInt32? GetUInt32( string fieldName )
         {
             return (UInt32?) this[fieldName];
         }
@@ -459,7 +459,7 @@ namespace FileDbNs
         /// <param name="index">The ordinal index of the field</param>
         /// <returns>The unsigned integer field value</returns>
         /// 
-        public UInt32? GetUInt( int index )
+        public UInt32? GetUInt32( int index )
         {
             return (UInt32?) this[index];
         }
