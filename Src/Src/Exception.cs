@@ -35,7 +35,8 @@ namespace FileDbNs
         GuidTypeMustBeGuidOrByteArray,
         ErrorConvertingValueForField,
         CannotDeletePrimaryKeyField,
-        FieldListIsEmpty
+        FieldListIsEmpty,
+        FieldNameIsEmpty
     }
 
     // This exception is raised whenever a statement cannot be compiled.
@@ -113,6 +114,8 @@ namespace FileDbNs
         internal const string GuidTypeMustBeGuidOrByteArray = "Guid type must be Guid or Byte array";
 
         internal const string ErrorConvertingValueForField = "Error converting value for field name: {0}  value: {1}";
+
+        internal const string FieldNameIsEmpty = "The field name is null or empty";
 
         #endregion Strings
 

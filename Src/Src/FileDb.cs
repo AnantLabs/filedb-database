@@ -2699,196 +2699,7 @@ namespace FileDbNs
             }
 
             // Create a new FileDb
-            string tmpFullFilename, fullFilenameBak;
-
-            #if SILVERLIGHT
-            tmpFullFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
-            tmpFullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
-            #else
-            tmpFullFilename = _dbName + ".tmp";
-            fullFilenameBak = _dbName + ".bak";
-            #endif
-
-            FileDb tempDb = new FileDb();
-            tempDb.Create( tmpFullFilename, newFields );
-
-            try
-            {
-                assignPublicProperties( tempDb, thisDb );
-
-                FieldValues values = new FieldValues( newFields.Count );
-
-                if( moveFirst() )
-                {
-                    do
-                    {
-                        object[] row = getCurrentRecord( false );
-                        object val;
-                        Field fld;
-
-                        for( int n = 0; n < row.Length; n++ )
-                        {
-                            val = row[n];
-                            fld = _fields[n];
-                            values.Add( fld.Name, val );
-                        }
-
-                        // add the new Field default values, if any
-                        if( defaultVals != null )
-                        {
-                            for( int n = 0; n < fieldsToAdd.Length; n++ )
-                            {
-                                val = defaultVals[n];
-                                fld = fieldsToAdd[n];
-                                values.Add( fld.Name, val );
-                            }
-                        }
-
-                        tempDb.AddRecord( values );
-                        values.Clear();
-
-                    } while( moveNext() );
-                }
-                tempDb.Close();
-            }
-            catch
-            {
-                // cleanup
-                if( tempDb.IsOpen )
-                    tempDb.Close();
-                File.Delete( tmpFullFilename );
-                throw;
-            }
-
-            // must close DB, rename files and reopen
-            string origDbFilename = _dbName;
-            thisDb.Close();
-
-            File.Move( origDbFilename, fullFilenameBak );
-            File.Move( tmpFullFilename, origDbFilename );
-
-            // reopen the DB
-            open( origDbFilename, null, _encryptor, false );
-
-            File.Delete( fullFilenameBak );
-
-            #if false
-            // started to do it this way, but the above is much simpler
-            // leaving this here in case I must do it this way later for some reason
-            try
-            {
-                // Note that we attempt the file creation under the DB lock, so
-                // that another process doesn't try to create the same file at the
-                // same time.
-                string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
-
-                #if SILVERLIGHT
-                IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
-                    #if true // !WINDOWS_PHONE
-                    var tmpdb = new IsolatedStorageFileStream( tmpFilename, FileMode.OpenOrCreate, FileAccess.Write, isoFile );
-                    #else
-                    var tmpdb = new MemoryStream( (int) _dataStrm.Length );
-                    #endif
-                #else
-                var tmpdb = File.Open( tmpFilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None );
-                #endif
-
-                fieldToAdd.Ordinal = _fields.Count;
-
-                // Add the field to the schema
-                _fields.Add( fieldToAdd );
-
-                // Do we have a new primary key?
-                if( fieldToAdd.IsPrimaryKey )
-                {
-                    _primaryKeyField = fieldToAdd;
-                    _primaryKey = fieldToAdd.Name.ToUpper();
-                }
-
-                // Since we've effectively done a cleanup(), set the number 
-                // of (unclean) deleted items to zero.
-                _numDeleted = 0;
-// TODO: finish - not yet completed
-                var tmpDataWriter = new BinaryWriter( tmpdb );
-
-                // Write the new schema
-                writeDbHeader( tmpDataWriter );
-                writeSchema( tmpDataWriter );
-
-                var newFields = _fields;
-
-                // Read in the current index
-                List<Int32> vIndex = readIndex();
-
-                // Now translate the data file.  For each index entry, read in
-                // the record, add in the new default value, then write it back
-                // out to a new temporary file.  Then move that temporary file
-                // back over the old data file.
-
-                // For each item in the index, move it from the current database
-                // file to the new one.  Also update the new file offset in the index
-                // so we can write it back out to the index file
-
-                var oldFields = _fields;
-
-                for( Int32 idx = 0; idx < _numRecords; ++idx )
-                {
-                    Int32 offset = vIndex[idx];
-
-                    // Read in the entire record
-                    _fields = oldFields;
-                    bool deleted;
-                    object[] record = readRecord( offset, false, out deleted );
-                    Debug.Assert( !deleted );
-
-                    // Save the new file offset
-
-                    vIndex[idx] = (Int32) tmpdb.Position;
-
-                    // Add in the new field to the record
-                    if( fieldToAdd.IsAutoInc )
-                    {
-                        // brettg: REVIEW
-                        fieldToAdd.CurAutoIncVal += 1;
-                        record[fieldToAdd.Ordinal] = fieldToAdd.AutoIncStart;
-                    }
-                    else
-                        record[fieldToAdd.Ordinal] = defaultVal;
-
-                    try
-                    {
-                        // Write out the record to the temporary file
-                        writeRecord( tmpDataWriter, record, -1, false );
-                    }
-                    catch
-                    {
-                        // read the old schema back in
-                        readSchema();
-
-                        // Error writing item to the database
-                        tmpdb.Close();
-                        isoFile.DeleteFile( tmpFilename );
-                        throw;
-                    }
-                }
-
-                // Move the temporary file over the original database file.
-                tmpdb.Close();
-                _dataStrm.Close();
-                isoFile.DeleteFile( _dbName );
-                // TODO: must have workaround for WP
-                isoFile.MoveFile( tmpFilename, _dbName );
-
-                // Write out the index (which may have been overwritten)
-                writeIndex( _metaWriter, vIndex );
-
-                // get all the new schema
-                readSchema();
-
-                // Re-open the database data file
-                _dataStrm = new IsolatedStorageFileStream( _dbName, FileMode.Open, FileAccess.ReadWrite, isoFile );
-            }
-            #endif
+            copyNewDB( thisDb, newFields, fieldsToAdd, null, null );
         }
 
         private void assignPublicProperties( FileDb tempDb, FileDb db )
@@ -2924,6 +2735,12 @@ namespace FileDbNs
             }
 
             // Create a new FileDb
+            copyNewDB( thisDb, newFields, null, null, fieldsToRemove );
+        }
+
+        void copyNewDB( FileDb thisDb, Fields newFields, Field[] fieldsToAdd, object[] defaultVals, string[] fieldsToRemove )
+        {
+            // Create a new FileDb
             string tmpFullFilename, fullFilenameBak;
 
             #if SILVERLIGHT
@@ -2951,12 +2768,43 @@ namespace FileDbNs
                         object val;
                         Field fld;
 
-                        for( int n = 0; n < row.Length; n++ )
+                        if( fieldsToRemove != null )
                         {
-                            val = row[n];
-                            fld = _fields[n];
-                            if( !fieldsToRemove.Any( f => string.Compare( f, fld.Name, StringComparison.CurrentCultureIgnoreCase ) == 0 ) )
+                            for( int n = 0; n < row.Length; n++ )
+                            {
+                                val = row[n];
+                                fld = _fields[n];
+
+                                // are we removing any fields?
+                                if( !fieldsToRemove.Any( f => string.Compare( f, fld.Name, StringComparison.CurrentCultureIgnoreCase ) == 0 ) )
+                                {
+                                    values.Add( fld.Name, val );
+                                }
+                            }
+                        }
+                        else // adding or renaming a field
+                        {
+                            for( int n = 0; n < row.Length; n++ )
+                            {
+                                val = row[n];
+                                fld = newFields[n];
                                 values.Add( fld.Name, val );
+                            }
+
+                            // are we adding new fields?
+                            if( fieldsToAdd != null )
+                            {
+                                // add the new Field default values, if any
+                                if( defaultVals != null )
+                                {
+                                    for( int n = 0; n < fieldsToAdd.Length; n++ )
+                                    {
+                                        val = defaultVals != null ? defaultVals[n] : null;
+                                        fld = fieldsToAdd[n];
+                                        values.Add( fld.Name, val );
+                                    }
+                                }
+                            }
                         }
 
                         tempDb.AddRecord( values );
@@ -3114,6 +2962,48 @@ namespace FileDbNs
             return true;
         }
 #endif
+
+        internal void renameField( FileDb thisDb, string fieldName, string newFieldName )
+        {
+            if( fieldName == null || fieldName.Length == 0 ||
+                    newFieldName == null || newFieldName.Length == 0 )
+                throw new FileDbException( FileDbException.FieldNameIsEmpty, FileDbExceptionsEnum.FieldNameIsEmpty );
+
+            checkIsDbOpen();
+            checkReadOnly();
+
+            if( !_fields.ContainsKey( fieldName ) )
+                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
+
+            if( fieldName.Length == newFieldName.Length )
+            {
+                // easy - since they are the same length we can just change the name
+                var field = _fields[fieldName];
+                field.Name = newFieldName;
+                writeSchema( _dataWriter );
+                _dataWriter.Flush();
+                _dataStrm.Flush();
+            }
+            else
+            {
+                // harder - must recreate the DB file
+                Fields newFields = new Fields( _fields.Count );
+
+                foreach( var fld in _fields )
+                {
+                    if( string.Compare( fld.Name, fieldName, true ) == 0 )
+                    {
+                        var newField = fld.Clone();
+                        newField.Name = newFieldName;
+                        newFields.Add( newField );
+                    }
+                    else
+                        newFields.Add( fld );
+                }
+
+                copyNewDB( thisDb, newFields, null, null, null );
+            }
+        }
 
         /// <summary>
         /// Flush the in-memory buffers to disk

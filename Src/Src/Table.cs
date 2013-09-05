@@ -115,15 +115,20 @@ namespace FileDbNs
         /// </summary>
         public object Tag { get; set; }
 
+        /// <summary>
+        /// Clone this Field
+        /// </summary>
+        /// <returns>A new Field with the same values</returns>
         public Field Clone()
         {
             Field newField = new Field( this.Name, this.DataType, this.Ordinal );
 
             newField.AutoIncStart = this.AutoIncStart;
+            newField.CurAutoIncVal = this.CurAutoIncVal;
             newField.IsArray = this.IsArray;
             newField.IsPrimaryKey = this.IsPrimaryKey;
-            newField.CurAutoIncVal = this.CurAutoIncVal;
             newField.Comment = this.Comment;
+            newField.Tag = this.Tag;
 
             return newField;
         }
