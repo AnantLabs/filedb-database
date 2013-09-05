@@ -1167,11 +1167,11 @@ namespace FileDbNs
         /// </summary>
         /// <param name="fieldName">The name of the Field to delete</param>
         /// 
-        public void DeleteField( string removeField )
+        public void DeleteField( string fieldName )
         {
             lock( this )
             {
-                this.DeleteFields( new string[] { removeField } );
+                this.DeleteFields( new string[] { fieldName } );
             }
         }
 
@@ -1179,13 +1179,27 @@ namespace FileDbNs
         /// <summary>
         /// Delete the specified Fields from the database.
         /// </summary>
-        /// <param name="removeFields">The Fields to delete</param>
+        /// <param name="fieldNames">The Fields to delete</param>
         /// 
-        public void DeleteFields( string[] removeFields )
+        public void DeleteFields( string[] fieldNames )
         {
             lock( this )
             {
-                _db.deleteFields( this, removeFields );
+                _db.deleteFields( this, fieldNames );
+            }
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Rename the specified Field.
+        /// </summary>
+        /// <param name="fieldName">The name of the Field to rename</param>
+        /// 
+        public void RenameField( string fieldName, string newFieldName )
+        {
+            lock( this )
+            {
+                _db.renameField( this, fieldName, newFieldName );
             }
         }
 
