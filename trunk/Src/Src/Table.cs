@@ -319,11 +319,9 @@ namespace FileDbNs
         {
             get
             {
-                /*
-                string upperName = name;
-                if( !_record.ContainsKey( upperName ) )
+                /* now done in the Fields class
+                if( !_record.ContainsKey( name ) )
                     throw new FileDbException( string.Format( FileDbException.InvalidFieldName, name ), FileDbExceptions.InvalidFieldName );
-                return _values[_record[upperName]];
                 */
                 return _values[_fields[name].Ordinal];
             }
@@ -331,12 +329,9 @@ namespace FileDbNs
             ////////////////////////////////////////////
             set
             {
-                /*
-                string upperName = name;
-                if( !_record.ContainsKey( upperName ) )
-                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, name ), FileDbExceptions.InvalidFieldName );
-                int idx = _record[upperName];
-                _values[idx] = value;
+                /* now done in the Fields class
+                if( !_fields.ContainsKey( name ) )
+                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, name ), FileDbExceptionsEnum.InvalidFieldName );
                 */
                 _values[_fields[name].Ordinal] = value;
             }
@@ -764,6 +759,9 @@ namespace FileDbNs
         {
             get
             {
+                if( !_fields.ContainsKey( fieldName ) )
+                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
+
                 if( _fields.Count > 0 )
                     return _fields[fieldName];
                 else

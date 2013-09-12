@@ -53,7 +53,7 @@ namespace FileDbNs
 
         internal const string StrInvalidDataType2 = "Invalid data type for field '{0}' - expected '{1}' but got '{2}'";
 
-        internal const string InvalidFieldName = "Invalid field name: {0}";
+        internal const string InvalidFieldName = "Field name not in table: {0}";
 
         internal const string InvalidKeyFieldType = "Invalid key field type (record number) - must be type Int32";
 
