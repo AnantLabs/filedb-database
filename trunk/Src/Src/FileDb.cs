@@ -2058,7 +2058,7 @@ namespace FileDbNs
 
                 BoolOpEnum boolOp;
 
-                if( searchExpressionOrGroup.GetType() == typeof( FilterExpressionGroup ) )
+                if( searchExpressionOrGroup is FilterExpressionGroup ) // searchExpressionOrGroup.GetType() == typeof( FilterExpressionGroup ) )
                 {
                     var sexg = searchExpressionOrGroup as FilterExpressionGroup;
                     thisMatch = evaluate( sexg, record, fields );
