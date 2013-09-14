@@ -502,7 +502,7 @@ namespace FileDbNs
                         {
                             if( filter[pos] == '\'' )
                             {
-                                Debug.Assert( sbTemp.Length > 0 );
+                                //Debug.Assert( sbTemp.Length > 0 ); -- it could be empty, eg. myfield = ''
 
                                 // if the next char is NOT another ' (escaped) then the string is completed
                                 if( (pos + 1 < filter.Length) && filter[pos + 1] == '\'' )
@@ -589,6 +589,8 @@ namespace FileDbNs
                 if( comparisonOp != EqualityEnum.In && comparisonOp != EqualityEnum.NotIn )
                 {
                     searchVal = sbTemp.ToString();
+                    if( !inString && string.Compare( (string) searchVal, "null", true ) == 0 )
+                        searchVal = null;
                     sbTemp.Length = 0;
                 }
                 var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType );
