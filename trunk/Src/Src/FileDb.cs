@@ -84,7 +84,7 @@ namespace FileDbNs
 #if SILVERLIGHT
         IsolatedStorageFileStream _dataStrm;
 #else
-        FileStream _dataStrm;
+        Stream _dataStrm;
 #endif
         BinaryReader _dataReader;
 
@@ -357,28 +357,35 @@ namespace FileDbNs
         /// 
         void openFiles( string dbName, FileMode mode )
         {
-            // Open the database files
-            #if SILVERLIGHT
+            if( !string.IsNullOrWhiteSpace( dbName ) )
+            {
+                // Open the database files
+                #if SILVERLIGHT
             IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
             if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
                 !isoFile.FileExists( dbName ) )
-            #else
-            if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
-                !File.Exists( dbName ) )
-            #endif
-                throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
+                #else
+                    if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
+                        !File.Exists( dbName ) )
+                #endif
+                    throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
 
-            FileAccess access;
-            if( _openReadOnly )
-                access = FileAccess.Read;
-            else
-                access = FileAccess.ReadWrite;
+                FileAccess access;
+                if( _openReadOnly )
+                    access = FileAccess.Read;
+                else
+                    access = FileAccess.ReadWrite;
 
-            #if SILVERLIGHT
-            _dataStrm = new IsolatedStorageFileStream( dbName, mode, access, isoFile );
-            #else
-            _dataStrm = File.Open( dbName, mode, access, FileShare.None );
-            #endif
+                #if SILVERLIGHT
+                    _dataStrm = new IsolatedStorageFileStream( dbName, mode, access, isoFile );
+                #else
+                    _dataStrm = File.Open( dbName, mode, access, FileShare.None );
+                #endif
+            }
+            else // memory DB
+            {
+                _dataStrm = new MemoryStream(4096);
+            }
 
             _dataReader = new BinaryReader( _dataStrm );
             if( !_openReadOnly )
