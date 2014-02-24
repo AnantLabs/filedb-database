@@ -396,9 +396,10 @@ namespace FileDbNs
         //----------------------------------------------------------------------------------------
         /// <summary>
         /// Open the indicated database file.
+        /// If dbName is null an in-memory database will be created.
         /// </summary>
-        /// <param name="dbName">The filename of the database file to open.  It can be a fully qualified
-        /// path or, if no path is specified the current folder will be used.</param>
+        /// <param name="dbName">The filename of the database file to open or null/empty to create a memory DB.
+        /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
         /// 
         public void Open( string dbName, bool readOnly )
         {
@@ -412,9 +413,10 @@ namespace FileDbNs
         /// <summary>
         /// Open the indicated database file for encryption. Encryption is "all or nothing",
         /// meaning all records are either encrypted or not.
+        /// If dbName is null an in-memory database will be created.
         /// </summary>
-        /// <param name="dbName">The filename of the database file to open.  It can be a fully qualified
-        /// path or, if no path is specified the current folder will be used.</param>
+        /// <param name="dbName">The filename of the database file to open or null/empty to create a memory DB.
+        /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
         /// <param name="encryptionKey">A string value to use as the encryption key</param>
         /// 
         public void Open( string dbName, string encryptionKey, bool readOnly )
@@ -441,8 +443,9 @@ namespace FileDbNs
         //----------------------------------------------------------------------------------------
         /// <summary>
         /// Create a new database file. If the file exists, it will be overwritten.
+        /// If dbName is null an in-memory database will be created.
         /// </summary>
-        /// <param name="dbName">The full pathname of the file.</param>
+        /// <param name="dbName">The full pathname of the file or null/empty to create a memory DB</param>
         /// <param name="fields">Array of Fields for the new database.</param>
         /// 
         public void Create( string dbName, Field[] fields )
@@ -456,8 +459,9 @@ namespace FileDbNs
         //----------------------------------------------------------------------------------------
         /// <summary>
         /// Create a new database file. If the file exists, it will be overwritten.
+        /// If dbName is null an in-memory database will be created.
         /// </summary>
-        /// <param name="dbName">The full pathname of the file.</param>
+        /// <param name="dbName">The full pathname of the file or null/empty to create a memory DB</param>
         /// <param name="fields">List of Fields for the new database.</param>
         /// 
         public void Create( string dbName, Fields fields )
