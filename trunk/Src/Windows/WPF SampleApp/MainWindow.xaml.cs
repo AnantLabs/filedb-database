@@ -125,10 +125,10 @@ namespace SampleApp
                     switch( type.ToLower() )
                     {
                         case "int":
-                            dataType = DataTypeEnum.Int;
+                            dataType = DataTypeEnum.Int32;
                         break;
                         case "uint":
-                            dataType = DataTypeEnum.UInt;
+                            dataType = DataTypeEnum.UInt32;
                         break;
                         case "string":
                             dataType = DataTypeEnum.String;
@@ -161,7 +161,7 @@ namespace SampleApp
 
 #else
                 var fieldLst = new List<Field>( 20 );
-                Field field = new Field( "ID", DataTypeEnum.Int );
+                Field field = new Field( "ID", DataTypeEnum.Int32 );
                 field.AutoIncStart = 0;
                 field.IsPrimaryKey = true;
                 fieldLst.Add( field );
@@ -186,7 +186,7 @@ namespace SampleApp
                 field = new Field( "ByteArray", DataTypeEnum.Byte );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "IntArray", DataTypeEnum.Int );
+                field = new Field( "IntArray", DataTypeEnum.Int32 );
                 field.IsArray = true;
                 fieldLst.Add( field );
                 field = new Field( "FloatArray", DataTypeEnum.Float );
@@ -311,7 +311,7 @@ namespace SampleApp
                                         record.Add( field.Name, bval );
                                 }
                             }
-                            else if( field.DataType == DataTypeEnum.Int )
+                            else if( field.DataType == DataTypeEnum.Int32 )
                             {
                                 if( field.IsArray )
                                 {
@@ -330,7 +330,7 @@ namespace SampleApp
                                         record.Add( field.Name, ival );
                                 }
                             }
-                            else if( field.DataType == DataTypeEnum.UInt )
+                            else if( field.DataType == DataTypeEnum.UInt32 )
                             {
                                 if( field.IsArray )
                                 {
@@ -1249,15 +1249,15 @@ fieldValues["StringArray"] = new string[] { "x", null };
                 // now get only Order records for the target Customer records using FilterExpression.CreateInExpressionFromTable
                 // this method creates a HastSet which is extremely efficient when used by FileDb.SelectRecords
 
-                filterExp = FilterExpression.CreateInExpressionFromTable<Customer>( "CustomerID", customers, "CustomerID" );
+                filterExp = FilterExpression.CreateInExpressionFromList<Customer>( "CustomerID", customers, "CustomerID" );
                 IList<Order> orders = ordersDb.SelectRecords<Order>( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
 
                 // now get only OrderDetails records for the target Order records
-                filterExp = FilterExpression.CreateInExpressionFromTable<Order>( "OrderID", orders, "OrderID" );
+                filterExp = FilterExpression.CreateInExpressionFromList<Order>( "OrderID", orders, "OrderID" );
                 IList<OrderDetail> orderDetails = orderDetailsDb.SelectRecords<OrderDetail>( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
 
                 // now get only Product records for the target OrderDetails records
-                filterExp = FilterExpression.CreateInExpressionFromTable<OrderDetail>( "ProductID", orderDetails, "ProductID" );
+                filterExp = FilterExpression.CreateInExpressionFromList<OrderDetail>( "ProductID", orderDetails, "ProductID" );
                 IList<Product> products = productsDb.SelectRecords<Product>( filterExp, new string[] { "ProductID", "ProductName" } );
 
                 // produces a flat/normalized sequence
@@ -1539,15 +1539,15 @@ fieldValues["StringArray"] = new string[] { "x", null };
                 // now get only Order records for the target Customer records using FilterExpression.CreateInExpressionFromTable
                 // this method creates a HastSet which is extremely efficient when used by FileDb.SelectRecords
 
-                filterExp = FilterExpression.CreateInExpressionFromTable( "CustomerID", customers, "CustomerID" );
+                filterExp = FilterExpression.CreateInExpressionFromList( "CustomerID", customers, "CustomerID" );
                 IList<Order> orders = ordersDb.SelectRecords<Order>( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
 
                 // now get only OrderDetails records for the target Order records
-                filterExp = FilterExpression.CreateInExpressionFromTable( "OrderID", orders, "OrderID" );
+                filterExp = FilterExpression.CreateInExpressionFromList( "OrderID", orders, "OrderID" );
                 IList<OrderDetail> orderDetails = orderDetailsDb.SelectRecords<OrderDetail>( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
 
                 // now get only Product records for the target OrderDetails records
-                filterExp = FilterExpression.CreateInExpressionFromTable( "ProductID", orderDetails, "ProductID" );
+                filterExp = FilterExpression.CreateInExpressionFromList( "ProductID", orderDetails, "ProductID" );
                 IList<Product> products = productsDb.SelectRecords<Product>( filterExp, new string[] { "ProductID", "ProductName" } );
 
 
@@ -1736,11 +1736,11 @@ fieldValues["StringArray"] = new string[] { "x", null };
                 // now get only Order records for the target Customer records using FilterExpression.CreateInExpressionFromTable
                 // this method creates a HastSet which is extremely efficient when used by FileDb.SelectRecords
 
-                filterExp = FilterExpression.CreateInExpressionFromTable<Customer>( "CustomerID", customers, "CustomerID" );
+                filterExp = FilterExpression.CreateInExpressionFromList<Customer>( "CustomerID", customers, "CustomerID" );
                 IList<Order> orders = ordersDb.SelectRecords<Order>( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
 
                 // now get only OrderDetails records for the target Order records
-                filterExp = FilterExpression.CreateInExpressionFromTable<Order>( "OrderID", orders, "OrderID" );
+                filterExp = FilterExpression.CreateInExpressionFromList<Order>( "OrderID", orders, "OrderID" );
                 IList<OrderDetail> orderDetails = orderDetailsDb.SelectRecords<OrderDetail>( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
 
                 // Step 2:  Use Linq to generate the objects for us
