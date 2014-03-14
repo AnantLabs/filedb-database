@@ -66,7 +66,7 @@ namespace FileDbNs
         /// Fired when a record has been updated.
         /// </summary>
         /// 
-        public static event RecordUpdatedHandler RecordUpdated;
+        public event RecordUpdatedHandler RecordUpdated;
 
         /// <summary>
         /// Handler for RecordAdded event.
@@ -78,7 +78,7 @@ namespace FileDbNs
         /// Fired when a record has been inserted.
         /// </summary>
         /// 
-        public static event RecordAddedHandler RecordAdded;
+        public event RecordAddedHandler RecordAdded;
 
         /// <summary>
         /// Handler for RecordDeleted event.
@@ -90,7 +90,7 @@ namespace FileDbNs
         /// Fired when a record has been deleted.
         /// </summary>
         /// 
-        public static event RecordDeletedHandler RecordDeleted;
+        public event RecordDeletedHandler RecordDeleted;
         //
         #endregion non-static Events
 
