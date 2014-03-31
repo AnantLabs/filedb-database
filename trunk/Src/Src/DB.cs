@@ -280,6 +280,15 @@ namespace FileDbNs
 
         #endregion Constructors
 
+        #region Overrides
+
+        public override string ToString()
+        {
+            return _db.DbFileName;
+        }
+
+        #endregion Overrides
+
         #region IDisposable
 
         // Do not make this method virtual.
