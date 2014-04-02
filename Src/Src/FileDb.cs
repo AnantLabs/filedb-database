@@ -82,7 +82,8 @@ namespace FileDbNs
         string _dbName;
 
 #if SILVERLIGHT
-        IsolatedStorageFileStream _dataStrm;
+        //IsolatedStorageFileStream _dataStrm;
+        Stream _dataStrm;
 #else
         Stream _dataStrm;
 #endif
@@ -361,9 +362,9 @@ namespace FileDbNs
             {
                 // Open the database files
                 #if SILVERLIGHT
-            IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
-            if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
-                !isoFile.FileExists( dbName ) )
+                IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
+                if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
+                    !isoFile.FileExists( dbName ) )
                 #else
                     if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
                         !File.Exists( dbName ) )
@@ -381,6 +382,11 @@ namespace FileDbNs
                 #else
                     _dataStrm = File.Open( dbName, mode, access, FileShare.None );
                 #endif
+
+                #if SILVERLIGHT
+                isoFile.Dispose();
+                isoFile = null;
+                #endif
             }
             else // memory DB
             {
@@ -390,11 +396,6 @@ namespace FileDbNs
             _dataReader = new BinaryReader( _dataStrm );
             if( !_openReadOnly )
                 _dataWriter = new BinaryWriter( _dataStrm );
-
-            #if SILVERLIGHT
-            isoFile.Dispose();
-            isoFile = null;
-            #endif
         }
 
         internal void close()
@@ -2752,7 +2753,7 @@ namespace FileDbNs
 
             #if SILVERLIGHT
             tmpFullFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
-            tmpFullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
+            fullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
             #else
             tmpFullFilename = _dbName + ".tmp";
             fullFilenameBak = _dbName + ".bak";
@@ -2998,7 +2999,7 @@ namespace FileDbNs
 
                 foreach( var fld in _fields )
                 {
-                    if( string.Compare( fld.Name, fieldName, true ) == 0 )
+                    if( string.Compare( fld.Name, fieldName, StringComparison.OrdinalIgnoreCase ) == 0 )
                     {
                         var newField = fld.Clone();
                         newField.Name = newFieldName;

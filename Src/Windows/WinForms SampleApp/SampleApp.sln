@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp.csproj", "{205A7A3E-1418-45E4-A6FE-9962B867A4ED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileDb", "..\FileDb\FileDb.csproj", "{7CFF3E3D-5717-45B6-ACCF-80BB1EAD9327}"

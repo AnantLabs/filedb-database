@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 using System.Diagnostics;
 using System.Collections;
@@ -331,9 +332,8 @@ namespace FileDbNs
                     if( char.IsLetter( filter[pos] ) ) // LIKE
                     {
                         // should be LIKE or IN
-                        if( pos+4 >= filter.Length )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptionsEnum.InvalidFilterConstruct );
+                        if( pos + 4 >= filter.Length )
+                            throwInvalidFilterConstruct( filter, pos );
 
                         // NOT
                         if( char.ToUpper(filter[pos]) == 'N' && char.ToUpper(filter[pos + 1]) == 'O' && char.ToUpper(filter[pos + 2]) == 'T' && char.IsWhiteSpace( filter[pos+3] ) )
@@ -350,8 +350,7 @@ namespace FileDbNs
                             {
                                 while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
                                 if( filter[pos] != '(' )
-                                    throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos - 4 ) ),
-                                        FileDbExceptionsEnum.InvalidFilterConstruct );
+                                    throwInvalidFilterConstruct( filter, pos-2 );
                             }
                             comparisonOp = not ? EqualityEnum.NotIn : EqualityEnum.In;
                         }
@@ -362,32 +361,29 @@ namespace FileDbNs
                             comparisonOp = not? EqualityEnum.NotLike : EqualityEnum.Like;
                         }
                         else
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos - 4 ) ),
-                                FileDbExceptionsEnum.InvalidFilterConstruct );
+                            throwInvalidFilterConstruct( filter, pos - 2 );
                     }
-                    /* deprecated
+                    // alternative way to specify ignore case search (other way is to prefix a fieldname with ~)
                     else if( filter[pos] == '~' ) // ~=
                     {
-                        matchType = MatchType.NoCase;
+                        matchType = MatchTypeEnum.IgnoreCase;
                         if( ++pos >= filter.Length )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
-                        // next char must be =
-                        if( filter[pos] != '=' )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptions.InvalidFilterConstruct );
-                        comparisonOp = Equality.Equal;
-                    }*/
-                    else if( filter[pos] == '!' ) // !=
-                    {
-                        if( ++pos >= filter.Length )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptionsEnum.InvalidFilterConstruct );
+                            throwInvalidFilterConstruct( filter, pos );
 
                         // next char must be =
                         if( filter[pos] != '=' )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptionsEnum.InvalidFilterConstruct );
+                            throwInvalidFilterConstruct( filter, pos );
+
+                        comparisonOp = EqualityEnum.Equal;
+                    }
+                    else if( filter[pos] == '!' ) // !=
+                    {
+                        if( ++pos >= filter.Length )
+                            throwInvalidFilterConstruct( filter, pos );
+
+                        // next char must be =
+                        if( filter[pos] != '=' )
+                            throwInvalidFilterConstruct( filter, pos );
 
                         comparisonOp = EqualityEnum.NotEqual;
                     }
@@ -398,8 +394,7 @@ namespace FileDbNs
                     else if( filter[pos] == '<' ) // <, <= or <>
                     {
                         if( pos + 1 >= filter.Length )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptionsEnum.InvalidFilterConstruct );
+                            throwInvalidFilterConstruct( filter, pos );
 
                         if( filter[pos + 1] == '>' )
                         {
@@ -417,8 +412,7 @@ namespace FileDbNs
                     else if( filter[pos] == '>' ) // > or >=
                     {
                         if( pos + 1 >= filter.Length )
-                            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                                FileDbExceptionsEnum.InvalidFilterConstruct );
+                            throwInvalidFilterConstruct( filter, pos );
 
                         if( filter[pos + 1] == '=' )
                         {
@@ -430,8 +424,7 @@ namespace FileDbNs
                     }
                     else
                     {
-                        throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
-                            FileDbExceptionsEnum.InvalidFilterConstruct );
+                        throwInvalidFilterConstruct( filter, pos );
                     }
                     pos++;
                     state = ParseState.Right;
@@ -589,13 +582,22 @@ namespace FileDbNs
                 if( comparisonOp != EqualityEnum.In && comparisonOp != EqualityEnum.NotIn )
                 {
                     searchVal = sbTemp.ToString();
-                    if( !inString && string.Compare( (string) searchVal, "null", true ) == 0 )
+                    if( !inString && string.Compare( (string) searchVal, "null", StringComparison.OrdinalIgnoreCase ) == 0 )
                         searchVal = null;
                     sbTemp.Length = 0;
                 }
                 var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType );
                 parentSrchExpGrp.Add( curBoolOp, srchExp );
             }
+        }
+
+        private static void throwInvalidFilterConstruct( string filter, int pos )
+        {
+            // backup a little for context
+            for( int n = 0; n < 2 && pos > 0; n++ ) pos--;
+
+            throw new FileDbException( string.Format( FileDbException.InvalidFilterConstruct, filter.Substring( pos ) ),
+                FileDbExceptionsEnum.InvalidFilterConstruct );
         }
 
         // Note: we will parse the InClause values but we don't know the Field type at this time
