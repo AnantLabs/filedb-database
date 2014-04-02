@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 
@@ -80,10 +77,10 @@ namespace SampleApp
                     switch( type.ToLower() )
                     {
                         case "int":
-                            dataType = DataTypeEnum.Int;
+                            dataType = DataTypeEnum.Int32;
                         break;
                         case "uint":
-                            dataType = DataTypeEnum.UInt;
+                            dataType = DataTypeEnum.UInt32;
                         break;
                         case "string":
                             dataType = DataTypeEnum.String;
@@ -118,7 +115,7 @@ namespace SampleApp
                 Field field;
                 var fieldLst = new List<Field>( 20 );
 
-                field = new Field( "ID", DataTypeEnum.Int );
+                field = new Field( "ID", DataTypeEnum.Int32 );
                 field.AutoIncStart = 0;
                 field.IsPrimaryKey = true;
                 fieldLst.Add( field );
@@ -143,7 +140,7 @@ namespace SampleApp
                 field = new Field( "ByteArray", DataTypeEnum.Byte );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "IntArray", DataTypeEnum.Int );
+                field = new Field( "IntArray", DataTypeEnum.Int32 );
                 field.IsArray = true;
                 fieldLst.Add( field );
                 field = new Field( "FloatArray", DataTypeEnum.Float );
@@ -244,7 +241,7 @@ namespace SampleApp
                                         record.Add( field.Name, bval );
                                 }
                             }
-                            else if( field.DataType == DataTypeEnum.Int )
+                            else if( field.DataType == DataTypeEnum.Int32 )
                             {
                                 if( field.IsArray )
                                 {
@@ -263,7 +260,7 @@ namespace SampleApp
                                         record.Add( field.Name, ival );
                                 }
                             }
-                            else if( field.DataType == DataTypeEnum.UInt )
+                            else if( field.DataType == DataTypeEnum.UInt32 )
                             {
                                 if( field.IsArray )
                                 {
@@ -520,13 +517,14 @@ namespace SampleApp
             {
                 // Use the FilterExpressionGroup's filter parser to create a FilterExpressionGroup
                 // The syntax is similar to SQL (do not preceed with WHERE)
-                // Note that we prefix the fieldname with ~ to get a case-INSENSITIVE search
+                // Note that we can prefix the fieldname with ~ to get a case-INSENSITIVE search
+                // or we can use ~= for the comparison operator to get the same thing
                 // (FileDb doesn't currently support UPPER or LOWER)
                 // Note that we can also use LIKE when we want to ignore case, but the difference
                 // is that LIKE will create a RegEx search which would be a little slower
                 // Note also that each set of parentheses will create a child FilterExpressionGroup
 
-                string filter = "(~FirstName = 'steven' OR [FirstName] LIKE 'NANCY') AND LastName = 'Fuller'";
+                string filter = "(FirstName ~= 'steven' OR [FirstName] LIKE 'nancy') AND LastName = 'Fuller'";
 
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
                 FileDbNs.Table table = _db.SelectRecords( filterExpGrp );
