@@ -1,16 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Linq;
 using System.Xml.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Shapes;
 using Microsoft.Phone.Controls;
 using System.Diagnostics;
 
@@ -113,10 +106,10 @@ namespace SampleApp
                     switch( type.ToLower() )
                     {
                         case "int":
-                            dataType = DataTypeEnum.Int;
+                            dataType = DataTypeEnum.Int32;
                             break;
                         case "uint":
-                            dataType = DataTypeEnum.UInt;
+                            dataType = DataTypeEnum.UInt32;
                             break;
                         case "string":
                             dataType = DataTypeEnum.String;
@@ -149,7 +142,7 @@ namespace SampleApp
 
 #else
                 var fieldLst = new List<Field>( 20 );
-                Field field = new Field( "ID", DataTypeEnum.Int );
+                Field field = new Field( "ID", DataTypeEnum.Int32 );
                 field.AutoIncStart = 0;
                 field.IsPrimaryKey = true;
                 fieldLst.Add( field );
@@ -174,7 +167,7 @@ namespace SampleApp
                 field = new Field( "ByteArray", DataTypeEnum.Byte );
                 field.IsArray = true;
                 fieldLst.Add( field );
-                field = new Field( "IntArray", DataTypeEnum.Int );
+                field = new Field( "IntArray", DataTypeEnum.Int32 );
                 field.IsArray = true;
                 fieldLst.Add( field );
                 field = new Field( "FloatArray", DataTypeEnum.Float );
@@ -275,7 +268,7 @@ namespace SampleApp
                                         record.Add( field.Name, bval );
                                 }
                             }
-                            else if( field.DataType == DataTypeEnum.Int )
+                            else if( field.DataType == DataTypeEnum.Int32 )
                             {
                                 if( field.IsArray )
                                 {
@@ -294,7 +287,7 @@ namespace SampleApp
                                         record.Add( field.Name, ival );
                                 }
                             }
-                            else if( field.DataType == DataTypeEnum.UInt )
+                            else if( field.DataType == DataTypeEnum.UInt32 )
                             {
                                 if( field.IsArray )
                                 {
