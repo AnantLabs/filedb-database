@@ -2,14 +2,9 @@
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 //using System.Data.Metadata.Edm;
-using System.Data.Services.Client;
 //using System.Data.Services.Design;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Xml;
-using System.Xml.Linq;
-using System.Diagnostics;
 using Microsoft.CSharp;
 
 using LINQPad.Extensibility.DataContext;
@@ -88,10 +83,10 @@ namespace FileDbDynamicDriverNs
                         case FileDbNs.DataTypeEnum.Double:
                             dataType = field.IsArray ? "Double[]" : "Double";
                             break;
-                        case FileDbNs.DataTypeEnum.Int:
+                        case FileDbNs.DataTypeEnum.Int32:
                             dataType = field.IsArray ? "Int32[]" : "Int32";
                             break;
-                        case FileDbNs.DataTypeEnum.UInt:
+                        case FileDbNs.DataTypeEnum.UInt32:
                             dataType = field.IsArray ? "UInt32[]" : "UInt32";
                             break;
                     }
