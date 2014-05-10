@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileDbDynamicDriver", "File
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileDb", "..\..\Windows\FileDb\FileDb.csproj", "{7CFF3E3D-5717-45B6-ACCF-80BB1EAD9327}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "..\TestApp\TestApp.csproj", "{D14A6716-962C-4DF2-9FED-5F76FE74FA76}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,16 @@ Global
 		{7CFF3E3D-5717-45B6-ACCF-80BB1EAD9327}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{7CFF3E3D-5717-45B6-ACCF-80BB1EAD9327}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{7CFF3E3D-5717-45B6-ACCF-80BB1EAD9327}.Release|x86.ActiveCfg = Release|Any CPU
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Debug|x86.ActiveCfg = Debug|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Debug|x86.Build.0 = Debug|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Release|Any CPU.ActiveCfg = Release|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Release|Mixed Platforms.Build.0 = Release|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Release|x86.ActiveCfg = Release|x86
+		{D14A6716-962C-4DF2-9FED-5F76FE74FA76}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
