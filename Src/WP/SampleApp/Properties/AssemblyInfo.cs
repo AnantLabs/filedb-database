@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle( "SampleApp" )]
+[assembly: AssemblyTitle( "FileDb Windows Phone SampleApp" )]
 [assembly: AssemblyDescription( "" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "TOSHIBA" )]
-[assembly: AssemblyProduct( "SampleApp" )]
-[assembly: AssemblyCopyright( "Copyright © TOSHIBA 2010" )]
+[assembly: AssemblyCompany( "EzTools Software" )]
+[assembly: AssemblyProduct( "FileDb" )]
+[assembly: AssemblyCopyright( "Copyright © EzTools Software" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 

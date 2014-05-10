@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle( "FileDb Database Engine Windows Phone 7 version" )]
-[assembly: AssemblyDescription( "Local database for .NET" )]
+[assembly: AssemblyDescription( "Local NoSql database for .NET" )]
 [assembly: AssemblyConfiguration( "" )]
 [assembly: AssemblyCompany( "EzTools Software" )]
 [assembly: AssemblyProduct( "FileDb Database Engine" )]
-[assembly: AssemblyCopyright( "Copyright © EzTools Software 2010-2011" )]
+[assembly: AssemblyCopyright( "Copyright © EzTools Software 2010-2014" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyVersion( "3.12.0" )]
-[assembly: AssemblyFileVersion( "3.12.0" )]
+[assembly: AssemblyVersion( "4.0.1" )]
+[assembly: AssemblyFileVersion( "4.0.1" )]
