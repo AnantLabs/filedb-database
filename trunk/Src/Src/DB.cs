@@ -371,12 +371,20 @@ namespace FileDbNs
             if( fieldList != null )
             {
                 fields = new Fields( fieldList.Length + nExtra );
+                int n = 0;
                 foreach( string fieldName in fieldList )
                 {
                     if( fields.ContainsKey( fieldName ) )
                         throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ),
                             FileDbExceptionsEnum.FieldSpecifiedTwice );
-                    fields.Add( _db.Fields[fieldName] );
+                    var field = _db.Fields[fieldName].Clone();
+                    fields.Add( field );
+
+                    // fix up the ordinal index
+                    #if DEBUG
+                    if( field.Ordinal != n ) { }
+                    #endif
+                    field.Ordinal = n++;
                 }
             }
             else
@@ -384,12 +392,12 @@ namespace FileDbNs
                 fields = new Fields( _db.Fields.Count + nExtra );
                 foreach( Field field in _db.Fields )
                 {
-                    fields.Add( field );
+                    fields.Add( field.Clone() );
                 }
             }
 
             if( includeIndex )
-                fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) ); // TODO: check the ordinal
+                fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) ); 
 
             table = new Table( fields, records, true );
 
@@ -864,11 +872,19 @@ namespace FileDbNs
                 if( fieldList != null )
                 {
                     fields = new Fields( fieldList.Length + nExtra );
+                    int n = 0;
                     foreach( string fieldName in fieldList )
                     {
                         if( fields.ContainsKey( fieldName ) )
                             throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptionsEnum.FieldSpecifiedTwice );
-                        fields.Add( _db.Fields[fieldName] );
+                        var field = _db.Fields[fieldName].Clone();
+                        fields.Add( field );
+
+                        // fix up the ordinal index
+                        #if DEBUG
+                        if( field.Ordinal != n ) { }
+                        #endif
+                        field.Ordinal = n++;
                     }
                 }
                 else
@@ -876,12 +892,12 @@ namespace FileDbNs
                     fields = new Fields( _db.Fields.Count + nExtra );
                     foreach( Field field in _db.Fields )
                     {
-                        fields.Add( field );
+                        fields.Add( field.Clone() );
                     }
                 }
 
                 if( includeIndex )
-                    fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) ); // TODO: check the ordinal
+                    fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
                 row = new Record( fields, record );
             }

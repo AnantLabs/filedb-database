@@ -2478,33 +2478,45 @@ namespace FileDbNs
 
                 foreach( Int32 offset in _index )
                 {
-                    // Read the record
-                    bool deleted;
-                    object[] record = readRecord( offset, includeIndex, out deleted );
-                    Debug.Assert( !deleted );
+                    #if DEBUG
+                    try
+                    {
+                    #endif
+                        // Read the record
+                        bool deleted;
+                        object[] record = readRecord( offset, includeIndex, out deleted );
+                        Debug.Assert( !deleted );
                     
-                    if( fieldList != null )
-                    {
-                        object[] tmpRecord = new object[fieldList.Length + (includeIndex ? 1 : 0)]; // one extra for the index
-                        int n=0;
-                        foreach( string fieldName in fieldList )
+                        if( fieldList != null )
                         {
-                            if( !_fields.ContainsKey( fieldName ) )
-                                throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
-                            Field fld = _fields[fieldName];
-                            tmpRecord[n++] = record[fld.Ordinal];
+                            object[] tmpRecord = new object[fieldList.Length + (includeIndex ? 1 : 0)]; // one extra for the index
+                            int n=0;
+                            foreach( string fieldName in fieldList )
+                            {
+                                if( !_fields.ContainsKey( fieldName ) )
+                                    throw new FileDbException( string.Format( FileDbException.InvalidFieldName, fieldName ), FileDbExceptionsEnum.InvalidFieldName );
+                                Field fld = _fields[fieldName];
+                                tmpRecord[n++] = record[fld.Ordinal];
+                            }
+                            record = tmpRecord;
                         }
-                        record = tmpRecord;
-                    }
 
-                    if( includeIndex )
+                        if( includeIndex )
+                        {
+                            // set the index into the record
+                            record[record.Length - 1] = idx++;
+                        }
+
+                        // Add it to the result
+                        result[nRow++] = record;
+
+                    #if DEBUG
+                    }
+                    catch( Exception ex )
                     {
-                        // set the index into the record
-                        record[record.Length - 1] = idx++;
+                        throw;
                     }
-
-                    // Add it to the result
-                    result[nRow++] = record;
+                    #endif
                 }
             //}
             //finally
