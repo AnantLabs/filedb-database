@@ -801,6 +801,23 @@ namespace FileDbNs
         }
         #endregion SelectAllRecords
 
+        #region SelectNoRecords
+
+        /// <summary>
+        /// Sometimes you may need to get an empty table just for the field definitions.
+        /// Use this method because its much more efficient than using a contrived filter 
+        /// which is designed to return no results.
+        /// </summary>
+        /// <returns>An empty table containing all fields</returns>
+        /// 
+        public Table SelectEmptyTable()
+        {
+            var table = new Table( _db.Fields, true );
+            return table;
+        }
+
+        #endregion SelectNoRecords
+
         #endregion SelectRecords
 
         #region GetRecord

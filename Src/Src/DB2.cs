@@ -70,35 +70,46 @@ namespace FileDbNs
 
                     switch( field.DataType )
                     {
-                        case DataTypeEnum.String:
-                            fieldType = field.IsArray? typeof( String[] ) : typeof( String );
-                        break;
+                        case DataTypeEnum.Bool:
+                            fieldType = field.IsArray ? typeof( Boolean[] ) : typeof( Boolean );
+                            break;
                         case DataTypeEnum.Byte:
                             fieldType = field.IsArray ? typeof( Byte[] ) : typeof( Byte );
-                        break;
+                            break;
                         case DataTypeEnum.Int32:
                             fieldType = field.IsArray ? typeof( Int32[] ) : typeof( Int32 );
                         break;
                         case DataTypeEnum.UInt32:
                             fieldType = field.IsArray ? typeof( UInt32[] ) : typeof( UInt32 );
                         break;
-                        case DataTypeEnum.Float:
+                        case DataTypeEnum.Int64:
+                            fieldType = field.IsArray ? typeof( Int32[] ) : typeof( Int32 );
+                        break;
+                        case DataTypeEnum.Single:
                             fieldType = field.IsArray ? typeof( Single[] ) : typeof( Single );
                         break;
                         case DataTypeEnum.Double:
                             fieldType = field.IsArray ? typeof( Double[] ) : typeof( Double );
                         break;
-                        case DataTypeEnum.Bool:
-                            fieldType = field.IsArray ? typeof( Boolean[] ) : typeof( Boolean );
+                        case DataTypeEnum.Decimal:
+                            fieldType = field.IsArray ? typeof( Decimal[] ) : typeof( Decimal );
                         break;
                         case DataTypeEnum.DateTime:
                             fieldType = field.IsArray ? typeof( DateTime[] ) : typeof( DateTime );
                         break;
+                        case DataTypeEnum.String:
+                            fieldType = field.IsArray ? typeof( String[] ) : typeof( String );
+                        break;
+                        case DataTypeEnum.Guid:
+                            fieldType = field.IsArray ? typeof( Guid[] ) : typeof( Guid );
+                        break;
                     }
 
                     if( prop.PropertyType != fieldType )
-                        throw new Exception( string.Format( "The type of Property {0} doesn't match the Field DataType {1}", 
-                                        prop.Name, field.DataType.ToString() ) );
+                    {
+                        throw new Exception( string.Format( "The type of Property {0} doesn't match the Field DataType - expected {1} but was {2}",
+                            prop.Name, field.DataType, prop.PropertyType ) );
+                    }
 
                     propsMap.Add( field.Name, prop );
                     //}
