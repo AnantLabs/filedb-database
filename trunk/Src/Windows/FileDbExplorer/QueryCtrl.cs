@@ -245,6 +245,7 @@ namespace FileDbExplorer
                 }
 
                 // licensing
+                #if false
                 if( !MainFrm.TheAppWnd.LicenseInfo.IsLicensed )
                 {
                     int nLimit = 1100 / 11,
@@ -252,6 +253,7 @@ namespace FileDbExplorer
                     if( nCount > nLimit )
                         Grid.Rows.RemoveRange( nLimit, nCount - nLimit );
                 }
+                #endif
 
                 string snum = Grid.Rows.Count.ToString();
                 int extraDigits = snum.Length - 4;

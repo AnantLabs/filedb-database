@@ -36,9 +36,6 @@ namespace FileDbExplorer
             this.label2 = new System.Windows.Forms.Label();
             this.LblRegName = new System.Windows.Forms.Label();
             this.LblExpiryDate = new System.Windows.Forms.Label();
-            this.iGrid1DefaultCellStyle1 = new TenTec.Windows.iGridLib.iGCellStyle( true );
-            this.iGrid1DefaultColHdrStyle1 = new TenTec.Windows.iGridLib.iGColHdrStyle( true );
-            this.iGrid1RowTextColCellStyle1 = new TenTec.Windows.iGridLib.iGCellStyle( true );
             this.SuspendLayout();
             // 
             // l1
@@ -162,8 +159,5 @@ namespace FileDbExplorer
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label LblRegName;
         private System.Windows.Forms.Label LblExpiryDate;
-        private TenTec.Windows.iGridLib.iGCellStyle iGrid1DefaultCellStyle1;
-        private TenTec.Windows.iGridLib.iGColHdrStyle iGrid1DefaultColHdrStyle1;
-        private TenTec.Windows.iGridLib.iGCellStyle iGrid1RowTextColCellStyle1;
     }
 }

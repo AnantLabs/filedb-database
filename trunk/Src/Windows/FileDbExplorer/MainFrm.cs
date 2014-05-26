@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 using System.IO;
-using System.Security.Cryptography;
 using System.Reflection;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -46,6 +41,7 @@ namespace FileDbExplorer
 
         internal const string ProdKey = "Elh8Psdr%f46wsHk3y4fk!nSF7C`4T3Q";  //5E9CE9F3-FD6B-4c82-9F0D-E0B4955B20C9";
 
+        #if false
         internal LicInfo LicenseInfo = new LicInfo();
 
         internal class LicInfo
@@ -61,6 +57,7 @@ namespace FileDbExplorer
                 set { _bIsLicensed = value; }
             }
         }
+        #endif
 
         internal static string Version
         {
@@ -77,10 +74,12 @@ namespace FileDbExplorer
         }
 
         //---------------------------------------------------------------------
+        #if false
         internal void SetNagged()
         {
             LicenseInfo.Nagged = true;
         }
+        #endif
 
         //---------------------------------------------------------------------
         public MainFrm( string[] args )
@@ -129,7 +128,7 @@ namespace FileDbExplorer
             if( regKey != null )
                 lastUsedDir = (string) regKey.GetValue( StrLastUsedDir );
 
-            if( lastUsedDir == null )
+            if( lastUsedDir == null || !Directory.Exists( lastUsedDir ) )
                 lastUsedDir = Application.StartupPath;
 
             fileDlg.InitialDirectory = lastUsedDir; // @"E:\EzTools.NET\FileDb\Windows\SampleApp\bin\Debug";
@@ -336,7 +335,7 @@ namespace FileDbExplorer
         private void timer_Tick( object sender, EventArgs e )
         {
             timer.Enabled = false;
-            CheckLicense();
+            //CheckLicense();
 
             if( _args != null && _args.Length > 0 )
             {
@@ -348,6 +347,7 @@ namespace FileDbExplorer
         }
 
         //---------------------------------------------------------------------
+#if false
         void CheckLicense()
         {
             const string LIC_NEWER = "This is a newer version than your license - you must upgrade your license to run this version.";
@@ -492,7 +492,7 @@ namespace FileDbExplorer
                 trialDlg.ShowDialog( this );
             }
         }
-
+#endif
         private void MnuSetEncryptionKey_Click( object sender, EventArgs e )
         {
             InputDlg dlg = new Utils.InputDlg( "Enter Encryption Key", "Enter the Encryption Key for this database file", true );
