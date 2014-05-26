@@ -37,8 +37,8 @@ namespace FileDbExplorer
 
         private void BtnLicenseDetails_Click( object sender, EventArgs e )
         {
-            LicenseInfoDlg licenseDlg = new LicenseInfoDlg( LblVer.Text );
-            licenseDlg.ShowDialog( this );
+            //LicenseInfoDlg licenseDlg = new LicenseInfoDlg( LblVer.Text );
+            //licenseDlg.ShowDialog( this );
         }
     }
 }
