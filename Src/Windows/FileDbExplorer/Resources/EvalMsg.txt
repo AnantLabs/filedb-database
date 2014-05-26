@@ -1,0 +1,5 @@
+Thank you for evaluating FileDb Explorer.  The FileDb DLL is FREE to use in your applications with no limitations, however we do charge a small fee for this Explorer tool.  Until you purchase a license, it will run in evaluation mode with the following limitations:
+
+ * Queries will return a maximum of 100 records.
+ 
+To purchase a license, you may click the link below which will open your Web browser to the EzTools Software order page.  If you require a full-featured evaluation, you may also request a time-limited trial license.  Or if you are having a license problem, click on the EzTools Support link.
