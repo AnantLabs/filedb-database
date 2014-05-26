@@ -731,8 +731,8 @@ namespace SampleApp
         //
         void LinqSelect_Record()
         {
-            FilterExpression filterExp = FilterExpression.Parse( "LastName IN ('Fuller', 'Peacock')" );
-            FileDbNs.Table employees = _db.SelectRecords( filterExp );
+            //FilterExpression filterExp = FilterExpression.Parse( "LastName IN ('Fuller', 'Peacock')" );
+            FileDbNs.Table employees = _db.SelectRecords( "LastName IN ('Fuller', 'Peacock')" );
 
             var query =
                 from e in employees
@@ -753,8 +753,8 @@ namespace SampleApp
         //
         void LinqSelect_Custom()
         {
-            FilterExpression filterExp = FilterExpression.Parse( "LastName IN ('Fuller', 'Peacock')" );
-            IList<Person> employees = _db.SelectRecords<Person>( filterExp );
+            //FilterExpression filterExp = FilterExpression.Parse( "LastName IN ('Fuller', 'Peacock')" );
+            IList<Person> employees = _db.SelectRecords<Person>( "LastName IN ('Fuller', 'Peacock')" );
 
             var query =
                 from e in employees
@@ -770,6 +770,7 @@ namespace SampleApp
                 Debug.WriteLine( employee.ToString() );
             }
         }
+
         #endregion Linq functions
         
         #region Helper functions
