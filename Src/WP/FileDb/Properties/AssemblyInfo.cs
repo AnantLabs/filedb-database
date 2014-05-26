@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle( "FileDb Database Engine Windows Phone 7 version" )]
+[assembly: AssemblyTitle( "FileDb Database Engine Windows Phone version" )]
 [assembly: AssemblyDescription( "Local NoSql database for .NET" )]
 [assembly: AssemblyConfiguration( "" )]
 [assembly: AssemblyCompany( "EzTools Software" )]
