@@ -56,10 +56,10 @@ namespace FileDbNs
         internal const Int32 AutoIncField = 0x1;
 
         // Array type
-        internal const Int32 ArrayField = 0x2;       
+        internal const Int32 ArrayField = 0x2;
 
         // Major version of the FileDb assembly
-        const byte VERSION_MAJOR = 4;
+        const byte VERSION_MAJOR = 5;
         // Minor version of the FileDb assembly
         const byte VERSION_MINOR = 0;
 
@@ -83,6 +83,8 @@ namespace FileDbNs
 
         // Size of the field specifing the size of a record in the index
         const Int32 INDEX_RBLOCK_SIZE = 4;
+
+        const int AsyncWaitTimeout = 10000;
 
         #endregion Consts
 
@@ -367,9 +369,6 @@ namespace FileDbNs
         /// <param name="dbName"></param>
         /// <param name="mode"></param>
         /// 
-        #if WINDOWS_PHONE_APP
-        //async 
-        #endif
         void openFiles( string dbName, FileModeEnum mode )
         {
             if( !string.IsNullOrWhiteSpace( dbName ) )
@@ -382,24 +381,14 @@ namespace FileDbNs
                 if( mode == FileModeEnum.Create || mode == FileModeEnum.CreateNew || mode == FileModeEnum.OpenOrCreate )
                 {
                     // find out if the file exists by getting it
-                    try
-                    {
-                        storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
-                    }
-                    catch( Exception ex )
-                    {
-                        // throws -2147024894 / x80070002 exception if file doesn't exist
-                        // for some reason we must coerce them both to UInt32
-                        if( (UInt32) ex.HResult != (UInt32) 0x80070002 )
-                            throw;
-                    }
+                    storageFile = openStorageFile( dbName );
 
                     if( storageFile != null )
                     {
-                        deleteFile( storageFile );
+                        deleteStorageFile( storageFile );
                         storageFile = null;
                     }
-                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( dbName ) ); //.CreateFileAsync( dbName, CreationCollisionOption.OpenIfExists );
+                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( dbName ) );
                 }
                 else
                 {
@@ -443,6 +432,30 @@ namespace FileDbNs
             if( !_openReadOnly )
                 _dataWriter = new BinaryWriter( _dataStrm );
         }
+
+        #if WINDOWS_PHONE_APP
+
+        private StorageFile openStorageFile( string fileName )
+        {
+            StorageFile storageFile = null;
+
+            // find out if the file exists by getting it
+            try
+            {
+                storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( fileName ) );
+            }
+            catch( Exception ex )
+            {
+                // throws -2147024894 / x80070002 exception if file doesn't exist
+                // for some reason we must coerce them both to UInt32
+                if( (UInt32) ex.HResult != (UInt32) 0x80070002 )
+                    throw; // rethrow exception if its some other error???
+            }
+
+            return storageFile;
+        }
+        #endif
+
 
         internal void close()
         {
@@ -524,9 +537,6 @@ namespace FileDbNs
             }
         }
         
-        #if WINDOWS_PHONE_APP
-        //async 
-        #endif
         internal void drop( string dbName )
         {
             if( dbName == _dbName && _isOpen )
@@ -536,7 +546,7 @@ namespace FileDbNs
 
             #if WINDOWS_PHONE_APP
             var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
-            deleteFile( storageFile );
+            deleteStorageFile( storageFile );
             #else
             File.Delete( dbName );
             #endif
@@ -1211,9 +1221,6 @@ namespace FileDbNs
         /// Remove all deleted records
         /// </summary>
         /// 
-        #if WINDOWS_PHONE_APP
-        //async 
-        #endif
         internal void cleanup( bool schemaChange )
         {
             checkIsDbOpen();
@@ -1310,7 +1317,7 @@ namespace FileDbNs
                 if( tmpdb != null )
                     tmpdb.Dispose();
                 if( storageFile != null )
-                    deleteFile( storageFile );
+                    deleteStorageFile( storageFile );
                 #else
                 tmpdb.Close();
                 File.Delete( tmpFilename );
@@ -1326,7 +1333,7 @@ namespace FileDbNs
             // Move the temporary file over the original database file
             #if WINDOWS_PHONE_APP
             var storageFile2 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
-            storageFile.MoveAndReplaceAsync( storageFile2 );
+            RunSynchronously( storageFile.MoveAndReplaceAsync( storageFile2 ) );
             tmpdb.Dispose();
             tmpdb = null;
             #else
@@ -2814,9 +2821,6 @@ namespace FileDbNs
             copyNewDB( thisDb, newFields, null, null, fieldsToRemove );
         }
 
-        #if WINDOWS_PHONE_APP
-        //async 
-        #endif
         void copyNewDB( FileDb thisDb, Fields newFields, Field[] fieldsToAdd, object[] defaultVals, string[] fieldsToRemove )
         {
             // Create a new FileDb
@@ -2910,7 +2914,7 @@ namespace FileDbNs
             #if WINDOWS_PHONE_APP
             var storageFile1 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( tmpFullFilename ) );
             var storageFile2 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( origDbFilename ) );
-            storageFile1.MoveAndReplaceAsync( storageFile2 );
+            RunSynchronously( storageFile1.MoveAndReplaceAsync( storageFile2 ) );
             #else
             File.Move( origDbFilename, fullFilenameBak );
             File.Move( tmpFullFilename, origDbFilename );
@@ -2925,15 +2929,16 @@ namespace FileDbNs
         {
             #if WINDOWS_PHONE_APP
             var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( filename ) );
-            deleteFile( storageFile );
+            if( storageFile != null )
+                deleteStorageFile( storageFile );
             #else
             File.Delete( filename );
             #endif
         }
 
-        static void deleteFile( StorageFile storageFile )
+        static void deleteStorageFile( StorageFile storageFile )
         {
-            RunTaskSynchronously( storageFile.DeleteAsync().AsTask() );
+            RunSynchronously( storageFile.DeleteAsync() );
         }
 
         static T RunSynchronously<T>( IAsyncOperation<T> asyncOp )
@@ -2943,10 +2948,22 @@ namespace FileDbNs
             {
                 evt.Set();
             };
-            if( !evt.WaitOne( 10000 ) )
-                throw new Exception( "Async operation timeout" );
+            if( !evt.WaitOne( AsyncWaitTimeout ) )
+                throw new FileDbException( FileDbException.AsyncOperationTimeout, FileDbExceptionsEnum.AsyncOperationTimeout );
             T results = asyncOp.GetResults();
             return results;
+        }
+
+        static void RunSynchronously( IAsyncAction asyncOp )
+        {
+            var evt = new AutoResetEvent( false );
+            asyncOp.Completed = delegate
+            {
+                evt.Set();
+            };
+            if( !evt.WaitOne( AsyncWaitTimeout ) )
+                throw new FileDbException( FileDbException.AsyncOperationTimeout, FileDbExceptionsEnum.AsyncOperationTimeout );
+            asyncOp.GetResults();
         }
 
         static void RunTaskSynchronously( Task task )
@@ -2956,8 +2973,8 @@ namespace FileDbNs
             {
                 evt.Set();
             } );
-            if( !evt.WaitOne( 10000 ) )
-                throw new Exception( "Async operation timeout" );
+            if( !evt.WaitOne( AsyncWaitTimeout ) )
+                throw new FileDbException( FileDbException.AsyncOperationTimeout, FileDbExceptionsEnum.AsyncOperationTimeout );
         }
 
         static T RunSynchronously<T>( Task<T> task )
@@ -2967,8 +2984,8 @@ namespace FileDbNs
             {
                 evt.Set();
             } );
-            if( !evt.WaitOne( 10000 ) )
-                throw new Exception( "Async operation timeout" );
+            if( !evt.WaitOne( AsyncWaitTimeout ) )
+                throw new FileDbException( FileDbException.AsyncOperationTimeout, FileDbExceptionsEnum.AsyncOperationTimeout );
 
             return task.Result;
 
@@ -3031,6 +3048,78 @@ namespace FileDbNs
                 _dataWriter.Flush();
                 _dataStrm.Flush();
             }
+        }
+
+        internal void beginTrans()
+        {
+            checkIsDbOpen();
+
+            // just make a backup copy
+
+            string backupFilename = _dbName + ".bak";
+            
+            #if WINDOWS_PHONE_APP
+
+            // find out if the file exists by getting it
+            var backupStorageFile = openStorageFile( backupFilename );
+            
+            // create the file if found
+            if( backupStorageFile == null )
+            {
+                backupStorageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( backupFilename ) );
+            }
+            // open this db file
+            var thisStorageFile = openStorageFile( _dbName );
+
+            RunSynchronously( thisStorageFile.CopyAndReplaceAsync( backupStorageFile ) );
+            #else
+//TODO
+            File...( backupFilename );
+            #endif
+        }
+
+        internal void commitTrans()
+        {
+            checkIsDbOpen();
+
+            // just delete the backup copy
+
+            string backupFilename = _dbName + ".bak";
+
+            deleteFile( backupFilename );
+        }
+
+        internal void rollbackTrans()
+        {
+            checkIsDbOpen();
+            checkReadOnly();
+
+            // close the db and copy the backup over the db
+
+            // get the dbName, etc. before we close
+            string dbName = _dbName;
+            Encryptor encryptor = _encryptor;
+            
+            string backupFilename = _dbName + ".bak";
+
+            #if WINDOWS_PHONE_APP
+
+            var backupStorageFile = openStorageFile( backupFilename );
+            if( backupStorageFile == null )
+                throw new FileDbException( FileDbException.MissingTransactionFile, FileDbExceptionsEnum.MissingTransactionFile );
+            close();
+
+            // copy the backup file
+            var thisStorageFile = openStorageFile( dbName );
+            RunSynchronously( backupStorageFile.CopyAndReplaceAsync( thisStorageFile ) );
+
+            // Re-open the database
+            open( dbName, null, encryptor, _openReadOnly );
+
+            #else
+//TODO
+            File...( backupFilename );
+            #endif
         }
 
         #endregion internal
@@ -4927,6 +5016,9 @@ namespace FileDbNs
             if( field.IsAutoInc )
             {
                 writer.Write( field.AutoIncStart.Value );
+                // CurAutoIncVal may not have been initialized yet
+                if( !field.CurAutoIncVal.HasValue )
+                    field.CurAutoIncVal = field.AutoIncStart;
                 writer.Write( field.CurAutoIncVal.Value );
             }
             // ver 2.0
@@ -4987,13 +5079,13 @@ namespace FileDbNs
                 // Check the orderby field name
                 if( !fields.ContainsKey( orderByField ) )
                 {
-                    throw new Exception( string.Format( "Invalid OrderBy field name - {0}", origOrderByName ) );
+                    throw new FileDbException( string.Format( FileDbException.InvalidOrderByFieldName, origOrderByName ), FileDbExceptionsEnum.InvalidOrderByFieldName );
                 }
 
                 Field sortField = fields[orderByField];
                 if( sortField.IsArray )
                 {
-                    throw new Exception( "Cannot OrderBy on an array field." );
+                    throw new FileDbException( FileDbException.CannotOrderByOnArrayField, FileDbExceptionsEnum.CannotOrderByOnArrayField );
                 }
 
                 if( fieldList != null )
@@ -5010,7 +5102,7 @@ namespace FileDbNs
                         }
                     }
                     if( sortField.Ordinal == -1 )
-                        throw new Exception( string.Format( "Invalid OrderBy field name - {0}", sortField ) );
+                        throw new FileDbException( string.Format( FileDbException.InvalidOrderByFieldName, sortField ), FileDbExceptionsEnum.InvalidOrderByFieldName );
                 }
 
                 sortFields.Add( sortField );

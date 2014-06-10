@@ -43,7 +43,11 @@ namespace FileDbNs
         ErrorConvertingValueForField,
         CannotDeletePrimaryKeyField,
         FieldListIsEmpty,
-        FieldNameIsEmpty
+        FieldNameIsEmpty,
+        InvalidOrderByFieldName,
+        CannotOrderByOnArrayField,
+        AsyncOperationTimeout,
+        MissingTransactionFile
     }
 
     // This exception is raised whenever a statement cannot be compiled.
@@ -123,6 +127,15 @@ namespace FileDbNs
         internal const string ErrorConvertingValueForField = "Error converting value for field name: {0}  value: {1}";
 
         internal const string FieldNameIsEmpty = "The field name is null or empty";
+
+        internal const string InvalidOrderByFieldName = "Invalid OrderBy field name - {0}";
+
+        internal const string CannotOrderByOnArrayField = "Cannot OrderBy on an array field";
+
+        internal const string AsyncOperationTimeout = "Async operation timeout";
+
+        internal const string MissingTransactionFile = "Missing transaction file";
+
 
         #endregion Strings
 
