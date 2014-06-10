@@ -513,6 +513,34 @@ namespace FileDbNs
         }
         #endregion Open/Close/Drop
 
+        #region Transaction
+
+        public void BeginTrans()
+        {
+            lock( this )
+            {
+                _db.beginTrans();
+            }
+        }
+
+        public void CommitTrans()
+        {
+            lock( this )
+            {
+                _db.commitTrans();
+            }
+        }
+
+        public void RollbackTrans()
+        {
+            lock( this )
+            {
+                _db.rollbackTrans();
+            }
+        }
+
+        #endregion Transaction
+
         #region Add
         //----------------------------------------------------------------------------------------
         /// <summary>
