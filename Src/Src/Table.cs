@@ -1,10 +1,14 @@
-﻿using System;
+﻿/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
+using System;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 
 #if !SILVERLIGHT && !WINDOWS_PHONE
 namespace LINQPad
@@ -55,7 +59,7 @@ namespace FileDbNs
         {
             Name = name;
             DataType = type;
-            AutoIncStart = -1; // default to no AutoInc
+            AutoIncStart = null; // default to no AutoInc
             this.Ordinal = ordinal;
         }
 
@@ -93,16 +97,16 @@ namespace FileDbNs
         /// Used for auto-increment fields. Set to the number which you want incrementing to begin.
         /// Set to -1 if not an auto-increment field.
         /// </summary>
-        public Int32 AutoIncStart { get; set; }
+        public Int32? AutoIncStart { get; set; }
 
-        internal Int32 CurAutoIncVal { get; set; }
+        internal Int32? CurAutoIncVal { get; set; }
 
         /// <summary>
         /// Returns true if this is an auto-increment field, false otherwise
         /// </summary>
         public bool IsAutoInc
         {
-            get { return AutoIncStart > -1; }
+            get { return AutoIncStart.HasValue; }
         }
 
         /// <summary>

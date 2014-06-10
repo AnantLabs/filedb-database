@@ -1,17 +1,23 @@
-﻿using System;
+﻿/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO.IsolatedStorage;
 using System.IO;
-using System.Text;
 using System.Linq;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Windows.Foundation;
+using Windows.Storage;
 
-/* TODO
-    
-    Support for array field searches by adding BoolOp.In 
-*/
+// TODO: Support for array field searches by adding BoolOp.In
 
 namespace FileDbNs
 {
@@ -22,6 +28,15 @@ namespace FileDbNs
         internal event FileDb.RecordAddedHandler RecordAdded;
         internal event FileDb.RecordDeletedHandler RecordDeleted;
 
+        public enum FileModeEnum
+        {
+            CreateNew = 1,
+            Create = 2,
+            Open = 3,
+            OpenOrCreate = 4,
+            Truncate = 5,
+            Append = 6,
+        }
 
         ///////////////////////////////////////////////////////////////////////
         #region Consts
@@ -81,12 +96,8 @@ namespace FileDbNs
 
         string _dbName;
 
-#if SILVERLIGHT
-        //IsolatedStorageFileStream _dataStrm;
         Stream _dataStrm;
-#else
-        Stream _dataStrm;
-#endif
+
         BinaryReader _dataReader;
 
         BinaryWriter _dataWriter;
@@ -276,7 +287,7 @@ namespace FileDbNs
             {
                 // Open the database files
 
-                openFiles( dbName, FileMode.Open );
+                openFiles( dbName, FileModeEnum.Open );
 
                 _isOpen = true;
                 _dbName = dbName;
@@ -356,37 +367,72 @@ namespace FileDbNs
         /// <param name="dbName"></param>
         /// <param name="mode"></param>
         /// 
-        void openFiles( string dbName, FileMode mode )
+        #if WINDOWS_PHONE_APP
+        //async 
+        #endif
+        void openFiles( string dbName, FileModeEnum mode )
         {
             if( !string.IsNullOrWhiteSpace( dbName ) )
             {
                 // Open the database files
-                #if SILVERLIGHT
-                IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
-                if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
-                    !isoFile.FileExists( dbName ) )
-                #else
-                    if( !(mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.OpenOrCreate) &&
-                        !File.Exists( dbName ) )
-                #endif
-                    throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
+                #if WINDOWS_PHONE_APP
 
+                StorageFile storageFile = null;
+
+                if( mode == FileModeEnum.Create || mode == FileModeEnum.CreateNew || mode == FileModeEnum.OpenOrCreate )
+                {
+                    // find out if the file exists by getting it
+                    try
+                    {
+                        storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+                    }
+                    catch( Exception ex )
+                    {
+                        // throws -2147024894 / x80070002 exception if file doesn't exist
+                        // for some reason we must coerce them both to UInt32
+                        if( (UInt32) ex.HResult != (UInt32) 0x80070002 )
+                            throw;
+                    }
+
+                    if( storageFile != null )
+                    {
+                        deleteFile( storageFile );
+                        storageFile = null;
+                    }
+                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( dbName ) ); //.CreateFileAsync( dbName, CreationCollisionOption.OpenIfExists );
+                }
+                else
+                {
+                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+                    if( storageFile == null )
+                        throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
+                }
+
+                if( _openReadOnly )
+                    _dataStrm = RunSynchronously( storageFile.OpenStreamForReadAsync() );
+                else
+                    _dataStrm = RunSynchronously( storageFile.OpenStreamForWriteAsync() );
+
+                #else
+                if( !(mode == FileModeEnum.Create || mode == FileModeEnum.CreateNew || mode == FileModeEnum.OpenOrCreate) &&
+                        !File.Exists( dbName ) )
+                {
+                    throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
+                }
                 FileAccess access;
                 if( _openReadOnly )
                     access = FileAccess.Read;
                 else
                     access = FileAccess.ReadWrite;
 
-                #if SILVERLIGHT
-                    _dataStrm = new IsolatedStorageFileStream( dbName, mode, access, isoFile );
-                #else
-                    _dataStrm = File.Open( dbName, mode, access, FileShare.None );
+                _dataStrm = File.Open( dbName, mode, access, FileShare.None );
                 #endif
 
-                #if SILVERLIGHT
-                isoFile.Dispose();
-                isoFile = null;
+                #if WINDOWS_PHONE_APP
+                //isoFile.Dispose();
+                //isoFile = null;
                 #endif
+                
             }
             else // memory DB
             {
@@ -406,7 +452,9 @@ namespace FileDbNs
                 {
                     // if AutoFlush is true then we shouldn't need to flush the index
                     flush( !AutoFlush );
+                    #if !WINDOWS_PHONE_APP
                     _dataStrm.Close();
+                    #endif
                     _dataStrm.Dispose();
                 }
                 finally
@@ -428,6 +476,38 @@ namespace FileDbNs
             }
         }
 
+        internal static bool exists( string dbName )
+        {
+            bool retVal = false;
+
+            if( !string.IsNullOrWhiteSpace( dbName ) )
+            {
+                #if WINDOWS_PHONE_APP
+                StorageFile storageFile = null;
+
+                // find out if the file exists by getting it
+                try
+                {
+                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+                }
+                catch( Exception ex )
+                {
+                    // throws -2147024894 / x80070002 exception if file doesn't exist
+                    // for some reason we must coerce them both to UInt32
+                    if( (UInt32) ex.HResult != (UInt32) 0x80070002 )
+                        throw;
+                }
+
+                retVal = storageFile != null;
+
+                #else
+                retval = File.Exists( dbName );
+                #endif
+            }
+
+            return retVal;
+        }
+
         void checkIsDbOpen()
         {
             if( !_isOpen )
@@ -444,6 +524,9 @@ namespace FileDbNs
             }
         }
         
+        #if WINDOWS_PHONE_APP
+        //async 
+        #endif
         internal void drop( string dbName )
         {
             if( dbName == _dbName && _isOpen )
@@ -451,16 +534,9 @@ namespace FileDbNs
                 close();
             }
 
-            #if SILVERLIGHT
-            IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
-            try
-            {
-                isoFile.DeleteFile( dbName );
-            }
-            finally
-            {
-                isoFile.Dispose();
-            }
+            #if WINDOWS_PHONE_APP
+            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+            deleteFile( storageFile );
             #else
             File.Delete( dbName );
             #endif
@@ -527,7 +603,7 @@ namespace FileDbNs
 
             // Open the database files
 
-            openFiles( dbName, FileMode.Create );
+            openFiles( dbName, FileModeEnum.Create );
                         
             _isOpen = true;
             _dbName = dbName;
@@ -589,7 +665,7 @@ namespace FileDbNs
                         
                         // if the field is absent this will add it regardless which is what we want
                         // because its an autoinc field
-                        record[field.Name] = field.CurAutoIncVal;
+                        record[field.Name] = field.CurAutoIncVal.Value;
                     }
                 }
 
@@ -1135,6 +1211,9 @@ namespace FileDbNs
         /// Remove all deleted records
         /// </summary>
         /// 
+        #if WINDOWS_PHONE_APP
+        //async 
+        #endif
         internal void cleanup( bool schemaChange )
         {
             checkIsDbOpen();
@@ -1153,16 +1232,14 @@ namespace FileDbNs
             // same time.
             string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp.fdb";
             tmpFilename = Path.Combine( Path.GetDirectoryName( _dbName ), tmpFilename );
-            #if SILVERLIGHT
-            IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
-                #if true // !WINDOWS_PHONE
-                var tmpdb = new IsolatedStorageFileStream( tmpFilename, FileMode.OpenOrCreate, FileAccess.Write, isoFile );
-                #else
-                var tmpdb = new MemoryStream( (int) _dataStrm.Length );
-                #endif
+
+            #if WINDOWS_PHONE_APP
+            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( tmpFilename ) );
+            var tmpdb = RunSynchronously( storageFile.OpenStreamForWriteAsync() );
             #else
-            var tmpdb = File.Open( tmpFilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None );
+            var tmpdb = File.Open( tmpFilename, FileModeEnum.OpenOrCreate, FileAccess.Write, FileShare.None );
             #endif
+
             tmpdb.SetLength( 0 );
 
             int tempNumDeleted = _numDeleted,
@@ -1229,10 +1306,13 @@ namespace FileDbNs
                 // set everything back the way it was
                 _indexStartPos = tempIndexStart;
                 _numDeleted = tempNumDeleted;
-                tmpdb.Close();
-                #if SILVERLIGHT
-                isoFile.DeleteFile( tmpFilename );
+                #if WINDOWS_PHONE_APP
+                if( tmpdb != null )
+                    tmpdb.Dispose();
+                if( storageFile != null )
+                    deleteFile( storageFile );
                 #else
+                tmpdb.Close();
                 File.Delete( tmpFilename );
                 #endif
                 throw;
@@ -1244,35 +1324,11 @@ namespace FileDbNs
             close();
 
             // Move the temporary file over the original database file
-            #if SILVERLIGHT
-            isoFile.DeleteFile( dbName );
-
-            #if true // !WINDOWS_PHONE
-            tmpdb.Close();
+            #if WINDOWS_PHONE_APP
+            var storageFile2 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+            storageFile.MoveAndReplaceAsync( storageFile2 );
+            tmpdb.Dispose();
             tmpdb = null;
-            isoFile.MoveFile( tmpFilename, dbName );
-            #else
-            try
-            {
-                // workaround for WP because we can't rename/move a file
-                byte[] buf = new byte[Math.Min( tmpdb.Length, 4024 )];
-                _dataStrm = isoFile.CreateFile( dbName );
-                tmpdb.Seek( 0, SeekOrigin.Begin );
-                int nRead = 0;
-                while( (nRead = tmpdb.Read( buf, 0, buf.Length )) > 0 )
-                {
-                    _dataStrm.Write( buf, 0, nRead );
-                }
-            }
-            finally
-            {
-                _dataStrm.Close();
-                _dataStrm = null;
-                tmpdb.Close();
-                tmpdb = null;
-            }
-            #endif
-            isoFile.Dispose();
             #else
             tmpdb.Close();
             tmpdb = null;
@@ -2758,12 +2814,15 @@ namespace FileDbNs
             copyNewDB( thisDb, newFields, null, null, fieldsToRemove );
         }
 
+        #if WINDOWS_PHONE_APP
+        //async 
+        #endif
         void copyNewDB( FileDb thisDb, Fields newFields, Field[] fieldsToAdd, object[] defaultVals, string[] fieldsToRemove )
         {
             // Create a new FileDb
             string tmpFullFilename, fullFilenameBak;
 
-            #if SILVERLIGHT
+            #if WINDOWS_PHONE_APP
             tmpFullFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
             fullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
             #else
@@ -2839,7 +2898,7 @@ namespace FileDbNs
                 // cleanup
                 if( tempDb.IsOpen )
                     tempDb.Close();
-                File.Delete( tmpFullFilename );
+                deleteFile( tmpFullFilename );
                 throw;
             }
 
@@ -2847,141 +2906,74 @@ namespace FileDbNs
             string origDbFilename = _dbName;
             thisDb.Close();
 
+            // Move the temporary file over the original database file
+            #if WINDOWS_PHONE_APP
+            var storageFile1 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( tmpFullFilename ) );
+            var storageFile2 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( origDbFilename ) );
+            storageFile1.MoveAndReplaceAsync( storageFile2 );
+            #else
             File.Move( origDbFilename, fullFilenameBak );
             File.Move( tmpFullFilename, origDbFilename );
+            File.Delete( fullFilenameBak );
+            #endif
 
             // reopen the DB
             open( origDbFilename, null, _encryptor, false );
-
-            File.Delete( fullFilenameBak );
         }
 
-#if false
-        // TODO: implement
-        internal bool removeField( string fieldName )
+        static void deleteFile( string filename )
         {
-            checkIsDbOpen();
-            checkReadOnly();
-
-            Field fieldToRemove = _fields[fieldName.ToUpper()];
-
-            if( fieldToRemove == null )
-            {
-                throw new FileDbException( string.Format( InvalidFieldName, fieldName ), FileDbExceptions.InvalidFieldName );
-            }
-
-            try
-            {
-                // Note that we attempt the file creation under the DB lock, so
-                // that another process doesn't try to create the same file at the
-                // same time.
-                IsolatedStorageFile isoFile = IsolatedStorageFile.GetUserStoreForApplication();
-                string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
-                var tmpdb = new IsolatedStorageFileStream( tmpFilename, FileMode.CreateNew, FileAccess.Write, isoFile );
-
-                // Save a copy of the field list.  It is needed in the main
-                // loop to play with the fields[] array and {read, write}_record(...)
-                var oldFields = _fields;
-                var newFields = new List<Field>( _fields );
-                newFields.Remove( fieldToRemove );                    
-
-                // Read in the current index
-                Int32[] vIndex = readIndex();
-// TODO: test
-                var tmpDataWriter = new BinaryWriter( tmpdb );
-
-                if( fieldToRemove == _primaryKeyField )
-                    _primaryKeyField = null;
-
-                // Is the field to be removed the primary key?
-                if( string.Compare( _primaryKey, fieldName, StringComparison.CurrentCultureIgnoreCase ) == 0 )
-                    _primaryKey = string.Empty;
-
-                // Write the new schema
-                _fields = newFields;
-                writeDbHeader( tmpDataWriter );
-                writeSchema( tmpDataWriter );
-
-                // Now translate the data file.  For each index entry, read in
-                // the record, remove the deleted field, then write it back
-                // out to a new temporary file.  Then move that temporary file
-                // back over the old data file.
-
-                // For each item in the index, move it from the current database
-                // file to the new one.  Also update the new file offset in the index
-                // so we can write it back out to the index file
-
-                if( _fields.Count > 1 )
-                {
-                    for( Int32 i = 0; i < _numRecords; i++ )
-                    {
-                        // Use the original fields[] array so read_record(...) will 
-                        // operate correctly for the old-format database .dat file.
-                        _fields = oldFields;
-
-                        // Read in the entire record
-                        bool deleted;
-                        object[] record = readRecord( vIndex[i], out deleted );
-                        Debug.Assert( !deleted );
-
-                        var newRecord = new object[record.Length - 1];
-
-                        // Save the new file offset
-                        vIndex[i] = (Int32) tmpdb.Position;
-
-                        // Remove the field from the record
-
-                        for( Int32 n = 0; n < _fields.Count; n++ )
-                        {
-                            Field fld = _fields[n];
-
-                            if( fld != fieldToRemove )
-                            {
-                                newRecord[n] = record[n];
-                            }
-                        }
-                        // Write out the record to the temporary file
-                        _fields = newFields;
-                        writeRecord( tmpDataWriter, record, -1, false );
-                    }
-                }
-                else
-                {
-                    // We have deleted the last field, so there are essentially no records left
-                    _numRecords = 0;
-                }
-
-                _fields = newFields;
-
-                // update numRecords
-                writeNumRecords( tmpDataWriter );
-
-                tmpDataWriter.Flush();
-
-                // Move the temporary file over the original database file.
-                tmpdb.Close();
-                _dataStrm.Close();
-                isoFile.DeleteFile( _dbName );
-                // TODO: must have workaround for WP
-                isoFile.MoveFile( tmpFilename, _dbName );
-
-                // Since we've effectively done a cleanup(), set the number 
-                // of (unclean) deleted items to zero.
-                _numDeleted = 0;
-
-                // Write out the index
-                writeIndex( _metaWriter, vIndex );
-
-                // Re-open the database data file
-                _dataStrm = new IsolatedStorageFileStream( _dbName, FileMode.Open, FileAccess.ReadWrite, isoFile );
-            }
-            finally
-            {
-            }
-
-            return true;
+            #if WINDOWS_PHONE_APP
+            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( filename ) );
+            deleteFile( storageFile );
+            #else
+            File.Delete( filename );
+            #endif
         }
-#endif
+
+        static void deleteFile( StorageFile storageFile )
+        {
+            RunTaskSynchronously( storageFile.DeleteAsync().AsTask() );
+        }
+
+        static T RunSynchronously<T>( IAsyncOperation<T> asyncOp )
+        {
+            var evt = new AutoResetEvent( false );
+            asyncOp.Completed = delegate
+            {
+                evt.Set();
+            };
+            if( !evt.WaitOne( 10000 ) )
+                throw new Exception( "Async operation timeout" );
+            T results = asyncOp.GetResults();
+            return results;
+        }
+
+        static void RunTaskSynchronously( Task task )
+        {
+            var evt = new AutoResetEvent( false );
+            task.ContinueWith( delegate 
+            {
+                evt.Set();
+            } );
+            if( !evt.WaitOne( 10000 ) )
+                throw new Exception( "Async operation timeout" );
+        }
+
+        static T RunSynchronously<T>( Task<T> task )
+        {
+            var evt = new AutoResetEvent( false );
+            task.ContinueWith( delegate
+            {
+                evt.Set();
+            } );
+            if( !evt.WaitOne( 10000 ) )
+                throw new Exception( "Async operation timeout" );
+
+            return task.Result;
+
+            //return RunSynchronously( asyncOp.AsAsyncOperation() );
+        }
 
         internal void renameField( FileDb thisDb, string fieldName, string newFieldName )
         {
@@ -4934,8 +4926,8 @@ namespace FileDbNs
 
             if( field.IsAutoInc )
             {
-                writer.Write( field.AutoIncStart );
-                writer.Write( field.CurAutoIncVal );
+                writer.Write( field.AutoIncStart.Value );
+                writer.Write( field.CurAutoIncVal.Value );
             }
             // ver 2.0
             writer.Write( field.Comment == null ? string.Empty : field.Comment );

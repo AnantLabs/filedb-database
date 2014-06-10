@@ -1,12 +1,33 @@
-﻿using System;
-using System.IO;
+﻿/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
+#if !WINDOWS_PHONE_APP
 using System.Security.Cryptography;
-using System.Text;
+#endif
 
 namespace FileDbNs
 {
     internal class Encryptor
     {
+#if WINDOWS_PHONE_APP
+        internal Encryptor( string hashKey, string productKey )
+        {
+        }
+
+        internal byte[] Encrypt( byte[] dataToEncrypt )
+        {
+            return dataToEncrypt;
+        }
+
+        internal byte[] Decrypt( byte[] encryptedData )
+        {
+            return encryptedData;
+        }
+#else
         byte[] _key;
         AesManaged _encryptor;
 
@@ -69,61 +90,6 @@ namespace FileDbNs
             return bytes;
         }
 
-        /* brettg: these are the original encryption methods, which I've saved for future ref
-         * 
-        internal string Encrypt( byte[] key, string dataToEncrypt )
-        {
-            // Initialise
-            AesManaged encryptor = new AesManaged();
-
-            // Set the key
-            encryptor.Key = key;
-            encryptor.IV = key;
-
-            // create a memory stream
-            using( MemoryStream encryptionStream = new MemoryStream() )
-            {
-                // Create the crypto stream
-                using( CryptoStream encrypt = new CryptoStream( encryptionStream, encryptor.CreateEncryptor(), CryptoStreamMode.Write ) )
-                {
-                    // Encrypt
-                    byte[] utfD1 = UTF8Encoding.UTF8.GetBytes( dataToEncrypt );
-                    encrypt.Write( utfD1, 0, utfD1.Length );
-                    encrypt.FlushFinalBlock();
-                    encrypt.Close();
-
-                    // Return the encrypted data
-                    return Convert.ToBase64String( encryptionStream.ToArray() );
-                }
-            }
-        }
-
-        internal string Decrypt( byte[] key, string encryptedString )
-        {
-            // Initialise
-            AesManaged decryptor = new AesManaged();
-            byte[] encryptedData = Convert.FromBase64String( encryptedString );
-
-            // Set the key
-            decryptor.Key = key;
-            decryptor.IV = key;
-
-            // create a memory stream
-            using( MemoryStream decryptionStream = new MemoryStream() )
-            {
-                // Create the crypto stream
-                using( CryptoStream decrypt = new CryptoStream( decryptionStream, decryptor.CreateDecryptor(), CryptoStreamMode.Write ) )
-                {
-                    // Encrypt
-                    decrypt.Write( encryptedData, 0, encryptedData.Length );
-                    decrypt.Flush();
-                    decrypt.Close();
-
-                    // Return the unencrypted data
-                    byte[] decryptedData = decryptionStream.ToArray();
-                    return UTF8Encoding.UTF8.GetString( decryptedData, 0, decryptedData.Length );
-                }
-            }
-        }*/
+#endif
     }
 }

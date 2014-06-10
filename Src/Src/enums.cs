@@ -1,4 +1,10 @@
-using System;
+/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
 
 namespace FileDbNs
 {
@@ -12,6 +18,30 @@ namespace FileDbNs
         String = 0, Byte = 1, Int = 2, UInt = 3, Float = 4, Double = 5, Bool = 6, DateTime = 7,
         Int64 = 8, Decimal = 9, Guid = 10, Undefined = 0x7FFF
     }
+
+#if WINDOWS_PHONE_APP
+  public enum TypeCode
+  {
+    Empty = 0,
+    Object = 1,
+    DBNull = 2,
+    Boolean = 3,
+    Char = 4,
+    SByte = 5,
+    Byte = 6,
+    Int16 = 7,
+    UInt16 = 8,
+    Int32 = 9,
+    UInt32 = 10,
+    Int64 = 11,
+    UInt64 = 12,
+    Single = 13,
+    Double = 14,
+    Decimal = 15,
+    DateTime = 16,
+    String = 18,
+  }
+#endif
 
     public enum DataTypeEnum : short
     {
