@@ -1,8 +1,14 @@
+/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
 using System;
-using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -113,7 +119,11 @@ namespace FileDbNs
             var hashSet = new HashSet<object>();
 
             Type type = typeof( T );
+            #if WINDOWS_PHONE_APP
+            PropertyInfo prop = type.GetRuntimeProperties().FirstOrDefault( p => p.PropertyType == type );
+            #else
             PropertyInfo prop = type.GetProperty( propertyName );
+            #endif
 
             if( prop == null )
                 throw new Exception( string.Format( "Field {0} is not a property of {1}", propertyName, type.Name ) );

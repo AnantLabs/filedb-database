@@ -1,8 +1,12 @@
-﻿using System;
+﻿/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
+using System;
 using System.IO;
-using System.Collections.Generic;
-
-using FileDbNs;
 
 namespace FileDbNs
 {
@@ -408,7 +412,7 @@ namespace FileDbNs
 
         #region Public Methods
 
-        #region Open/Close/Drop
+        #region Open/Close/Drop/Exists
 
         //----------------------------------------------------------------------------------------
         /// <summary>
@@ -501,6 +505,11 @@ namespace FileDbNs
             {
                 _db.drop( dbName );
             }
+        }
+
+        public static bool Exists( string dbName )
+        {
+            return FileDbEngine.exists( dbName );
         }
         #endregion Open/Close/Drop
 

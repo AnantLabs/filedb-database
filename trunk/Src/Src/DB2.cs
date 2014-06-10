@@ -1,7 +1,13 @@
-﻿using System;
+﻿/* Copyright (C) EzTools Software - All Rights Reserved
+ * Proprietary and confidential source code.
+ * This is not free software.  Any copying of this file 
+ * via any medium is strictly prohibited except as allowed
+ * by the FileDb license agreement.
+ * Written by Brett Goodman <eztools-software.com>, October 2014
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
 
 namespace FileDbNs
@@ -21,7 +27,7 @@ namespace FileDbNs
         //----------------------------------------------------------------------------------------
         // Create a table from the raw records
         //
-        private IList<T> createTList<T>( object[][] records, string[] fieldList, bool includeIndex, string[] orderByList )
+        private List<T> createTList<T>( object[][] records, string[] fieldList, bool includeIndex, string[] orderByList )
             where T : class, new()
         {
             // get the field list
@@ -51,9 +57,14 @@ namespace FileDbNs
                 fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
             // use reflection to populate the Field properties
-
+            
+            #if WINDOWS_PHONE_APP
+            IEnumerable<PropertyInfo> propertyInfos = typeof( T ).GetRuntimeProperties();
+            #else
             PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );
-            Dictionary<string, PropertyInfo> propsMap = new Dictionary<string, PropertyInfo>( propertyInfos.Length );
+            #endif
+
+            Dictionary<string, PropertyInfo> propsMap = new Dictionary<string, PropertyInfo>( propertyInfos.Count() );
             
             foreach( Field field in fields )
             {
@@ -157,7 +168,7 @@ namespace FileDbNs
         /// <param name="filter">A FilterExpression representing the desired filter.</param>
         /// <returns>A new List of custom objects with the requested Records</returns>
         ///
-        public IList<T> SelectRecords<T>( FilterExpression filter )
+        public List<T> SelectRecords<T>( FilterExpression filter )
             where T : class, new()
         {
             return SelectRecords<T>( filter, null, null, false );
@@ -172,7 +183,7 @@ namespace FileDbNs
         /// <param name="fieldList">The desired fields to be in the returned Table</param>
         /// <returns>A new List of custom objects with the requested Records and Fields</returns>
         /// 
-        public IList<T> SelectRecords<T>( FilterExpression filter, string[] fieldList )
+        public List<T> SelectRecords<T>( FilterExpression filter, string[] fieldList )
             where T : class, new()
         {
             return SelectRecords<T>( filter, fieldList, null, false );
@@ -190,7 +201,7 @@ namespace FileDbNs
         /// in reverse order.</param>
         /// <returns>A new List of custom objects with the requested Records and Fields ordered by the specified fields.</returns>
         /// 
-        public IList<T> SelectRecords<T>( FilterExpression filter, string[] fieldList, string[] orderByList )
+        public List<T> SelectRecords<T>( FilterExpression filter, string[] fieldList, string[] orderByList )
             where T : class, new()
         {
             return SelectRecords<T>( filter, fieldList, orderByList, false );
@@ -210,7 +221,7 @@ namespace FileDbNs
         /// in reverse order.</param>
         /// <returns>A new List of custom objects with the requested Records and Fields</returns>
         /// 
-        public IList<T> SelectRecords<T>( FilterExpression filter, string[] fieldList, string[] orderByList, bool includeIndex )
+        public List<T> SelectRecords<T>( FilterExpression filter, string[] fieldList, string[] orderByList, bool includeIndex )
             where T : class, new()
         {
             lock( this )
@@ -231,7 +242,7 @@ namespace FileDbNs
         /// <param name="filter">A FilterExpressionGroup representing the desired filter.</param>
         /// <returns>A new List of custom objects with the requested Records</returns>
         /// 
-        public IList<T> SelectRecords<T>( FilterExpressionGroup filter )
+        public List<T> SelectRecords<T>( FilterExpressionGroup filter )
             where T : class, new()
         {
             return SelectRecords<T>( filter, null, null, false );
@@ -246,7 +257,7 @@ namespace FileDbNs
         /// <param name="fieldList">The desired fields to be in the returned Table</param>
         /// <returns>A new List of custom objects with the requested Records and Fields</returns>
         /// 
-        public IList<T> SelectRecords<T>( FilterExpressionGroup filter, string[] fieldList )
+        public List<T> SelectRecords<T>( FilterExpressionGroup filter, string[] fieldList )
             where T : class, new()
         {
             return SelectRecords<T>( filter, fieldList, null, false );
@@ -264,7 +275,7 @@ namespace FileDbNs
         /// in reverse order.</param>
         /// <returns>A new List of custom objects with the requested Records and Fields in the specified order</returns>
         /// 
-        public IList<T> SelectRecords<T>( FilterExpressionGroup filter, string[] fieldList, string[] orderByList )
+        public List<T> SelectRecords<T>( FilterExpressionGroup filter, string[] fieldList, string[] orderByList )
             where T : class, new()
         {
             return SelectRecords<T>( filter, fieldList, orderByList, false );
@@ -282,7 +293,7 @@ namespace FileDbNs
         /// in reverse order.</param>
         /// <returns>A new List of custom objects with the requested Records and Fields</returns>
         ///
-        public IList<T> SelectRecords<T>( FilterExpressionGroup filter, string[] fieldList, string[] orderByList, bool includeIndex )
+        public List<T> SelectRecords<T>( FilterExpressionGroup filter, string[] fieldList, string[] orderByList, bool includeIndex )
             where T : class, new()
         {
             lock( this )
@@ -302,7 +313,7 @@ namespace FileDbNs
         /// <param name="filter">A string representing the desired filter, eg. LastName = 'Fuller'</param>
         /// <returns>A new List of custom objects with the requested Records</returns>
         /// 
-        public IList<T> SelectRecords<T>( string filter )
+        public List<T> SelectRecords<T>( string filter )
             where T : class, new()
         {
             FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
@@ -318,7 +329,7 @@ namespace FileDbNs
         /// <param name="fieldList">The desired fields to be in the returned Table</param>
         /// <returns>A new List of custom objects with the requested Records and Fields</returns>
         /// 
-        public IList<T> SelectRecords<T>( string filter, string[] fieldList )
+        public List<T> SelectRecords<T>( string filter, string[] fieldList )
             where T : class, new()
         {
             FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
@@ -337,7 +348,7 @@ namespace FileDbNs
         /// in reverse order.</param>
         /// <returns>A new List of custom objects with the requested Records and Fields ordered by the specified list</returns>
         /// 
-        public IList<T> SelectRecords<T>( string filter, string[] fieldList, string[] orderByList )
+        public List<T> SelectRecords<T>( string filter, string[] fieldList, string[] orderByList )
             where T : class, new()
         {
             FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
@@ -358,7 +369,7 @@ namespace FileDbNs
         /// in reverse order</param>
         /// <returns>A new List of custom objects with the requested Records and Fields</returns>
         /// 
-        public IList<T> SelectRecords<T>( string filter, string[] fieldList, string[] orderByList, bool includeIndex )
+        public List<T> SelectRecords<T>( string filter, string[] fieldList, string[] orderByList, bool includeIndex )
             where T : class, new()
         {
             FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
@@ -373,7 +384,7 @@ namespace FileDbNs
         /// </summary>
         /// <returns>A table containing all Records and Fields.</returns>
         /// 
-        public IList<T> SelectAllRecords<T>()
+        public List<T> SelectAllRecords<T>()
             where T : class, new()
         {
             return SelectAllRecords<T>( null, null, false );
@@ -386,7 +397,7 @@ namespace FileDbNs
         /// <param name="fieldList">The list of Fields to return or null for all Fields</param>
         /// <returns>A table containing all rows.</returns>
         /// 
-        public IList<T> SelectAllRecords<T>( string[] fieldList )
+        public List<T> SelectAllRecords<T>( string[] fieldList )
             where T : class, new()
         {
             return SelectAllRecords<T>( fieldList, null, false );
@@ -401,7 +412,7 @@ namespace FileDbNs
         /// or null for default order</param>
         /// <returns>A table containing all rows.</returns>
         /// 
-        public IList<T> SelectAllRecords<T>( string[] fieldList, string[] orderByList )
+        public List<T> SelectAllRecords<T>( string[] fieldList, string[] orderByList )
             where T : class, new()
         {
             return SelectAllRecords<T>( fieldList, orderByList, false );
@@ -414,7 +425,7 @@ namespace FileDbNs
         /// <param name="includeIndex">Specify whether to include the Record index as one of the Fields</param>
         /// <returns>A table containing all rows.</returns>
         /// 
-        public IList<T> SelectAllRecords<T>( bool includeIndex )
+        public List<T> SelectAllRecords<T>( bool includeIndex )
             where T : class, new()
         {
             return SelectAllRecords<T>( null, null, includeIndex );
@@ -430,7 +441,7 @@ namespace FileDbNs
         /// or null for default order</param>
         /// <returns>A table containing all Records and the specified Fields.</returns>
         /// 
-        public IList<T> SelectAllRecords<T>( string[] fieldList, string[] orderByList, bool includeIndex )
+        public List<T> SelectAllRecords<T>( string[] fieldList, string[] orderByList, bool includeIndex )
             where T : class, new()
         {
             lock( this )
@@ -538,8 +549,12 @@ namespace FileDbNs
                     fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
                 obj = new T();
+                #if WINDOWS_PHONE_APP
+                IEnumerable<PropertyInfo> propertyInfos = typeof( T ).GetRuntimeProperties();
+                #else
                 PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );
-                Dictionary<string, PropertyInfo> propsMap = new Dictionary<string, PropertyInfo>( propertyInfos.Length );
+                #endif
+                Dictionary<string, PropertyInfo> propsMap = new Dictionary<string, PropertyInfo>( propertyInfos.Count() );
 
                 for( int n = 0; n < fields.Count; n++ )
                 {
