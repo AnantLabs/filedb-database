@@ -5,6 +5,8 @@
  * by the FileDb license agreement.
  * Written by Brett Goodman <eztools-software.com>, October 2014
  */
+using System.IO;
+using System.Text;
 #if !WINDOWS_PHONE_APP
 using System.Security.Cryptography;
 #endif

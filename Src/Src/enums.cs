@@ -5,6 +5,7 @@
  * by the FileDb license agreement.
  * Written by Brett Goodman <eztools-software.com>, October 2014
  */
+using System;
 
 namespace FileDbNs
 {
