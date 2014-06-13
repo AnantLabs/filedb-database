@@ -14,8 +14,10 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+#if WINDOWS_PHONE_APP
 using Windows.Foundation;
 using Windows.Storage;
+#endif
 
 // TODO: Support for array field searches by adding BoolOp.In
 
@@ -414,7 +416,7 @@ namespace FileDbNs
                 else
                     access = FileAccess.ReadWrite;
 
-                _dataStrm = File.Open( dbName, mode, access, FileShare.None );
+                _dataStrm = File.Open( dbName, (FileMode) mode, access, FileShare.None );
                 #endif
 
                 #if WINDOWS_PHONE_APP
@@ -514,7 +516,7 @@ namespace FileDbNs
                 retVal = storageFile != null;
 
                 #else
-                retval = File.Exists( dbName );
+                retVal = File.Exists( dbName );
                 #endif
             }
 
@@ -1244,7 +1246,7 @@ namespace FileDbNs
             var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( tmpFilename ) );
             var tmpdb = RunSynchronously( storageFile.OpenStreamForWriteAsync() );
             #else
-            var tmpdb = File.Open( tmpFilename, FileModeEnum.OpenOrCreate, FileAccess.Write, FileShare.None );
+            var tmpdb = File.Open( tmpFilename, (FileMode) FileModeEnum.OpenOrCreate, FileAccess.Write, FileShare.None );
             #endif
 
             tmpdb.SetLength( 0 );
@@ -2826,13 +2828,8 @@ namespace FileDbNs
             // Create a new FileDb
             string tmpFullFilename, fullFilenameBak;
 
-            #if WINDOWS_PHONE_APP
-            tmpFullFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp";
-            fullFilenameBak = Path.GetFileNameWithoutExtension( _dbName ) + ".bak";
-            #else
             tmpFullFilename = _dbName + ".tmp";
             fullFilenameBak = _dbName + ".bak";
-            #endif
 
             FileDb tempDb = new FileDb();
             tempDb.Create( tmpFullFilename, newFields );
@@ -2936,6 +2933,7 @@ namespace FileDbNs
             #endif
         }
 
+        #if WINDOWS_PHONE_APP
         static void deleteStorageFile( StorageFile storageFile )
         {
             RunSynchronously( storageFile.DeleteAsync() );
@@ -2991,6 +2989,7 @@ namespace FileDbNs
 
             //return RunSynchronously( asyncOp.AsAsyncOperation() );
         }
+        #endif
 
         internal void renameField( FileDb thisDb, string fieldName, string newFieldName )
         {
@@ -3073,8 +3072,11 @@ namespace FileDbNs
 
             RunSynchronously( thisStorageFile.CopyAndReplaceAsync( backupStorageFile ) );
             #else
-//TODO
-            File...( backupFilename );
+
+            if( File.Exists( backupFilename ) )
+                File.Delete( backupFilename );
+
+            File.Copy( _dbName, backupFilename );
             #endif
         }
 
@@ -3113,13 +3115,18 @@ namespace FileDbNs
             var thisStorageFile = openStorageFile( dbName );
             RunSynchronously( backupStorageFile.CopyAndReplaceAsync( thisStorageFile ) );
 
+            #else
+            string tmpFilename = _dbName + ".tmp";
+
+            close();
+            // rename the current DB - don't delete yet in case something goes wrong
+            File.Move( _dbName, tmpFilename );
+            File.Move( backupFilename, _dbName );
+            File.Delete( tmpFilename );
+            #endif
+
             // Re-open the database
             open( dbName, null, encryptor, _openReadOnly );
-
-            #else
-//TODO
-            File...( backupFilename );
-            #endif
         }
 
         #endregion internal
