@@ -928,10 +928,10 @@ namespace FileDbNs
         /// </summary>
         /// <param name="dbName">The full path and filename of the new database</param>
         /// 
-        public FileDb SaveToDb( string dbName )
+        public FileDb SaveToDb( string dbName, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
             FileDb db = new FileDb();
-            db.Create( this, dbName );
+            db.Create( this, dbName, folderLoc );
             return db;
         }
 

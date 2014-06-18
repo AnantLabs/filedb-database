@@ -61,6 +61,18 @@ namespace FileDbNs
         Undefined = 0x7FFF
     }
 
+    public enum FolderLocEnum
+    {
+        #if !WINDOWS_PHONE_APP
+        Default,
+        #else
+        Default = 0,
+        LocalFolder = 0,
+        RoamingFolder,
+        TempFolder
+        #endif
+    }
+
     //=====================================================================
     /// <summary>
     /// Specifies the type of match for FilterExpressions with String data types

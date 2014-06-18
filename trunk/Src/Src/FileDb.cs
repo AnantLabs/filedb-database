@@ -30,14 +30,14 @@ namespace FileDbNs
         internal event FileDb.RecordAddedHandler RecordAdded;
         internal event FileDb.RecordDeletedHandler RecordDeleted;
 
-        public enum FileModeEnum
+        private enum FileModeEnum
         {
             CreateNew = 1,
             Create = 2,
             Open = 3,
             OpenOrCreate = 4,
-            Truncate = 5,
-            Append = 6,
+            //Truncate = 5,
+            //Append = 6,
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -45,9 +45,9 @@ namespace FileDbNs
 
         const string StrIndex = "index";
 
-        const int NoLock = 0,
-                  ReadLock = 1,
-                  WriteLock = 2;
+        //const int NoLock = 0,
+        //          ReadLock = 1,
+        //          WriteLock = 2;
 
         const int VerNullValueSupport = 202;
         
@@ -81,7 +81,7 @@ namespace FileDbNs
         const Int32 INDEX_OFFSET = INDEX_DELETED_OFFSET + 4;
 
         // Location of the Index offset, which is always written at the end of the data file
-        const Int32 USER_VERSION_OFFSET = INDEX_OFFSET + 4;
+        //const Int32 USER_VERSION_OFFSET = INDEX_OFFSET + 4;
 
         // Size of the field specifing the size of a record in the index
         const Int32 INDEX_RBLOCK_SIZE = 4;
@@ -98,7 +98,10 @@ namespace FileDbNs
              _openReadOnly,
              _autoFlush;
 
-        string _dbName;
+        string _dbName, 
+               _primaryKey;
+
+        FolderLocEnum _folderLoc;
 
         Stream _dataStrm;
 
@@ -123,8 +126,6 @@ namespace FileDbNs
               _ver;
 
         Fields _fields;
-
-        string _primaryKey;
 
         float _userVersion;
 
@@ -279,7 +280,7 @@ namespace FileDbNs
             _encryptor = new Encryptor( encryptionKey, this.GetType().ToString() );
         }
 
-        internal void open( string dbName, string encryptionKey, Encryptor encryptor, bool readOnly )
+        internal void open( string dbName, string encryptionKey, Encryptor encryptor, bool readOnly, FolderLocEnum folderLoc )
         {
             // Close existing databases first
             if( _isOpen )
@@ -291,10 +292,11 @@ namespace FileDbNs
             {
                 // Open the database files
 
-                openFiles( dbName, FileModeEnum.Open );
+                openFiles( dbName, FileModeEnum.Open, folderLoc );
 
                 _isOpen = true;
                 _dbName = dbName;
+                _folderLoc = folderLoc;
                 _iteratorIndex = 0;
 
                 _ver_major = 0;
@@ -365,13 +367,42 @@ namespace FileDbNs
             }
         }
 
+        #if WINDOWS_PHONE_APP
+        StorageFolder getStorageFolder()
+        {
+            return getStorageFolder( _folderLoc );
+        }
+
+        static StorageFolder getStorageFolder( FolderLocEnum folderLoc )
+        {
+            StorageFolder storageFolder;
+
+            switch( folderLoc )
+            {
+                case FolderLocEnum.RoamingFolder:
+                storageFolder = ApplicationData.Current.LocalFolder;
+                break; ;
+
+                case FolderLocEnum.TempFolder:
+                storageFolder = ApplicationData.Current.LocalFolder;
+                break; ;
+
+                default:
+                case FolderLocEnum.LocalFolder:
+                    storageFolder = ApplicationData.Current.LocalFolder;
+                    break; ;
+            }
+            return storageFolder;
+        }
+        #endif
+
         /// <summary>
         /// Open the database files
         /// </summary>
         /// <param name="dbName"></param>
         /// <param name="mode"></param>
         /// 
-        void openFiles( string dbName, FileModeEnum mode )
+        void openFiles( string dbName, FileModeEnum mode, FolderLocEnum folderLoc )
         {
             if( !string.IsNullOrWhiteSpace( dbName ) )
             {
@@ -383,18 +414,18 @@ namespace FileDbNs
                 if( mode == FileModeEnum.Create || mode == FileModeEnum.CreateNew || mode == FileModeEnum.OpenOrCreate )
                 {
                     // find out if the file exists by getting it
-                    storageFile = openStorageFile( dbName );
+                    storageFile = openStorageFile( dbName, folderLoc );
 
                     if( storageFile != null )
                     {
                         deleteStorageFile( storageFile );
                         storageFile = null;
                     }
-                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( dbName ) );
+                    storageFile = RunSynchronously( getStorageFolder().CreateFileAsync( dbName ) );
                 }
                 else
                 {
-                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+                    storageFile = RunSynchronously( getStorageFolder().GetFileAsync( dbName ) );
                     if( storageFile == null )
                         throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
                 }
@@ -418,12 +449,6 @@ namespace FileDbNs
 
                 _dataStrm = File.Open( dbName, (FileMode) mode, access, FileShare.None );
                 #endif
-
-                #if WINDOWS_PHONE_APP
-                //isoFile.Dispose();
-                //isoFile = null;
-                #endif
-                
             }
             else // memory DB
             {
@@ -437,14 +462,14 @@ namespace FileDbNs
 
         #if WINDOWS_PHONE_APP
 
-        private StorageFile openStorageFile( string fileName )
+        private StorageFile openStorageFile( string fileName, FolderLocEnum folderLoc )
         {
             StorageFile storageFile = null;
 
             // find out if the file exists by getting it
             try
             {
-                storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( fileName ) );
+                storageFile = RunSynchronously( getStorageFolder( folderLoc ).GetFileAsync( fileName ) );
             }
             catch( Exception ex )
             {
@@ -482,6 +507,7 @@ namespace FileDbNs
                     _dataReader = null;
                     _isOpen = false;
                     _dbName = null;
+                    _folderLoc = FolderLocEnum.Default;
                     _fields = null;
                     _primaryKey = null;
                     _primaryKeyField = null;
@@ -491,7 +517,7 @@ namespace FileDbNs
             }
         }
 
-        internal static bool exists( string dbName )
+        internal static bool exists( string dbName, FolderLocEnum folderLoc )
         {
             bool retVal = false;
 
@@ -503,7 +529,7 @@ namespace FileDbNs
                 // find out if the file exists by getting it
                 try
                 {
-                    storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+                    storageFile = RunSynchronously( getStorageFolder( folderLoc ).GetFileAsync( dbName ) );
                 }
                 catch( Exception ex )
                 {
@@ -547,14 +573,14 @@ namespace FileDbNs
             }
 
             #if WINDOWS_PHONE_APP
-            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+            var storageFile = RunSynchronously( getStorageFolder().GetFileAsync( dbName ) );
             deleteStorageFile( storageFile );
             #else
             File.Delete( dbName );
             #endif
         }
-        
-        internal void create( string dbName, Field[] schema )
+
+        internal void create( string dbName, Field[] schema, FolderLocEnum folderLoc )
         {
             // Close any existing DB first
             if( _isOpen )
@@ -615,10 +641,11 @@ namespace FileDbNs
 
             // Open the database files
 
-            openFiles( dbName, FileModeEnum.Create );
+            openFiles( dbName, FileModeEnum.Create, folderLoc );
                         
             _isOpen = true;
             _dbName = dbName;
+            _folderLoc = folderLoc;
             _iteratorIndex = 0;
 
             _ver_major = VERSION_MAJOR;
@@ -1239,13 +1266,15 @@ namespace FileDbNs
             // Note that we attempt the file creation under the DB lock, so
             // that another process doesn't try to create the same file at the
             // same time.
-            string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp.fdb";
-            tmpFilename = Path.Combine( Path.GetDirectoryName( _dbName ), tmpFilename );
+            //string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp.fdb";
+            //tmpFilename = Path.Combine( Path.GetDirectoryName( _dbName ), tmpFilename );
+            string tmpFilename = _dbName + ".tmp";
 
             #if WINDOWS_PHONE_APP
-            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( tmpFilename ) );
-            var tmpdb = RunSynchronously( storageFile.OpenStreamForWriteAsync() );
+            var tempStorageFile = RunSynchronously( ApplicationData.Current.TemporaryFolder.CreateFileAsync( tmpFilename ) );
+            var tmpdb = RunSynchronously( tempStorageFile.OpenStreamForWriteAsync() );
             #else
+            // TODO: make it use temp folder
             var tmpdb = File.Open( tmpFilename, (FileMode) FileModeEnum.OpenOrCreate, FileAccess.Write, FileShare.None );
             #endif
 
@@ -1318,8 +1347,8 @@ namespace FileDbNs
                 #if WINDOWS_PHONE_APP
                 if( tmpdb != null )
                     tmpdb.Dispose();
-                if( storageFile != null )
-                    deleteStorageFile( storageFile );
+                if( tempStorageFile != null )
+                    deleteStorageFile( tempStorageFile );
                 #else
                 tmpdb.Close();
                 File.Delete( tmpFilename );
@@ -1329,13 +1358,14 @@ namespace FileDbNs
 
             // get the dbName, etc. before we close
             string dbName = _dbName;
+            FolderLocEnum folderLoc = _folderLoc;
             Encryptor encryptor = _encryptor;
             close();
 
             // Move the temporary file over the original database file
             #if WINDOWS_PHONE_APP
-            var storageFile2 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
-            RunSynchronously( storageFile.MoveAndReplaceAsync( storageFile2 ) );
+            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
+            RunSynchronously( tempStorageFile.MoveAndReplaceAsync( storageFile ) );
             tmpdb.Dispose();
             tmpdb = null;
             #else
@@ -1346,7 +1376,7 @@ namespace FileDbNs
             #endif
 
             // Re-open the database
-            open( dbName, null, encryptor, _openReadOnly );
+            open( dbName, null, encryptor, _openReadOnly, folderLoc );
         }
 
         private void setRecordDeleted( int pos, bool deleted )
@@ -2832,7 +2862,13 @@ namespace FileDbNs
             fullFilenameBak = _dbName + ".bak";
 
             FileDb tempDb = new FileDb();
-            tempDb.Create( tmpFullFilename, newFields );
+
+            #if WINDOWS_PHONE_APP
+            string nameOnly = Path.GetFileName( _dbName );
+            tempDb.Create( nameOnly, newFields, FolderLocEnum.TempFolder );
+            #else
+            tempDb.Create( tmpFullFilename, newFields, FolderLocEnum.Default );
+            #endif
 
             try
             {
@@ -2899,19 +2935,25 @@ namespace FileDbNs
                 // cleanup
                 if( tempDb.IsOpen )
                     tempDb.Close();
-                deleteFile( tmpFullFilename );
+                #if WINDOWS_PHONE_APP
+                deleteFile( nameOnly, FolderLocEnum.TempFolder );
+                #else
+                File.Delete( tmpFullFilename );
+                #endif
                 throw;
             }
 
             // must close DB, rename files and reopen
             string origDbFilename = _dbName;
+            FolderLocEnum folderLoc = _folderLoc;
+            Encryptor encryptor = _encryptor;
             thisDb.Close();
 
             // Move the temporary file over the original database file
             #if WINDOWS_PHONE_APP
-            var storageFile1 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( tmpFullFilename ) );
-            var storageFile2 = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( origDbFilename ) );
-            RunSynchronously( storageFile1.MoveAndReplaceAsync( storageFile2 ) );
+            var tmpStorageFile = RunSynchronously( getStorageFolder( FolderLocEnum.TempFolder ).GetFileAsync( tmpFullFilename ) );
+            var storageFile = RunSynchronously( getStorageFolder().GetFileAsync( origDbFilename ) );
+            RunSynchronously( tmpStorageFile.MoveAndReplaceAsync( storageFile ) );
             #else
             File.Move( origDbFilename, fullFilenameBak );
             File.Move( tmpFullFilename, origDbFilename );
@@ -2919,13 +2961,13 @@ namespace FileDbNs
             #endif
 
             // reopen the DB
-            open( origDbFilename, null, _encryptor, false );
+            open( origDbFilename, null, encryptor, false, folderLoc );
         }
 
-        static void deleteFile( string filename )
+        static void deleteFile( string filename, FolderLocEnum folderLoc )
         {
             #if WINDOWS_PHONE_APP
-            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( filename ) );
+            var storageFile = RunSynchronously( getStorageFolder( folderLoc ).GetFileAsync( filename ) );
             if( storageFile != null )
                 deleteStorageFile( storageFile );
             #else
@@ -3011,6 +3053,7 @@ namespace FileDbNs
                 writeSchema( _dataWriter );
                 _dataWriter.Flush();
                 _dataStrm.Flush();
+                readSchema();
             }
             else
             {
@@ -3055,12 +3098,11 @@ namespace FileDbNs
 
             // just make a backup copy
 
-            string backupFilename = _dbName + ".bak";
-            
             #if WINDOWS_PHONE_APP
-
+            string backupFilename = Path.GetFileName( _dbName );
+            
             // find out if the file exists by getting it
-            var backupStorageFile = openStorageFile( backupFilename );
+            var backupStorageFile = openStorageFile( backupFilename, FolderLocEnum.TempFolder );
             
             // create the file if found
             if( backupStorageFile == null )
@@ -3068,10 +3110,12 @@ namespace FileDbNs
                 backupStorageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( backupFilename ) );
             }
             // open this db file
-            var thisStorageFile = openStorageFile( _dbName );
+            var thisStorageFile = openStorageFile( _dbName, _folderLoc );
 
             RunSynchronously( thisStorageFile.CopyAndReplaceAsync( backupStorageFile ) );
             #else
+
+            string backupFilename = _dbName + ".bak";
 
             if( File.Exists( backupFilename ) )
                 File.Delete( backupFilename );
@@ -3086,9 +3130,13 @@ namespace FileDbNs
 
             // just delete the backup copy
 
+            #if WINDOWS_PHONE_APP
+            string backupFilename = Path.GetFileName( _dbName );
+            deleteFile( backupFilename, FolderLocEnum.TempFolder );
+            #else
             string backupFilename = _dbName + ".bak";
-
-            deleteFile( backupFilename );
+            File.Delete( backupFilename );
+            #endif
         }
 
         internal void rollbackTrans()
@@ -3100,22 +3148,22 @@ namespace FileDbNs
 
             // get the dbName, etc. before we close
             string dbName = _dbName;
+            FolderLocEnum folderLoc = _folderLoc;
             Encryptor encryptor = _encryptor;
             
-            string backupFilename = _dbName + ".bak";
-
             #if WINDOWS_PHONE_APP
-
-            var backupStorageFile = openStorageFile( backupFilename );
+            string backupFilename = Path.GetFileName( _dbName );
+            var backupStorageFile = openStorageFile( backupFilename, FolderLocEnum.TempFolder );
             if( backupStorageFile == null )
                 throw new FileDbException( FileDbException.MissingTransactionFile, FileDbExceptionsEnum.MissingTransactionFile );
             close();
 
             // copy the backup file
-            var thisStorageFile = openStorageFile( dbName );
+            var thisStorageFile = openStorageFile( dbName, _folderLoc );
             RunSynchronously( backupStorageFile.CopyAndReplaceAsync( thisStorageFile ) );
 
             #else
+            string backupFilename = _dbName + ".bak";
             string tmpFilename = _dbName + ".tmp";
 
             close();
@@ -3126,7 +3174,7 @@ namespace FileDbNs
             #endif
 
             // Re-open the database
-            open( dbName, null, encryptor, _openReadOnly );
+            open( dbName, null, encryptor, _openReadOnly, folderLoc );
         }
 
         #endregion internal

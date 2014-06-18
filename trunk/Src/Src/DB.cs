@@ -352,9 +352,9 @@ namespace FileDbNs
 
         // Create database from a Table.  Called by Table.SaveToDb
         //
-        internal void Create( Table table, string dbName )
+        internal void Create( Table table, string dbName, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
-            _db.create( dbName, table.Fields.ToArray() );
+            _db.create( dbName, table.Fields.ToArray(), folderLoc );
 
             foreach( Record record in table )
             {
@@ -422,11 +422,11 @@ namespace FileDbNs
         /// <param name="dbName">The filename of the database file to open or null/empty to create a memory DB.
         /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
         /// 
-        public void Open( string dbName, bool readOnly )
+        public void Open( string dbName, bool readOnly, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
             lock( this )
             {
-                _db.open( dbName, null, null, readOnly );
+                _db.open( dbName, null, null, readOnly, folderLoc );
             }
         }
 
@@ -440,11 +440,11 @@ namespace FileDbNs
         /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
         /// <param name="encryptionKey">A string value to use as the encryption key</param>
         /// 
-        public void Open( string dbName, string encryptionKey, bool readOnly )
+        public void Open( string dbName, string encryptionKey, bool readOnly, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
             lock( this )
             {
-                _db.open( dbName, encryptionKey, null, readOnly );
+                _db.open( dbName, encryptionKey, null, readOnly, folderLoc );
             }
         }
 
@@ -469,11 +469,11 @@ namespace FileDbNs
         /// <param name="dbName">The full pathname of the file or null/empty to create a memory DB</param>
         /// <param name="fields">Array of Fields for the new database.</param>
         /// 
-        public void Create( string dbName, Field[] fields )
+        public void Create( string dbName, Field[] fields, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
             lock( this )
             {
-                _db.create( dbName, fields );
+                _db.create( dbName, fields, folderLoc );
             }
         }
 
@@ -485,11 +485,11 @@ namespace FileDbNs
         /// <param name="dbName">The full pathname of the file or null/empty to create a memory DB</param>
         /// <param name="fields">List of Fields for the new database.</param>
         /// 
-        public void Create( string dbName, Fields fields )
+        public void Create( string dbName, Fields fields, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
             lock( this )
             {
-                _db.create( dbName, fields.ToArray() );
+                _db.create( dbName, fields.ToArray(), folderLoc );
             }
         }
 
@@ -507,9 +507,9 @@ namespace FileDbNs
             }
         }
 
-        public static bool Exists( string dbName )
+        public static bool Exists( string dbName, FolderLocEnum folderLoc = FolderLocEnum.Default )
         {
-            return FileDbEngine.exists( dbName );
+            return FileDbEngine.exists( dbName, folderLoc );
         }
         #endregion Open/Close/Drop
 
