@@ -12,8 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
+
 #if WINDOWS_PHONE_APP
 using Windows.Foundation;
 using Windows.Storage;
@@ -1253,7 +1252,9 @@ namespace FileDbNs
         internal void cleanup( bool schemaChange )
         {
             checkIsDbOpen();
-            checkReadOnly();
+            // this causes us to fail opening as readonly and a schemaChange is needed
+            // we should not need this check anyway because we shouldn't have any deleted records if readonly
+            //checkReadOnly();
 
             // Don't bother if the database is clean
             if( !schemaChange && _numDeleted == 0 )
@@ -3453,7 +3454,10 @@ namespace FileDbNs
                     for( Int32 i = 0; i < _numDeleted; i++ )
                         _deletedRecords.Add( _dataReader.ReadInt32() );
                 }
-                catch { }
+                catch
+                {
+                    // TODO: ???
+                }
             }
 
             readMetaData( _dataReader );
