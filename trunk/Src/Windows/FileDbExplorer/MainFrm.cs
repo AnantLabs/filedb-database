@@ -615,7 +615,6 @@ namespace FileDbExplorer
                     var vs = _rClickNode.Text.Split( '[' );
                     string text = string.Format( "{0} [{1}", dlg.Value, vs[1] );
                     _rClickNode.Text = text;
-                    nodeInfo.Tag = dlg.Value;
                     this.Cursor = Cursors.Default;
                 }
 
