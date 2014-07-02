@@ -446,7 +446,8 @@ namespace FileDbNs
                 else
                     access = FileAccess.ReadWrite;
 
-                _dataStrm = File.Open( dbName, (FileMode) mode, access, FileShare.None );
+                // we must allow read sharing access else operations that require copying to a temp file (copy operation) will fail
+                _dataStrm = File.Open( dbName, (FileMode) mode, access, FileShare.Read );
                 #endif
             }
             else // memory DB
