@@ -13,7 +13,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
-#if WINDOWS_PHONE_APP
+#if false // WINDOWS_PHONE_APP
 using Windows.Foundation;
 using Windows.Storage;
 #endif
@@ -94,15 +94,20 @@ namespace FileDbNs
 
         bool _isOpen,
              _disposed,
-             _openReadOnly,
+             _isReadOnly,
              _autoFlush;
 
-        string _dbName, 
+        string _dbFileName, 
                _primaryKey;
 
-        FolderLocEnum _folderLoc;
+        //FolderLocEnum _folderLoc;
 
-        Stream _dataStrm;
+        Stream _dbStream,
+               _transDbStream;
+
+        #if !(NETFX_CORE || PCL)
+        String _transFilename;
+        #endif
 
         BinaryReader _dataReader;
 
@@ -201,7 +206,7 @@ namespace FileDbNs
 
         public string DbFileName
         {
-            get { return _dbName; }
+            get { return _dbFileName; }
         }
 
         internal float UserVersion
@@ -270,7 +275,7 @@ namespace FileDbNs
         {
             _autoCleanThreshold = -1;
             _isOpen = false;
-            _openReadOnly = false;
+            _isReadOnly = false;
             _autoFlush = false;
         }
 
@@ -279,31 +284,55 @@ namespace FileDbNs
             _encryptor = new Encryptor( encryptionKey, this.GetType().ToString() );
         }
 
-        internal void open( string dbName, string encryptionKey, Encryptor encryptor, bool readOnly, FolderLocEnum folderLoc )
+        #if PCL || NETFX_CORE
+        internal void open( Stream dbStream, string encryptionKey, Encryptor encryptor )
+        #else
+        internal void open( string dbFileName, Stream dbStream, string encryptionKey, Encryptor encryptor, bool readOnly ) // FolderLocEnum folderLoc )
+        #endif
         {
             // Close existing databases first
             if( _isOpen )
                 close();
 
-            _openReadOnly = readOnly;
-
             try
             {
                 // Open the database files
 
-                openFiles( dbName, FileModeEnum.Open, folderLoc );
+                _dbFileName = null;
+
+                #if PCL || NETFX_CORE
+                if( dbStream == null )
+                {
+                    _dbStream = new MemoryStream( 4096 );
+                    _isReadOnly = false;
+                }
+                else
+                {
+                    _isReadOnly = !dbStream.CanWrite;
+                    _dbStream = dbStream;
+                    _dbStream.Seek( 0, SeekOrigin.Begin );
+                }
+                #else
+                // allow null for memory DB
+                //if( string.IsNullOrWhitespace(dbFileName) )
+                //    throw new throw new FileDbException( FileDbException.EmptyFilename, FileDbExceptionsEnum.EmptyFilename );
+                _isReadOnly = readOnly;
+                openDbFileOrStream( dbFileName, dbStream, FileModeEnum.Open ); // folderLoc );
+                _dbFileName = dbFileName;
+                //_folderLoc = folderLoc;
+                #endif
+
+                getReaderWriter();
 
                 _isOpen = true;
-                _dbName = dbName;
-                _folderLoc = folderLoc;
                 _iteratorIndex = 0;
 
                 _ver_major = 0;
                 _ver_minor = 0;
                 _ver = 0;
 
-                try
-                {
+                //try
+                //{
                     //lockRead( false );
 
                     // Read and verify the signature
@@ -354,10 +383,10 @@ namespace FileDbNs
                     // at 2.2 we started supporting NULL fields
                     if( _ver_major < VERSION_MAJOR || _ver < VerNullValueSupport )
                         cleanup( true );
-                }
-                finally
-                {
-                }
+                //}
+                //finally
+                //{
+                //}
             }
             catch( FileDbException ex )
             {
@@ -366,7 +395,7 @@ namespace FileDbNs
             }
         }
 
-        #if WINDOWS_PHONE_APP
+        #if false // WINDOWS_PHONE_APP
         StorageFolder getStorageFolder()
         {
             return getStorageFolder( _folderLoc );
@@ -398,69 +427,77 @@ namespace FileDbNs
         /// <summary>
         /// Open the database files
         /// </summary>
-        /// <param name="dbName"></param>
+        /// <param name="dbFileName"></param>
         /// <param name="mode"></param>
         /// 
-        void openFiles( string dbName, FileModeEnum mode, FolderLocEnum folderLoc )
+        #if !(PCL || NETFX_CORE)
+        void openDbFileOrStream( string dbFileName, Stream dbStream, FileModeEnum mode ) // FolderLocEnum folderLoc )
         {
-            if( !string.IsNullOrWhiteSpace( dbName ) )
+            if( !string.IsNullOrWhiteSpace( dbFileName ) )
             {
                 // Open the database files
-                #if WINDOWS_PHONE_APP
+                #if false // WINDOWS_PHONE_APP
 
                 StorageFile storageFile = null;
 
                 if( mode == FileModeEnum.Create || mode == FileModeEnum.CreateNew || mode == FileModeEnum.OpenOrCreate )
                 {
                     // find out if the file exists by getting it
-                    storageFile = openStorageFile( dbName, folderLoc );
+                    storageFile = openStorageFile( dbFileName, folderLoc );
 
                     if( storageFile != null )
                     {
                         deleteStorageFile( storageFile );
                         storageFile = null;
                     }
-                    storageFile = RunSynchronously( getStorageFolder().CreateFileAsync( dbName ) );
+                    storageFile = RunSynchronously( getStorageFolder().CreateFileAsync( dbFileName ) );
                 }
                 else
                 {
-                    storageFile = RunSynchronously( getStorageFolder().GetFileAsync( dbName ) );
+                    storageFile = RunSynchronously( getStorageFolder().GetFileAsync( dbFileName ) );
                     if( storageFile == null )
                         throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
                 }
 
                 if( _openReadOnly )
-                    _dataStrm = RunSynchronously( storageFile.OpenStreamForReadAsync() );
+                    _dbStream = RunSynchronously( storageFile.OpenStreamForReadAsync() );
                 else
-                    _dataStrm = RunSynchronously( storageFile.OpenStreamForWriteAsync() );
+                    _dbStream = RunSynchronously( storageFile.OpenStreamForWriteAsync() );
 
-                #else
+#else
                 if( !(mode == FileModeEnum.Create || mode == FileModeEnum.CreateNew || mode == FileModeEnum.OpenOrCreate) &&
-                        !File.Exists( dbName ) )
+                        !File.Exists( dbFileName ) )
                 {
                     throw new FileDbException( FileDbException.DatabaseFileNotFound, FileDbExceptionsEnum.DatabaseFileNotFound );
                 }
                 FileAccess access;
-                if( _openReadOnly )
+                if( _isReadOnly )
                     access = FileAccess.Read;
                 else
                     access = FileAccess.ReadWrite;
 
                 // we must allow read sharing access else operations that require copying to a temp file (copy operation) will fail
-                _dataStrm = File.Open( dbName, (FileMode) mode, access, FileShare.Read );
+                _dbStream = File.Open( dbFileName, (FileMode) mode, access, FileShare.Read );
                 #endif
             }
             else // memory DB
             {
-                _dataStrm = new MemoryStream(4096);
+                if( dbStream != null )
+                    _dbStream = dbStream;
+                else
+                    _dbStream = new MemoryStream(4096);
             }
+        }
+        #endif
 
-            _dataReader = new BinaryReader( _dataStrm );
-            if( !_openReadOnly )
-                _dataWriter = new BinaryWriter( _dataStrm );
+        void getReaderWriter()
+        {
+            _dataReader = new BinaryReader( _dbStream );
+            if( !_isReadOnly )
+                _dataWriter = new BinaryWriter( _dbStream );
         }
 
-        #if WINDOWS_PHONE_APP
+        #if false // WINDOWS_PHONE_APP
 
         private StorageFile openStorageFile( string fileName, FolderLocEnum folderLoc )
         {
@@ -483,8 +520,20 @@ namespace FileDbNs
         }
         #endif
 
+        /// <summary>
+        /// Flushes the Stream and detaches it, rendering this FileDb closed
+        /// </summary>
+        ///
+        Stream detachDataStreamAndClose()
+        {
+            Stream dbStream = _dbStream;
 
-        internal void close()
+            close( false );
+
+            return dbStream;
+        }
+
+        internal void close( bool disposeDataStrm=true )
         {
             if( _isOpen )
             {
@@ -492,44 +541,56 @@ namespace FileDbNs
                 {
                     // if AutoFlush is true then we shouldn't need to flush the index
                     flush( !AutoFlush );
-                    #if !WINDOWS_PHONE_APP
-                    _dataStrm.Close();
-                    #endif
-                    _dataStrm.Dispose();
+                    //#if !WINDOWS_PHONE_APP
+                    // I don't think this is needed in any case
+                    //_dbStream.Close();
+                    //#endif
+                    _dbStream.Dispose();
                 }
                 finally
                 {
                     _autoCleanThreshold = -1;
                     _dataStartPos = 0;
-                    _dataStrm = null;
+                    _dbStream = null;
                     _dataWriter = null;
                     _dataReader = null;
                     _dataReader = null;
                     _isOpen = false;
-                    _dbName = null;
-                    _folderLoc = FolderLocEnum.Default;
+                    _dbFileName = null;
+                    //_folderLoc = FolderLocEnum.Default;
                     _fields = null;
                     _primaryKey = null;
                     _primaryKeyField = null;
                     _encryptor = null;
                     _metaData = null;
+
+                    #if NETFX_CORE || PCL
+                    _transDbStream = null;
+                    #else
+                    if( _transFilename != null )
+                    {
+                        File.Delete( _transFilename );
+                        _transFilename = null;
+                    }
+                    #endif
                 }
             }
         }
 
-        internal static bool exists( string dbName, FolderLocEnum folderLoc )
+        #if !(PCL || NETFX_CORE)
+        internal static bool exists( string dbFileName ) // FolderLocEnum folderLoc )
         {
             bool retVal = false;
 
-            if( !string.IsNullOrWhiteSpace( dbName ) )
+            if( !string.IsNullOrWhiteSpace( dbFileName ) )
             {
-                #if WINDOWS_PHONE_APP
+                #if false // WINDOWS_PHONE_APP
                 StorageFile storageFile = null;
 
                 // find out if the file exists by getting it
                 try
                 {
-                    storageFile = RunSynchronously( getStorageFolder( folderLoc ).GetFileAsync( dbName ) );
+                    storageFile = RunSynchronously( getStorageFolder( folderLoc ).GetFileAsync( dbFileName ) );
                 }
                 catch( Exception ex )
                 {
@@ -541,13 +602,14 @@ namespace FileDbNs
 
                 retVal = storageFile != null;
 
-                #else
-                retVal = File.Exists( dbName );
+#else
+                retVal = File.Exists( dbFileName );
                 #endif
             }
 
             return retVal;
         }
+        #endif
 
         void checkIsDbOpen()
         {
@@ -559,28 +621,34 @@ namespace FileDbNs
 
         void checkReadOnly()
         {
-            if( _openReadOnly )
+            if( _isReadOnly )
             {
                 throw new FileDbException( FileDbException.DatabaseReadOnlyMode, FileDbExceptionsEnum.NoOpenDatabase );
             }
         }
         
-        internal void drop( string dbName )
+        #if !(PCL || NETFX_CORE)
+        internal void drop( string dbFileName )
         {
-            if( dbName == _dbName && _isOpen )
+            if( dbFileName == _dbFileName && _isOpen )
             {
                 close();
             }
 
-            #if WINDOWS_PHONE_APP
-            var storageFile = RunSynchronously( getStorageFolder().GetFileAsync( dbName ) );
+            #if false // WINDOWS_PHONE_APP
+            var storageFile = RunSynchronously( getStorageFolder().GetFileAsync( dbFileName ) );
             deleteStorageFile( storageFile );
             #else
-            File.Delete( dbName );
+            File.Delete( dbFileName );
             #endif
         }
+        #endif
 
-        internal void create( string dbName, Field[] schema, FolderLocEnum folderLoc )
+        #if PCL || NETFX_CORE
+        internal void create( Stream dbStream, Field[] schema )
+        #else
+        internal void create( string dbFileName, Field[] schema ) // FolderLocEnum folderLoc )
+        #endif
         {
             // Close any existing DB first
             if( _isOpen )
@@ -641,42 +709,58 @@ namespace FileDbNs
 
             // Open the database files
 
-            openFiles( dbName, FileModeEnum.Create, folderLoc );
-                        
+            _dbFileName = null;
+            _transDbStream = null;
+            _transFilename = null;
+            
+            #if PCL || NETFX_CORE
+            if( dbStream == null )
+            {
+                _dbStream = new MemoryStream( 4096 );
+                _isReadOnly = false;
+            }
+            else
+            {
+                _isReadOnly = !dbStream.CanWrite;
+                //if (_isReadOnly) -- not sure if we need this
+                //    throw new FileDbException(FileDbException.StreamMustBeWritable, FileDbExceptionsEnum.StreamMustBeWritable);
+                _dbStream = dbStream;
+                _dbStream.Seek( 0, SeekOrigin.Begin );
+            }
+            #else
+            openDbFileOrStream( dbFileName, null, FileModeEnum.Create ); // folderLoc );
+            _dbFileName = dbFileName;
+            //_folderLoc = folderLoc;
+            #endif
+
+            getReaderWriter();
+
             _isOpen = true;
-            _dbName = dbName;
-            _folderLoc = folderLoc;
             _iteratorIndex = 0;
 
             _ver_major = VERSION_MAJOR;
             _ver_minor = VERSION_MINOR;
             _ver = _ver_major * 100 + _ver_minor;
 
-            //try
-            //{
-                _numRecords = 0;
-                _numDeleted = 0;
+            _numRecords = 0;
+            _numDeleted = 0;
 
-                // Write the schema
-                writeDbHeader( _dataWriter );
-                writeSchema( _dataWriter );
+            // Write the schema
+            writeDbHeader( _dataWriter );
+            writeSchema( _dataWriter );
                 
-                // the indexStart is the same as dataStart until records are added
-                _indexStartPos = _dataStartPos;
+            // the indexStart is the same as dataStart until records are added
+            _indexStartPos = _dataStartPos;
                 
-                // we must write the indexStart location AFTER writeSchema the first time
-                writeIndexStart( _dataWriter );
+            // we must write the indexStart location AFTER writeSchema the first time
+            writeIndexStart( _dataWriter );
                 
-                // brettg: read it back in because the field order may have changed if the primary key
-                // wasn't the first field
-                readSchema();
+            // brettg: read it back in because the field order may have changed if the primary key
+            // wasn't the first field
+            readSchema();
 
-                _index = new List<int>(100);
-                _deletedRecords = new List<int>(3);
-            //}
-            //finally
-            //{
-            //}
+            _index = new List<int>(100);
+            _deletedRecords = new List<int>(3);
         }
 
         internal int addRecord( FieldValues record )
@@ -752,7 +836,7 @@ namespace FileDbNs
                     for( int ndx = 0; ndx < _deletedRecords.Count; ndx++ )
                     {
                         Int32 holePos = _deletedRecords[ndx];
-                        _dataStrm.Seek( holePos, SeekOrigin.Begin );
+                        _dbStream.Seek( holePos, SeekOrigin.Begin );
                         Int32 holeSize = _dataReader.ReadInt32();
                         Debug.Assert( holeSize < 0 );
                         holeSize = -holeSize;
@@ -765,7 +849,7 @@ namespace FileDbNs
                     }
                 }
 
-                _dataStrm.Seek( newOffset, SeekOrigin.Begin );
+                _dbStream.Seek( newOffset, SeekOrigin.Begin );
 
                 writeRecord( _dataWriter, record, recordSize, nullmask, false );
 
@@ -793,7 +877,7 @@ namespace FileDbNs
                 }
                     
                 // check to see if we went past the previous _indexStartPos
-                int newDataEndPos = (int) _dataStrm.Position;
+                int newDataEndPos = (int) _dbStream.Position;
                 if( newDataEndPos > _indexStartPos )
                 {
                     // capture the new index pos - the end of the last record is the start of the index
@@ -932,7 +1016,7 @@ namespace FileDbNs
             // and not worry about a deleted record.
 
             int origRecordOffset = lstIndex[index];
-            _dataStrm.Seek( origRecordOffset, SeekOrigin.Begin );
+            _dbStream.Seek( origRecordOffset, SeekOrigin.Begin );
             oldSize = _dataReader.ReadInt32();
             Debug.Assert( oldSize >= 0 );
 
@@ -975,7 +1059,7 @@ namespace FileDbNs
                 int ndx = 0;
                 foreach( Int32 holePos in _deletedRecords )
                 {
-                    _dataStrm.Seek( holePos, SeekOrigin.Begin );
+                    _dbStream.Seek( holePos, SeekOrigin.Begin );
                     Int32 holeSize = _dataReader.ReadInt32();
                     Debug.Assert( holeSize < 0 );
                     holeSize = -holeSize;
@@ -992,11 +1076,11 @@ namespace FileDbNs
                 newPos = origRecordOffset;
 
             // Write the record to the database file
-            _dataStrm.Seek( newPos, SeekOrigin.Begin );
+            _dbStream.Seek( newPos, SeekOrigin.Begin );
             writeRecord( _dataWriter, fullRecord, newSize, nullmask, false );
 
             // check to see if we went past the previous _indexStartPos
-            int newDataEndPos = (int) _dataStrm.Position;
+            int newDataEndPos = (int) _dbStream.Position;
             if( newDataEndPos > _indexStartPos )
             {
                 // capture the new index pos - the end of the last record is the start of the index
@@ -1029,11 +1113,11 @@ namespace FileDbNs
                 indexUpdated = true;
 
                 // make the old record's size be negative to indicate deleted
-                _dataStrm.Seek( origRecordOffset, SeekOrigin.Begin );
+                _dbStream.Seek( origRecordOffset, SeekOrigin.Begin );
                 _dataWriter.Write( -oldSize );
 
                 // Write the number of deleted records                    
-                _dataStrm.Seek( INDEX_DELETED_OFFSET, SeekOrigin.Begin );
+                _dbStream.Seek( INDEX_DELETED_OFFSET, SeekOrigin.Begin );
                 _dataWriter.Write( _numDeleted );
             }
 
@@ -1189,13 +1273,13 @@ namespace FileDbNs
                 var index = new List<int>( numRecs );
                 _deletedRecords = new List<int>();
 
-                _dataStrm.Seek( _dataStartPos, SeekOrigin.Begin );
+                _dbStream.Seek( _dataStartPos, SeekOrigin.Begin );
                 Int32 newOffset = _dataStartPos;
 
                 for( Int32 recordNum = 0; recordNum < numRecs; ++recordNum )
                 {
                     // Read in the size of the block allocated for the record
-                    _dataStrm.Seek( newOffset, SeekOrigin.Begin );
+                    _dbStream.Seek( newOffset, SeekOrigin.Begin );
                     Int32 recordSize;
 
                     // Read the record
@@ -1230,7 +1314,7 @@ namespace FileDbNs
 
                 _indexStartPos = newOffset;
 
-                _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+                _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                 _dataWriter.Write( _numRecords = index.Count );
 
@@ -1268,26 +1352,34 @@ namespace FileDbNs
             // Note that we attempt the file creation under the DB lock, so
             // that another process doesn't try to create the same file at the
             // same time.
-            //string tmpFilename = Path.GetFileNameWithoutExtension( _dbName ) + ".tmp.fdb";
-            //tmpFilename = Path.Combine( Path.GetDirectoryName( _dbName ), tmpFilename );
-            string tmpFilename = _dbName + ".tmp";
+            //string tmpFilename = Path.GetFileNameWithoutExtension( _dbFileName ) + ".tmp.fdb";
+            //tmpFilename = Path.Combine( Path.GetDirectoryName( _dbFileName ), tmpFilename );
 
-            #if WINDOWS_PHONE_APP
-            var tempStorageFile = RunSynchronously( ApplicationData.Current.TemporaryFolder.CreateFileAsync( tmpFilename ) );
-            var tmpdb = RunSynchronously( tempStorageFile.OpenStreamForWriteAsync() );
+            Stream tmpStrm = null;
+
+            #if NETFX_CORE || PCL
+            // use MemoryStream rather than temp file
+            tmpStrm = new MemoryStream( (int) _dbStream.Length );
             #else
-            // TODO: make it use temp folder
-            var tmpdb = File.Open( tmpFilename, (FileMode) FileModeEnum.OpenOrCreate, FileAccess.Write, FileShare.None );
+            string tmpFilename = null;
+            if( _dbFileName == null )
+            {
+                tmpStrm = new MemoryStream( (int) _dbStream.Length );
+            }
+            else
+            {
+                tmpFilename = getTempDbFilename();
+                tmpStrm = File.Open( tmpFilename, (FileMode) FileModeEnum.OpenOrCreate, FileAccess.Write, FileShare.None );
+                tmpStrm.SetLength( 0 );
+            }
             #endif
-
-            tmpdb.SetLength( 0 );
 
             int tempNumDeleted = _numDeleted,
                 tempIndexStart = _indexStartPos;
 
             try
             {
-                var tmpDataWriter = new BinaryWriter( tmpdb );
+                var tmpDataWriter = new BinaryWriter( tmpStrm );
 
                 // create a new index list
                 var newIndex = new List<Int32>( _index.Count );
@@ -1299,8 +1391,6 @@ namespace FileDbNs
                 writeDbHeader( tmpDataWriter );
                 writeSchema( tmpDataWriter );
 
-                var dicRecord = new FieldValues();
-
                 // For each item in the index, move it from the current database file to the new one
 
                 for( Int32 idx = 0; idx < _index.Count; ++idx )
@@ -1309,7 +1399,7 @@ namespace FileDbNs
                     bool deleted;
 
                     // Save the new file offset index
-                    newIndex.Add( (Int32) tmpdb.Position );
+                    newIndex.Add( (Int32) tmpStrm.Position );
 
                     // Read in the entire record
                     if( schemaChange )
@@ -1332,62 +1422,67 @@ namespace FileDbNs
                         writeRecordRaw( tmpDataWriter, record, false );
                     }
                 }
-                _indexStartPos = (int) tmpdb.Position;
+                _indexStartPos = (int) tmpStrm.Position;
                 writeIndexStart( tmpDataWriter );
                 _deletedRecords = new List<Int32>();
                 _index = newIndex;
-                tmpdb.Flush();
-                writeIndex( tmpdb, tmpDataWriter, _index );
+                tmpStrm.Flush();
+                writeIndex( tmpStrm, tmpDataWriter, _index );
                 tmpDataWriter.Flush();
-                tmpdb.Flush();
+                tmpStrm.Flush();
             }
             catch
             {
                 // set everything back the way it was
                 _indexStartPos = tempIndexStart;
                 _numDeleted = tempNumDeleted;
-                #if WINDOWS_PHONE_APP
-                if( tmpdb != null )
-                    tmpdb.Dispose();
-                if( tempStorageFile != null )
-                    deleteStorageFile( tempStorageFile );
-                #else
-                tmpdb.Close();
-                File.Delete( tmpFilename );
+
+                if( tmpStrm != null )
+                    tmpStrm.Dispose();
+
+                #if !(NETFX_CORE || PCL)
+                if( tmpFilename != null )
+                    File.Delete( tmpFilename );
                 #endif
+
                 throw;
             }
 
-            // get the dbName, etc. before we close
-            string dbName = _dbName;
-            FolderLocEnum folderLoc = _folderLoc;
+            // get the dbFileName, etc. before we close
+            string dbFileName = _dbFileName;
+            //Stream dbStream = _dbStream; not needed
+            //FolderLocEnum folderLoc = _folderLoc;
             Encryptor encryptor = _encryptor;
+            bool isReadOnly = _isReadOnly;
             close();
 
-            // Move the temporary file over the original database file
-            #if WINDOWS_PHONE_APP
-            var storageFile = RunSynchronously( ApplicationData.Current.LocalFolder.GetFileAsync( dbName ) );
-            RunSynchronously( tempStorageFile.MoveAndReplaceAsync( storageFile ) );
-            tmpdb.Dispose();
-            tmpdb = null;
+            #if NETFX_CORE || PCL
+            // reopen with the new Stream
+            open( tmpStrm, null, encryptor );
             #else
-            tmpdb.Close();
-            tmpdb = null;
-            File.Delete( dbName );
-            File.Move( tmpFilename, dbName );
+            // Move the temporary file over the original database file and reopen
+            if( tmpFilename != null )
+            {
+                File.Delete( dbFileName );
+                tmpStrm.Close();
+                File.Move( tmpFilename, dbFileName );
+                // Re-open the database
+                open( dbFileName, null, null, encryptor, isReadOnly ); // folderLoc );
+            }
+            else
+            {
+                open( null, tmpStrm, null, encryptor, isReadOnly ); // folderLoc );
+            }
             #endif
-
-            // Re-open the database
-            open( dbName, null, encryptor, _openReadOnly, folderLoc );
         }
 
         private void setRecordDeleted( int pos, bool deleted )
         {
-            _dataStrm.Seek( pos, SeekOrigin.Begin );
+            _dbStream.Seek( pos, SeekOrigin.Begin );
             Int32 size = _dataReader.ReadInt32();
             if( size > 0 )
                 size = -size;
-            _dataStrm.Seek( pos, SeekOrigin.Begin );
+            _dbStream.Seek( pos, SeekOrigin.Begin );
             _dataWriter.Write( size );
         }
 
@@ -1403,7 +1498,7 @@ namespace FileDbNs
 
             //try
             //{
-                _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+                _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                 _numRecords = _numDeleted = 0;
                 _indexStartPos = _dataStartPos;
@@ -1478,7 +1573,7 @@ namespace FileDbNs
                 _deletedRecords.Add( _index[index] );
                 _index.RemoveAt( index );
                 
-                _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+                _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                 // Write the number of records
                 _dataWriter.Write( --_numRecords );
@@ -1542,7 +1637,7 @@ namespace FileDbNs
 
                 _index.RemoveAt( index );
 
-                _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+                _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                 // Write the number of records
                 _dataWriter.Write( --_numRecords );
@@ -1647,7 +1742,7 @@ namespace FileDbNs
 
                 if( deleteCount > 0 )
                 {
-                    _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+                    _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                     // Write the number of records
                     _dataWriter.Write( _numRecords );
@@ -1719,7 +1814,7 @@ namespace FileDbNs
 
                 if( deleteCount > 0 )
                 {
-                    _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+                    _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
 
                     // Write the number of records
                     _dataWriter.Write( _numRecords );
@@ -2855,21 +2950,32 @@ namespace FileDbNs
             copyNewDB( thisDb, newFields, null, null, fieldsToRemove );
         }
 
+        string getTempDbFilename()
+        {
+            string tmpName = Path.GetTempFileName() + ".filedb";
+            return tmpName;
+        }
+
         void copyNewDB( FileDb thisDb, Fields newFields, Field[] fieldsToAdd, object[] defaultVals, string[] fieldsToRemove )
         {
             // Create a new FileDb
-            string tmpFullFilename, fullFilenameBak;
-
-            tmpFullFilename = _dbName + ".tmp";
-            fullFilenameBak = _dbName + ".bak";
 
             FileDb tempDb = new FileDb();
 
-            #if WINDOWS_PHONE_APP
-            string nameOnly = Path.GetFileName( _dbName );
-            tempDb.Create( nameOnly, newFields, FolderLocEnum.TempFolder );
+            Stream newDbStream = null;
+
+            // we'll use a memory DB for handheld devices because the databases should be small enough
+            #if NETFX_CORE || PCL
+            tempDb.Create( null, newFields );
             #else
-            tempDb.Create( tmpFullFilename, newFields, FolderLocEnum.Default );
+            string tmpFullFilename = null, fullFilenameBak = null;
+            if( _dbFileName != null )
+            {
+                tmpFullFilename = getTempDbFilename();
+                fullFilenameBak = getTempDbFilename();
+            }
+            // if tmpFullFilename is null, a memory DB will be created
+            tempDb.Create( tmpFullFilename, newFields ); // FolderLocEnum.TempFolder );
             #endif
 
             try
@@ -2930,45 +3036,59 @@ namespace FileDbNs
 
                     } while( moveNext() );
                 }
+
+                #if NETFX_CORE || PCL
+                newDbStream = tempDb._dbEngine.detachDataStreamAndClose();
+                #else
+                if( tmpFullFilename == null )
+                    newDbStream = tempDb._dbEngine.detachDataStreamAndClose();
                 tempDb.Close();
+                #endif
             }
             catch
             {
                 // cleanup
                 if( tempDb.IsOpen )
                     tempDb.Close();
-                #if WINDOWS_PHONE_APP
-                deleteFile( nameOnly, FolderLocEnum.TempFolder );
-                #else
-                File.Delete( tmpFullFilename );
+
+                #if !(NETFX_CORE || PCL)
+                if( tmpFullFilename != null )
+                    File.Delete( tmpFullFilename ); // FolderLocEnum.TempFolder );
                 #endif
+
                 throw;
             }
 
             // must close DB, rename files and reopen
-            string origDbFilename = _dbName;
-            FolderLocEnum folderLoc = _folderLoc;
+            string origDbFilename = _dbFileName;
+            //FolderLocEnum folderLoc = _folderLoc;
             Encryptor encryptor = _encryptor;
             thisDb.Close();
 
-            // Move the temporary file over the original database file
-            #if WINDOWS_PHONE_APP
-            var tmpStorageFile = RunSynchronously( getStorageFolder( FolderLocEnum.TempFolder ).GetFileAsync( tmpFullFilename ) );
-            var storageFile = RunSynchronously( getStorageFolder().GetFileAsync( origDbFilename ) );
-            RunSynchronously( tmpStorageFile.MoveAndReplaceAsync( storageFile ) );
+            #if NETFX_CORE || PCL
+            // open using the new Stream
+            open( newDbStream, null, encryptor );
             #else
-            File.Move( origDbFilename, fullFilenameBak );
-            File.Move( tmpFullFilename, origDbFilename );
-            File.Delete( fullFilenameBak );
+            if( tmpFullFilename != null )
+            {
+                // Move the temporary file over the original database file
+                File.Move( origDbFilename, fullFilenameBak );
+                File.Move( tmpFullFilename, origDbFilename );
+                File.Delete( fullFilenameBak );
+                // reopen the DB
+                open( origDbFilename, null, null, encryptor, false ); // folderLoc );
+            }
+            else
+            {
+                open( null, newDbStream, null, encryptor, false ); // folderLoc );
+            }
             #endif
-
-            // reopen the DB
-            open( origDbFilename, null, encryptor, false, folderLoc );
         }
 
+        #if false // NETFX_CORE && !PCL
         static void deleteFile( string filename, FolderLocEnum folderLoc )
         {
-            #if WINDOWS_PHONE_APP
+            #if NETFX_CORE
             var storageFile = RunSynchronously( getStorageFolder( folderLoc ).GetFileAsync( filename ) );
             if( storageFile != null )
                 deleteStorageFile( storageFile );
@@ -2977,7 +3097,6 @@ namespace FileDbNs
             #endif
         }
 
-        #if WINDOWS_PHONE_APP
         static void deleteStorageFile( StorageFile storageFile )
         {
             RunSynchronously( storageFile.DeleteAsync() );
@@ -3054,7 +3173,7 @@ namespace FileDbNs
                 field.Name = newFieldName;
                 writeSchema( _dataWriter );
                 _dataWriter.Flush();
-                _dataStrm.Flush();
+                _dbStream.Flush();
                 readSchema();
             }
             else
@@ -3084,13 +3203,13 @@ namespace FileDbNs
         /// 
         internal void flush( bool saveIndex )
         {
-            if( !_openReadOnly )
+            if( !_isReadOnly )
             {
                 if( saveIndex )
-                    writeIndex( _dataStrm, _dataWriter, _index );
+                    writeIndex( _dbStream, _dataWriter, _index );
 
                 _dataWriter.Flush();
-                _dataStrm.Flush();
+                _dbStream.Flush();
             }
         }
 
@@ -3100,29 +3219,19 @@ namespace FileDbNs
 
             // just make a backup copy
 
-            #if WINDOWS_PHONE_APP
-            string backupFilename = Path.GetFileName( _dbName );
-            
-            // find out if the file exists by getting it
-            var backupStorageFile = openStorageFile( backupFilename, FolderLocEnum.TempFolder );
-            
-            // create the file if found
-            if( backupStorageFile == null )
-            {
-                backupStorageFile = RunSynchronously( ApplicationData.Current.LocalFolder.CreateFileAsync( backupFilename ) );
-            }
-            // open this db file
-            var thisStorageFile = openStorageFile( _dbName, _folderLoc );
-
-            RunSynchronously( thisStorageFile.CopyAndReplaceAsync( backupStorageFile ) );
+            #if NETFX_CORE || PCL
+            _transDbStream = new MemoryStream( _dbStream.Length > int.MaxValue ? int.MaxValue : (int) _dbStream.Length );
+            var pos = _dbStream.Position;
+            _dbStream.Seek( 0, SeekOrigin.Begin );
+            _dbStream.CopyTo( _transDbStream );
+            // set the position back to where it was
+            _dbStream.Seek( pos, SeekOrigin.Begin );
+            _transDbStream.Seek( pos, SeekOrigin.Begin );
             #else
-
-            string backupFilename = _dbName + ".bak";
-
-            if( File.Exists( backupFilename ) )
-                File.Delete( backupFilename );
-
-            File.Copy( _dbName, backupFilename );
+            _transFilename = getTempDbFilename();
+            if( File.Exists( _transFilename ) )
+                File.Delete( _transFilename );
+            File.Copy( _dbFileName, _transFilename );
             #endif
         }
 
@@ -3132,12 +3241,11 @@ namespace FileDbNs
 
             // just delete the backup copy
 
-            #if WINDOWS_PHONE_APP
-            string backupFilename = Path.GetFileName( _dbName );
-            deleteFile( backupFilename, FolderLocEnum.TempFolder );
+            #if NETFX_CORE || PCL
+            _transDbStream.Dispose();
+            _transDbStream = null;
             #else
-            string backupFilename = _dbName + ".bak";
-            File.Delete( backupFilename );
+            File.Delete( _transFilename );
             #endif
         }
 
@@ -3148,35 +3256,42 @@ namespace FileDbNs
 
             // close the db and copy the backup over the db
 
-            // get the dbName, etc. before we close
-            string dbName = _dbName;
-            FolderLocEnum folderLoc = _folderLoc;
+            // get the dbFileName, etc. before we close
             Encryptor encryptor = _encryptor;
-            
-            #if WINDOWS_PHONE_APP
-            string backupFilename = Path.GetFileName( _dbName );
-            var backupStorageFile = openStorageFile( backupFilename, FolderLocEnum.TempFolder );
-            if( backupStorageFile == null )
-                throw new FileDbException( FileDbException.MissingTransactionFile, FileDbExceptionsEnum.MissingTransactionFile );
-            close();
-
-            // copy the backup file
-            var thisStorageFile = openStorageFile( dbName, _folderLoc );
-            RunSynchronously( backupStorageFile.CopyAndReplaceAsync( thisStorageFile ) );
-
+            #if NETFX_CORE || PCL
+            var transDbStream = _transDbStream;
             #else
-            string backupFilename = _dbName + ".bak";
-            string tmpFilename = _dbName + ".tmp";
-
-            close();
-            // rename the current DB - don't delete yet in case something goes wrong
-            File.Move( _dbName, tmpFilename );
-            File.Move( backupFilename, _dbName );
-            File.Delete( tmpFilename );
+            string dbFileName = _dbFileName;
+            //FolderLocEnum folderLoc = _folderLoc;
+            bool isReadOnly = _isReadOnly;
+            var transDbStream = _transDbStream; // in case its a memory DB
+            var transFilename = _transFilename;
             #endif
 
+            close();
+            
             // Re-open the database
-            open( dbName, null, encryptor, _openReadOnly, folderLoc );
+            #if NETFX_CORE || PCL
+            open( transStream, null, encryptor );
+            #else
+
+            if( dbFileName == null ) // memory DB
+            {
+                // reopen with the backup datastream
+                open( null, transDbStream, null, encryptor, isReadOnly );
+            }
+            else
+            {
+                string backupFilename = getTempDbFilename();
+                string tmpFilename = getTempDbFilename();
+                // rename the current DB - don't delete yet in case something goes wrong
+                File.Move( dbFileName, tmpFilename );
+                File.Move( backupFilename, dbFileName );
+                File.Delete( tmpFilename );
+
+                open( dbFileName, null, null, encryptor, isReadOnly ); // folderLoc );
+            }
+            #endif
         }
 
         #endregion internal
@@ -3395,7 +3510,7 @@ namespace FileDbNs
             // I think ToArray may be efficient, just returning its internal array
             return readIndex2().ToArray();
             #if false
-            _dataStrm.Seek( _indexStartPos, SeekOrigin.Begin );
+            _dbStream.Seek( _indexStartPos, SeekOrigin.Begin );
 
             // Read in the index
             Int32[] vIndex = new Int32[_numRecords];
@@ -3430,7 +3545,7 @@ namespace FileDbNs
         ///
         List<Int32> readIndex()
         {
-            _dataStrm.Seek( _indexStartPos, SeekOrigin.Begin );
+            _dbStream.Seek( _indexStartPos, SeekOrigin.Begin );
 
             // Read in the index
             var vIndex = new List<Int32>(_numRecords);
@@ -3574,7 +3689,7 @@ namespace FileDbNs
                 dataWriter.Write( size );
 
                 #if DEBUG
-                startPos = (int) dataWriter.BaseStream.Position; // _dataStrm.Position;
+                startPos = (int) dataWriter.BaseStream.Position; // _dbStream.Position;
                 #endif
             }
             dataWriter.Write( nullmask );
@@ -4565,7 +4680,7 @@ namespace FileDbNs
         object[] readRecord( BinaryReader dataReader, Int32 offset, bool includeIndex, out Int32 size, out bool deleted )
         {
             // Read in the record at the given offset.
-            _dataStrm.Seek( offset, SeekOrigin.Begin );
+            _dbStream.Seek( offset, SeekOrigin.Begin );
 
             // Read in the size of the block allocated for the record
             size = dataReader.ReadInt32();
@@ -4623,7 +4738,7 @@ namespace FileDbNs
         byte[] readRecordRaw( BinaryReader dataReader, Int32 offset, out bool deleted )
         {
             // Read in the record at the given offset.
-            _dataStrm.Seek( offset, SeekOrigin.Begin );
+            _dbStream.Seek( offset, SeekOrigin.Begin );
 
             // Read in the size of the block allocated for the record
             int size = dataReader.ReadInt32();
@@ -4661,12 +4776,12 @@ namespace FileDbNs
 
             if( _encryptor == null )
             {
-                _dataStrm.Seek( offset + INDEX_RBLOCK_SIZE, SeekOrigin.Begin );
+                _dbStream.Seek( offset + INDEX_RBLOCK_SIZE, SeekOrigin.Begin );
             }
             else // must first decrypt the record
             {
                 // Read in the size of the block allocated for the record
-                _dataStrm.Seek( offset, SeekOrigin.Begin );
+                _dbStream.Seek( offset, SeekOrigin.Begin );
                 int size = dataReader.ReadInt32();
 
                 if( size < 0 ) // deleted record
@@ -4986,7 +5101,7 @@ namespace FileDbNs
                     writeField( writer, field );
             }
 
-            _dataStartPos = (Int32) _dataStrm.Position;
+            _dataStartPos = (Int32) _dbStream.Position;
         }
 
         private void writeMetaData( BinaryWriter dataWriter )
@@ -5176,7 +5291,7 @@ namespace FileDbNs
 
         void readSchema( BinaryReader reader )
         {
-            _dataStrm.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
+            _dbStream.Seek( SCHEMA_OFFSET, SeekOrigin.Begin );
             // Read the database statistics
             //
             // Statistics format:
@@ -5289,7 +5404,7 @@ namespace FileDbNs
             }
 
             // Save where the index starts
-            _dataStartPos = (Int32) _dataStrm.Position;
+            _dataStartPos = (Int32) _dbStream.Position;
         }
 
         void writeNumRecords( BinaryWriter writer )

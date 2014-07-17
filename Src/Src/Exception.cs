@@ -47,7 +47,9 @@ namespace FileDbNs
         InvalidOrderByFieldName,
         CannotOrderByOnArrayField,
         AsyncOperationTimeout,
-        MissingTransactionFile
+        MissingTransactionFile,
+        EmptyFilename,
+        StreamMustBeWritable
     }
 
     // This exception is raised whenever a statement cannot be compiled.
@@ -136,7 +138,10 @@ namespace FileDbNs
 
         internal const string MissingTransactionFile = "Missing transaction file";
 
+        internal const string EmptyFilename = "The database filename cannot be null or empty";
 
+        internal const string StreamMustBeWritable = "The Stream must be writable to create a database";
+        
         #endregion Strings
 
         /////////////////////////////////////////

@@ -23,11 +23,11 @@ namespace FileDbNs
         /// <summary>
         /// Handler for static DbRecordUpdated event.
         /// </summary>
-        /// <param name="dbName">The name of the updated database</param>
+        /// <param name="dbFileName">The name of the updated database</param>
         /// <param name="index">The record index</param>
         /// <param name="fieldValues">The fields and new values which were updated</param>
         /// 
-        public delegate void DbRecordUpdatedHandler( string dbName, int index, FieldValues fieldValues );
+        public delegate void DbRecordUpdatedHandler( string dbFileName, int index, FieldValues fieldValues );
         /// <summary>
         /// Static event fired when a record has been updated.
         /// </summary>
@@ -36,9 +36,9 @@ namespace FileDbNs
         /// <summary>
         /// Handler for static DbRecordAdded event.
         /// </summary>
-        /// <param name="dbName">The name of the updated database</param>
+        /// <param name="dbFileName">The name of the updated database</param>
         /// <param name="index">The record index</param>
-        public delegate void DbRecordAddedHandler( string dbName, int index );
+        public delegate void DbRecordAddedHandler( string dbFileName, int index );
         /// <summary>
         /// Static event fired when a record has been inserted.
         /// </summary>
@@ -47,9 +47,9 @@ namespace FileDbNs
         /// <summary>
         /// Handler for static DbRecordDeleted event.
         /// </summary>
-        /// <param name="dbName">The name of the updated database</param>
+        /// <param name="dbFileName">The name of the updated database</param>
         /// <param name="index">The record index</param>
-        public delegate void DbRecordDeletedHandler( string dbName, int index );
+        public delegate void DbRecordDeletedHandler( string dbFileName, int index );
         /// <summary>
         /// Static event fired when a record has been deleted.
         /// </summary>
@@ -101,7 +101,7 @@ namespace FileDbNs
         #region Fields
         const string StrIndex = "index";
 
-        FileDbEngine _db = new FileDbEngine();
+        internal FileDbEngine _dbEngine = new FileDbEngine();
 
         Encryptor _encryptor;
         int _encryptKeyHashCode = 0;
@@ -119,7 +119,7 @@ namespace FileDbNs
         /// 
         public string DbFileName
         {
-            get { return _db.DbFileName; }
+            get { return _dbEngine.DbFileName; }
         }
 
         //----------------------------------------------------------------------------------------
@@ -130,11 +130,11 @@ namespace FileDbNs
         {
             get
             {
-                return _db.UserVersion;
+                return _dbEngine.UserVersion;
             }
             set
             {
-                _db.UserVersion = value;
+                _dbEngine.UserVersion = value;
             }
         }
 
@@ -145,7 +145,7 @@ namespace FileDbNs
         /// 
         public Fields Fields
         {
-            get { return _db.Fields; }
+            get { return _dbEngine.Fields; }
         }
 
         //----------------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ namespace FileDbNs
         {
             get
             {
-                return _db.NumRecords;
+                return _dbEngine.NumRecords;
             }
         }
 
@@ -171,7 +171,7 @@ namespace FileDbNs
         {
             get
             {
-                return _db.NumDeleted;
+                return _dbEngine.NumDeleted;
             }
         }
 
@@ -188,8 +188,8 @@ namespace FileDbNs
         /// 
         public Int32 AutoCleanThreshold
         {
-            get { return _db.getAutoCleanThreshold(); }
-            set { _db.setAutoCleanThreshold( value ); }
+            get { return _dbEngine.getAutoCleanThreshold(); }
+            set { _dbEngine.setAutoCleanThreshold( value ); }
         }
 
         /// <summary>
@@ -208,8 +208,8 @@ namespace FileDbNs
         /// 
         public bool AutoFlush
         {
-            get { return _db.AutoFlush; }
-            set { _db.AutoFlush = value; }
+            get { return _dbEngine.AutoFlush; }
+            set { _dbEngine.AutoFlush = value; }
         }
 
         //----------------------------------------------------------------------------------------
@@ -219,7 +219,7 @@ namespace FileDbNs
         /// 
         public bool IsOpen
         {
-            get { return _db.IsOpen; }
+            get { return _dbEngine.IsOpen; }
         }
 
         //----------------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ namespace FileDbNs
         /// 
         public object MetaData
         {
-            get { return _db.MetaData; }
+            get { return _dbEngine.MetaData; }
             set
             {
                 if( value != null )
@@ -239,7 +239,7 @@ namespace FileDbNs
                     if( metaType != typeof( String ) && metaType != typeof( Byte[] ) )
                         throw new FileDbException( FileDbException.InvalidMetaDataType, FileDbExceptionsEnum.InvalidMetaDataType );
                 }
-                _db.MetaData = value;
+                _dbEngine.MetaData = value;
             }
         }
 
@@ -250,9 +250,9 @@ namespace FileDbNs
         public FileDb()
         {
             AutoFlush = true;
-            _db.RecordUpdated += onDbUpdated;
-            _db.RecordAdded += onRecordAdded;
-            _db.RecordDeleted += onRecordDeleted;
+            _dbEngine.RecordUpdated += onDbUpdated;
+            _dbEngine.RecordAdded += onRecordAdded;
+            _dbEngine.RecordDeleted += onRecordDeleted;
         }
 
         void onDbUpdated( int index, FieldValues fieldValues )
@@ -261,7 +261,7 @@ namespace FileDbNs
                 RecordUpdated( index, fieldValues );
 
             if( DbRecordUpdated != null )
-                DbRecordUpdated( _db.DbFileName, index, fieldValues );
+                DbRecordUpdated( _dbEngine.DbFileName, index, fieldValues );
         }
 
         void onRecordAdded( int index )
@@ -270,7 +270,7 @@ namespace FileDbNs
                 RecordAdded( index );
 
             if( DbRecordAdded != null )
-                DbRecordAdded( _db.DbFileName, index );
+                DbRecordAdded( _dbEngine.DbFileName, index );
         }
 
         void onRecordDeleted( int index )
@@ -279,7 +279,7 @@ namespace FileDbNs
                 RecordDeleted( index );
 
             if( DbRecordDeleted != null )
-                DbRecordDeleted( _db.DbFileName, index );
+                DbRecordDeleted( _dbEngine.DbFileName, index );
         }
 
         #endregion Constructors
@@ -288,7 +288,7 @@ namespace FileDbNs
 
         public override string ToString()
         {
-            return _db.DbFileName;
+            return _dbEngine.DbFileName;
         }
 
         #endregion Overrides
@@ -350,11 +350,13 @@ namespace FileDbNs
 
         #region Private Methods
 
+        #if NETFX_CORE || PCL
+
         // Create database from a Table.  Called by Table.SaveToDb
         //
-        internal void Create( Table table, string dbName, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        internal void CreateFromTable( Table table, Stream dataStream )
         {
-            _db.create( dbName, table.Fields.ToArray(), folderLoc );
+            _dbEngine.create( dataStream, table.Fields.ToArray() );
 
             foreach( Record record in table )
             {
@@ -362,6 +364,20 @@ namespace FileDbNs
                 AddRecord( fieldValues );
             }
         }
+        #else
+        // Create database from a Table.  Called by Table.SaveToDb
+        //
+        internal void CreateFromTable( Table table, string dbFileName )
+        {
+            _dbEngine.create( dbFileName, table.Fields.ToArray() );
+
+            foreach( Record record in table )
+            {
+                FieldValues fieldValues = record.GetFieldValues();
+                AddRecord( fieldValues );
+            }
+        }
+        #endif
 
         //----------------------------------------------------------------------------------------
         // Create a table from the raw records
@@ -381,7 +397,7 @@ namespace FileDbNs
                     if( fields.ContainsKey( fieldName ) )
                         throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ),
                             FileDbExceptionsEnum.FieldSpecifiedTwice );
-                    var field = _db.Fields[fieldName].Clone();
+                    var field = _dbEngine.Fields[fieldName].Clone();
                     fields.Add( field );
 
                     // fix up the ordinal index
@@ -393,8 +409,8 @@ namespace FileDbNs
             }
             else
             {
-                fields = new Fields( _db.Fields.Count + nExtra );
-                foreach( Field field in _db.Fields )
+                fields = new Fields( _dbEngine.Fields.Count + nExtra );
+                foreach( Field field in _dbEngine.Fields )
                 {
                     fields.Add( field.Clone() );
                 }
@@ -414,19 +430,34 @@ namespace FileDbNs
 
         #region Open/Close/Drop/Exists
 
+        #if NETFX_CORE || PCL
         //----------------------------------------------------------------------------------------
         /// <summary>
-        /// Open the indicated database file.
-        /// If dbName is null an in-memory database will be created.
+        /// Open with an existing database stream
         /// </summary>
-        /// <param name="dbName">The filename of the database file to open or null/empty to create a memory DB.
-        /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
+        /// <param name="stream">The database stream to use - normally a FileStream</param>
         /// 
-        public void Open( string dbName, bool readOnly, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        public void Open( Stream stream )
         {
             lock( this )
             {
-                _db.open( dbName, null, null, readOnly, folderLoc );
+                _dbEngine.open( stream, null, null );
+            }
+        }
+        #else
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Open the indicated database file.
+        /// If dbFileName is null an in-memory database will be created.
+        /// </summary>
+        /// <param name="dbFileName">The filename of the database file to open.
+        /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
+        /// 
+        public void Open( string dbFileName, bool readOnly )
+        {
+            lock( this )
+            {
+                _dbEngine.open( dbFileName, null, null, null, readOnly );
             }
         }
 
@@ -434,19 +465,20 @@ namespace FileDbNs
         /// <summary>
         /// Open the indicated database file for encryption. Encryption is "all or nothing",
         /// meaning all records are either encrypted or not.
-        /// If dbName is null an in-memory database will be created.
+        /// If dbFileName is null an in-memory database will be created.
         /// </summary>
-        /// <param name="dbName">The filename of the database file to open or null/empty to create a memory DB.
+        /// <param name="dbFileName">The filename of the database file to open.
         /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
         /// <param name="encryptionKey">A string value to use as the encryption key</param>
         /// 
-        public void Open( string dbName, string encryptionKey, bool readOnly, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        public void Open( string dbFileName, string encryptionKey, bool readOnly )
         {
             lock( this )
             {
-                _db.open( dbName, encryptionKey, null, readOnly, folderLoc );
+                _dbEngine.open( dbFileName, null, encryptionKey, null, readOnly );
             }
         }
+        #endif
 
         //----------------------------------------------------------------------------------------
         /// <summary>
@@ -457,39 +489,72 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.close();
+                _dbEngine.close();
             }
         }
 
+        #if NETFX_CORE || PCL
+
         //----------------------------------------------------------------------------------------
         /// <summary>
-        /// Create a new database file. If the file exists, it will be overwritten.
-        /// If dbName is null an in-memory database will be created.
+        /// Create a new database using the passed stream, or if null and in-memory DB
         /// </summary>
-        /// <param name="dbName">The full pathname of the file or null/empty to create a memory DB</param>
+        /// <param name="stream">The stream to use or null to create a memory DB</param>
         /// <param name="fields">Array of Fields for the new database.</param>
         /// 
-        public void Create( string dbName, Field[] fields, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        public void Create( Stream stream, Field[] fields )
         {
             lock( this )
             {
-                _db.create( dbName, fields, folderLoc );
+                _dbEngine.create( stream, fields );
+            }
+        }
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Create a new database using the passed stream, or if null and in-memory DB
+        /// </summary>
+        /// <param name="stream">The stream to use or null to create a memory DB</param>
+        /// <param name="fields">List of Fields for the new database.</param>
+        /// 
+        public void Create( Stream stream, Fields fields )
+        {
+            lock( this )
+            {
+                _dbEngine.create( stream, fields.ToArray() );
+            }
+        }
+        #else
+
+        //----------------------------------------------------------------------------------------
+        /// <summary>
+        /// Create a new database file. If the file exists, it will be overwritten.
+        /// If dbFileName is null an in-memory database will be created.
+        /// </summary>
+        /// <param name="dbFileName">The full pathname of the file or null/empty to create a memory DB</param>
+        /// <param name="fields">Array of Fields for the new database.</param>
+        /// 
+        public void Create( string dbFileName, Field[] fields )
+        {
+            lock( this )
+            {
+                _dbEngine.create( dbFileName, fields );
             }
         }
 
         //----------------------------------------------------------------------------------------
         /// <summary>
         /// Create a new database file. If the file exists, it will be overwritten.
-        /// If dbName is null an in-memory database will be created.
+        /// If dbFileName is null an in-memory database will be created.
         /// </summary>
-        /// <param name="dbName">The full pathname of the file or null/empty to create a memory DB</param>
+        /// <param name="dbFileName">The full pathname of the file or null/empty to create a memory DB</param>
         /// <param name="fields">List of Fields for the new database.</param>
         /// 
-        public void Create( string dbName, Fields fields, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        public void Create( string dbFileName, Fields fields )
         {
             lock( this )
             {
-                _db.create( dbName, fields.ToArray(), folderLoc );
+                _dbEngine.create( dbFileName, fields.ToArray() );
             }
         }
 
@@ -497,20 +562,24 @@ namespace FileDbNs
         /// <summary>
         /// Delete an existing database.
         /// </summary>
-        /// <param name="dbName">The pathname of the file to delete.</param>
-        /// 
-        public void Drop( string dbName )
+        /// <param name="dbFileName">The pathname of the file to delete.</param>
+        /// TODO: make static
+        public void Drop( string dbFileName )
         {
             lock( this )
             {
-                _db.drop( dbName );
+                _dbEngine.drop( dbFileName );
             }
         }
+        #endif
 
-        public static bool Exists( string dbName, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        #if !(NETFX_CORE || PCL)
+        public static bool Exists( string dbFileName )
         {
-            return FileDbEngine.exists( dbName, folderLoc );
+            return FileDbEngine.exists( dbFileName );
         }
+        #endif
+
         #endregion Open/Close/Drop
 
         #region Transaction
@@ -519,7 +588,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.beginTrans();
+                _dbEngine.beginTrans();
             }
         }
 
@@ -527,7 +596,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.commitTrans();
+                _dbEngine.commitTrans();
             }
         }
 
@@ -535,7 +604,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.rollbackTrans();
+                _dbEngine.rollbackTrans();
             }
         }
 
@@ -555,7 +624,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.addRecord( values );
+                return _dbEngine.addRecord( values );
             }
         }
         #endregion Add
@@ -625,7 +694,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[][] records = _db.getRecordByField( filter, fieldList, includeIndex, orderByList );
+                object[][] records = _dbEngine.getRecordByField( filter, fieldList, includeIndex, orderByList );
                 return createTable( records, fieldList, includeIndex, orderByList );
             }
         }
@@ -693,7 +762,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[][] records = _db.getRecordByFields( filter, fieldList, includeIndex, orderByList );
+                object[][] records = _dbEngine.getRecordByFields( filter, fieldList, includeIndex, orderByList );
                 return createTable( records, fieldList, includeIndex, orderByList );
             }
         }
@@ -832,7 +901,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[][] records = _db.getAllRecords( fieldList, includeIndex, orderByList );
+                object[][] records = _dbEngine.getAllRecords( fieldList, includeIndex, orderByList );
                 return createTable( records, fieldList, includeIndex, orderByList );
             }
         }
@@ -849,7 +918,7 @@ namespace FileDbNs
         /// 
         public Table SelectEmptyTable()
         {
-            var table = new Table( _db.Fields, true );
+            var table = new Table( _dbEngine.Fields, true );
             return table;
         }
 
@@ -872,7 +941,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[] record = _db.getCurrentRecord( includeIndex );
+                object[] record = _dbEngine.getCurrentRecord( includeIndex );
                 return createRecord( record, fieldList, includeIndex );
             }
         }
@@ -891,7 +960,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[] record = _db.getRecordByIndex( index, fieldList, false );
+                object[] record = _dbEngine.getRecordByIndex( index, fieldList, false );
                 return createRecord( record, fieldList, false );
             }
         }
@@ -910,7 +979,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[] record = _db.getRecordByKey( key, fieldList, includeIndex );
+                object[] record = _dbEngine.getRecordByKey( key, fieldList, includeIndex );
                 return createRecord( record, fieldList, includeIndex );
             }
         }
@@ -931,7 +1000,7 @@ namespace FileDbNs
                     {
                         if( fields.ContainsKey( fieldName ) )
                             throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptionsEnum.FieldSpecifiedTwice );
-                        var field = _db.Fields[fieldName].Clone();
+                        var field = _dbEngine.Fields[fieldName].Clone();
                         fields.Add( field );
 
                         // fix up the ordinal index
@@ -943,8 +1012,8 @@ namespace FileDbNs
                 }
                 else
                 {
-                    fields = new Fields( _db.Fields.Count + nExtra );
-                    foreach( Field field in _db.Fields )
+                    fields = new Fields( _dbEngine.Fields.Count + nExtra );
+                    foreach( Field field in _dbEngine.Fields )
                     {
                         fields.Add( field.Clone() );
                     }
@@ -977,7 +1046,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.updateRecordByIndex( values, index );
+                _dbEngine.updateRecordByIndex( values, index );
             }
         }
 
@@ -992,7 +1061,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.updateRecordByKey( values, key );
+                _dbEngine.updateRecordByKey( values, key );
             }
         }
 
@@ -1008,7 +1077,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.updateRecords( filter, values );
+                return _dbEngine.updateRecords( filter, values );
             }
         }
 
@@ -1024,7 +1093,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.updateRecords( filter, values );
+                return _dbEngine.updateRecords( filter, values );
             }
         }
 
@@ -1042,7 +1111,7 @@ namespace FileDbNs
             lock( this )
             {
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
-                return _db.updateRecords( filterExpGrp, values );
+                return _dbEngine.updateRecords( filterExpGrp, values );
             }
         }
         
@@ -1054,7 +1123,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.removeAll();
+                return _dbEngine.removeAll();
             }
         }
 
@@ -1070,7 +1139,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.removeByIndex( index );
+                return _dbEngine.removeByIndex( index );
             }
         }
 
@@ -1085,7 +1154,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.removeByKey( key );
+                return _dbEngine.removeByKey( key );
             }
         }
 
@@ -1100,7 +1169,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.removeByValue( filter );
+                return _dbEngine.removeByValue( filter );
             }
         }
 
@@ -1115,7 +1184,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.removeByValues( filter );
+                return _dbEngine.removeByValues( filter );
             }
         }
 
@@ -1132,7 +1201,7 @@ namespace FileDbNs
             lock( this )
             {
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
-                return _db.removeByValues( filterExpGrp );
+                return _dbEngine.removeByValues( filterExpGrp );
             }
         }
 
@@ -1148,7 +1217,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.moveFirst();
+                return _dbEngine.moveFirst();
             }
         }
 
@@ -1160,7 +1229,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                return _db.moveNext();
+                return _dbEngine.moveNext();
             }
         }
         #endregion Iteration
@@ -1175,7 +1244,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.cleanup( false );
+                _dbEngine.cleanup( false );
             }
         }
 
@@ -1193,7 +1262,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.flush( true );
+                _dbEngine.flush( true );
             }
         }
 
@@ -1206,7 +1275,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.reindex();
+                _dbEngine.reindex();
             }
         }
 
@@ -1240,7 +1309,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.addFields( this, newFields, defaultVals );
+                _dbEngine.addFields( this, newFields, defaultVals );
             }
         }
 
@@ -1268,7 +1337,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.deleteFields( this, fieldNames );
+                _dbEngine.deleteFields( this, fieldNames );
             }
         }
 
@@ -1282,7 +1351,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.renameField( this, fieldName, newFieldName );
+                _dbEngine.renameField( this, fieldName, newFieldName );
             }
         }
 
@@ -1302,7 +1371,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                _db.setEncryptionKey( encryptionKey );
+                _dbEngine.setEncryptionKey( encryptionKey );
             }
         }
 
