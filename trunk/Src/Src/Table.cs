@@ -6,6 +6,7 @@
  * Written by Brett Goodman <eztools-software.com>, October 2014
  */
 using System;
+using System.IO;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
@@ -921,19 +922,36 @@ namespace FileDbNs
             return row;
         }
 
+        #if PCL
+
+        /// <summary>
+        /// Save this Table to the Stream as a new database.  If the Stream is null
+        /// one will be created and it will be a memory DB.  The new database will be just as if you had created
+        /// it from scratch and populated it with the Table data.
+        /// </summary>
+        /// <param name="dbFileName">The full path and filename of the new database</param>
+        /// 
+        public FileDb SaveToDb( Stream dataStrm )
+        {
+            FileDb db = new FileDb();
+            db.CreateFromTable( this, dataStrm );
+            return db;
+        }
+        #else
         /// <summary>
         /// Save this Table to the indicated file as a new database.  If the file exists
         /// it will be overwritten.  The new database will be just as if you had created
-        /// it from scratch.
+        /// it from scratch and populated it with the Table data.
         /// </summary>
-        /// <param name="dbName">The full path and filename of the new database</param>
+        /// <param name="dbFileName">The full path and filename of the new database</param>
         /// 
-        public FileDb SaveToDb( string dbName, FolderLocEnum folderLoc = FolderLocEnum.Default )
+        public FileDb SaveToDb( string dbFileName )
         {
             FileDb db = new FileDb();
-            db.Create( this, dbName, folderLoc );
+            db.CreateFromTable( this, dbFileName );
             return db;
         }
+        #endif
 
         #region SelectRecords
 

@@ -20,7 +20,7 @@ namespace FileDbNs
         Int64 = 8, Decimal = 9, Guid = 10, Undefined = 0x7FFF
     }
 
-#if WINDOWS_PHONE_APP
+#if WINDOWS_PHONE_APP || PCL
   public enum TypeCode
   {
     Empty = 0,
@@ -61,6 +61,7 @@ namespace FileDbNs
         Undefined = 0x7FFF
     }
 
+    #if false
     public enum FolderLocEnum
     {
         #if !WINDOWS_PHONE_APP
@@ -72,6 +73,7 @@ namespace FileDbNs
         TempFolder
         #endif
     }
+    #endif
 
     //=====================================================================
     /// <summary>

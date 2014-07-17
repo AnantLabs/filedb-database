@@ -7,7 +7,7 @@
  */
 using System.IO;
 using System.Text;
-#if !WINDOWS_PHONE_APP
+#if !(NETFX_CORE || PCL)
 using System.Security.Cryptography;
 #endif
 
@@ -15,7 +15,7 @@ namespace FileDbNs
 {
     internal class Encryptor
     {
-#if WINDOWS_PHONE_APP
+#if NETFX_CORE || PCL
         internal Encryptor( string hashKey, string productKey )
         {
         }

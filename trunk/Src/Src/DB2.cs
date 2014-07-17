@@ -41,13 +41,13 @@ namespace FileDbNs
                     if( fields.ContainsKey( fieldName ) )
                         throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ),
                             FileDbExceptionsEnum.FieldSpecifiedTwice );
-                    fields.Add( _db.Fields[fieldName] );
+                    fields.Add( _dbEngine.Fields[fieldName] );
                 }
             }
             else
             {
-                fields = new Fields( _db.Fields.Count + nExtra );
-                foreach( Field field in _db.Fields )
+                fields = new Fields( _dbEngine.Fields.Count + nExtra );
+                foreach( Field field in _dbEngine.Fields )
                 {
                     fields.Add( field );
                 }
@@ -58,7 +58,7 @@ namespace FileDbNs
 
             // use reflection to populate the Field properties
             
-            #if WINDOWS_PHONE_APP
+            #if WINDOWS_PHONE_APP || PCL
             IEnumerable<PropertyInfo> propertyInfos = typeof( T ).GetRuntimeProperties();
             #else
             PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );
@@ -226,7 +226,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[][] records = _db.getRecordByField( filter, fieldList, includeIndex, orderByList );
+                object[][] records = _dbEngine.getRecordByField( filter, fieldList, includeIndex, orderByList );
                 return createTList<T>( records, fieldList, includeIndex, orderByList );
             }
         }
@@ -298,7 +298,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[][] records = _db.getRecordByFields( filter, fieldList, includeIndex, orderByList );
+                object[][] records = _dbEngine.getRecordByFields( filter, fieldList, includeIndex, orderByList );
                 return createTList<T>( records, fieldList, includeIndex, orderByList );
             }
         }
@@ -446,7 +446,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[][] records = _db.getAllRecords( fieldList, includeIndex, orderByList );
+                object[][] records = _dbEngine.getAllRecords( fieldList, includeIndex, orderByList );
                 return createTList<T>( records, fieldList, includeIndex, orderByList );
             }
         }
@@ -470,7 +470,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[] record = _db.getCurrentRecord( includeIndex );
+                object[] record = _dbEngine.getCurrentRecord( includeIndex );
                 return createT<T>( record, fieldList, false );
             }
         }
@@ -490,7 +490,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[] record = _db.getRecordByIndex( index, fieldList, false );
+                object[] record = _dbEngine.getRecordByIndex( index, fieldList, false );
                 return createT<T>( record, fieldList, false );
             }
         }
@@ -510,7 +510,7 @@ namespace FileDbNs
         {
             lock( this )
             {
-                object[] record = _db.getRecordByKey( key, fieldList, includeIndex );
+                object[] record = _dbEngine.getRecordByKey( key, fieldList, includeIndex );
                 return createT<T>( record, fieldList, includeIndex );
             }
         }
@@ -533,13 +533,13 @@ namespace FileDbNs
                     {
                         if( fields.ContainsKey( fieldName ) )
                             throw new FileDbException( string.Format( FileDbException.FieldSpecifiedTwice, fieldName ), FileDbExceptionsEnum.FieldSpecifiedTwice );
-                        fields.Add( _db.Fields[fieldName] );
+                        fields.Add( _dbEngine.Fields[fieldName] );
                     }
                 }
                 else
                 {
-                    fields = new Fields( _db.Fields.Count + nExtra );
-                    foreach( Field field in _db.Fields )
+                    fields = new Fields( _dbEngine.Fields.Count + nExtra );
+                    foreach( Field field in _dbEngine.Fields )
                     {
                         fields.Add( field );
                     }
@@ -549,7 +549,7 @@ namespace FileDbNs
                     fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
                 obj = new T();
-                #if WINDOWS_PHONE_APP
+                #if WINDOWS_PHONE_APP || PCL
                 IEnumerable<PropertyInfo> propertyInfos = typeof( T ).GetRuntimeProperties();
                 #else
                 PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );
