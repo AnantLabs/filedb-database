@@ -922,7 +922,7 @@ namespace FileDbNs
             return row;
         }
 
-        #if PCL
+        #if NETFX_CORE || PCL
 
         /// <summary>
         /// Save this Table to the Stream as a new database.  If the Stream is null

@@ -120,7 +120,7 @@ namespace FileDbNs
             var hashSet = new HashSet<object>();
 
             Type type = typeof( T );
-            #if WINDOWS_PHONE_APP || PCL
+            #if NETFX_CORE
             PropertyInfo prop = type.GetRuntimeProperties().FirstOrDefault( p => p.PropertyType == type );
             #else
             PropertyInfo prop = type.GetProperty( propertyName );

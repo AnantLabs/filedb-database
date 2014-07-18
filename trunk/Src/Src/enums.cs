@@ -20,8 +20,8 @@ namespace FileDbNs
         Int64 = 8, Decimal = 9, Guid = 10, Undefined = 0x7FFF
     }
 
-#if WINDOWS_PHONE_APP || PCL
-  public enum TypeCode
+#if NETFX_CORE || PCL
+    public enum TypeCode
   {
     Empty = 0,
     Object = 1,
