@@ -711,7 +711,9 @@ namespace FileDbNs
 
             _dbFileName = null;
             _transDbStream = null;
+            #if !(NETFX_CORE || PCL)
             _transFilename = null;
+            #endif
             
             #if PCL || NETFX_CORE
             if( dbStream == null )
@@ -2950,11 +2952,13 @@ namespace FileDbNs
             copyNewDB( thisDb, newFields, null, null, fieldsToRemove );
         }
 
+        #if !(NETFX_CORE || PCL)
         string getTempDbFilename()
         {
             string tmpName = Path.GetTempFileName() + ".filedb";
             return tmpName;
         }
+        #endif
 
         void copyNewDB( FileDb thisDb, Fields newFields, Field[] fieldsToAdd, object[] defaultVals, string[] fieldsToRemove )
         {
@@ -3239,6 +3243,9 @@ namespace FileDbNs
         {
             checkIsDbOpen();
 
+            if( _transDbStream == null && _transFilename == null )
+                throw new FileDbException( FileDbException.NoCurrentTransaction, FileDbExceptionsEnum.NoCurrentTransaction );
+
             // just delete the backup copy
 
             #if NETFX_CORE || PCL
@@ -3252,19 +3259,20 @@ namespace FileDbNs
         internal void rollbackTrans()
         {
             checkIsDbOpen();
-            checkReadOnly();
+
+            if( _transDbStream == null && _transFilename == null )
+                throw new FileDbException( FileDbException.NoCurrentTransaction, FileDbExceptionsEnum.NoCurrentTransaction );
 
             // close the db and copy the backup over the db
 
             // get the dbFileName, etc. before we close
             Encryptor encryptor = _encryptor;
-            #if NETFX_CORE || PCL
             var transDbStream = _transDbStream;
-            #else
+
+            #if !(NETFX_CORE || PCL)
             string dbFileName = _dbFileName;
             //FolderLocEnum folderLoc = _folderLoc;
             bool isReadOnly = _isReadOnly;
-            var transDbStream = _transDbStream; // in case its a memory DB
             var transFilename = _transFilename;
             #endif
 
@@ -3272,9 +3280,8 @@ namespace FileDbNs
             
             // Re-open the database
             #if NETFX_CORE || PCL
-            open( transStream, null, encryptor );
+            open( transDbStream, null, encryptor );
             #else
-
             if( dbFileName == null ) // memory DB
             {
                 // reopen with the backup datastream

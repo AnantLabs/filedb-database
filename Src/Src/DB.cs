@@ -247,6 +247,10 @@ namespace FileDbNs
 
         #region Constructors
 
+        /// <summary>
+        /// Constructor for FileDb
+        /// </summary>
+        /// 
         public FileDb()
         {
             AutoFlush = true;
@@ -286,9 +290,14 @@ namespace FileDbNs
 
         #region Overrides
 
+        /// <summary>
+        /// ToString override - returns the DB filename or a string indicating its a memory DB
+        /// </summary>
+        /// <returns></returns>
+        /// 
         public override string ToString()
         {
-            return _dbEngine.DbFileName;
+            return _dbEngine.DbFileName ?? "memory DB";
         }
 
         #endregion Overrides
@@ -452,6 +461,7 @@ namespace FileDbNs
         /// </summary>
         /// <param name="dbFileName">The filename of the database file to open.
         /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
+        /// <param name="readOnly">Indicates whether to open read only or not</param>
         /// 
         public void Open( string dbFileName, bool readOnly )
         {
@@ -470,6 +480,7 @@ namespace FileDbNs
         /// <param name="dbFileName">The filename of the database file to open.
         /// It can be a fully qualified path or, if no path is specified the current folder will be used.</param>
         /// <param name="encryptionKey">A string value to use as the encryption key</param>
+        /// <param name="readOnly">Indicates whether to open read only or not</param>
         /// 
         public void Open( string dbFileName, string encryptionKey, bool readOnly )
         {
@@ -574,6 +585,12 @@ namespace FileDbNs
         #endif
 
         #if !(NETFX_CORE || PCL)
+        /// <summary>
+        /// Indicates if the DB filename's existence
+        /// </summary>
+        /// <param name="dbFileName"></param>
+        /// <returns>True if the file exists, false otherwise</returns>
+        /// 
         public static bool Exists( string dbFileName )
         {
             return FileDbEngine.exists( dbFileName );
@@ -584,6 +601,11 @@ namespace FileDbNs
 
         #region Transaction
 
+        /// <summary>
+        /// Start a transaction - a backup of the whole database file is made until the transaction is completed.
+        /// Be sure to call either CommitTrans or RollbackTrans so the backup can be disposed
+        /// </summary>
+        /// 
         public void BeginTrans()
         {
             lock( this )
@@ -592,6 +614,10 @@ namespace FileDbNs
             }
         }
 
+        /// <summary>
+        /// Commit the changes since the transaction was begun
+        /// </summary>
+        /// 
         public void CommitTrans()
         {
             lock( this )
@@ -600,6 +626,10 @@ namespace FileDbNs
             }
         }
 
+        /// <summary>
+        /// Roll back the changes since the transaction was begun
+        /// </summary>
+        /// 
         public void RollbackTrans()
         {
             lock( this )
@@ -617,7 +647,7 @@ namespace FileDbNs
         /// Note that not all fields must be represented.  Missing fields will be set to default
         /// values (0, empty or null).  Note that only Array datatypes can NULL.
         /// </summary>
-        /// <param name="record">The name-value pairs to add.</param>
+        /// <param name="values">The name-value pairs to add.</param>
         /// <returns>The volatile index of the newly added record.</returns>
         /// 
         public int AddRecord( FieldValues values )
@@ -1119,6 +1149,11 @@ namespace FileDbNs
 
         #region Delete
 
+        /// <summary>
+        /// Delete all records in the database
+        /// </summary>
+        /// <returns>The number of records deleted</returns>
+        /// 
         public Int32 DeleteAllRecords()
         {
             lock( this )
