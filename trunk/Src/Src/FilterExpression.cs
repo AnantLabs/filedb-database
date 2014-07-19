@@ -119,7 +119,7 @@ namespace FileDbNs
             var hashSet = new HashSet<object>();
 
             Type type = typeof( T );
-            #if NETFX_CORE || PCL
+            #if NETFX_CORE //|| PCL
             PropertyInfo prop = type.GetRuntimeProperties().FirstOrDefault( p => p.PropertyType == type );
             #else
             PropertyInfo prop = type.GetProperty( propertyName );
