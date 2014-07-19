@@ -3243,8 +3243,11 @@ namespace FileDbNs
         {
             checkIsDbOpen();
 
-            if( _transDbStream == null && _transFilename == null )
-                throw new FileDbException( FileDbException.NoCurrentTransaction, FileDbExceptionsEnum.NoCurrentTransaction );
+            if( _transDbStream == null 
+                #if !(NETFX_CORE || PCL)
+                && _transFilename == null
+                #endif
+                ) throw new FileDbException( FileDbException.NoCurrentTransaction, FileDbExceptionsEnum.NoCurrentTransaction );
 
             // just delete the backup copy
 
@@ -3260,8 +3263,11 @@ namespace FileDbNs
         {
             checkIsDbOpen();
 
-            if( _transDbStream == null && _transFilename == null )
-                throw new FileDbException( FileDbException.NoCurrentTransaction, FileDbExceptionsEnum.NoCurrentTransaction );
+            if( _transDbStream == null 
+                #if !(NETFX_CORE || PCL)
+                && _transFilename == null
+                #endif
+                ) throw new FileDbException( FileDbException.NoCurrentTransaction, FileDbExceptionsEnum.NoCurrentTransaction );
 
             // close the db and copy the backup over the db
 
