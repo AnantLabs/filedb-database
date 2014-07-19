@@ -58,7 +58,7 @@ namespace FileDbNs
 
             // use reflection to populate the Field properties
             
-            #if NETFX_CORE || PCL
+            #if NETFX_CORE //|| PCL
             IEnumerable<PropertyInfo> propertyInfos = typeof( T ).GetRuntimeProperties();
             #else
             PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );
@@ -549,7 +549,7 @@ namespace FileDbNs
                     fields.Add( new Field( StrIndex, DataTypeEnum.Int32, fields.Count ) );
 
                 obj = new T();
-                #if NETFX_CORE || PCL
+                #if NETFX_CORE //|| PCL
                 IEnumerable<PropertyInfo> propertyInfos = typeof( T ).GetRuntimeProperties();
                 #else
                 PropertyInfo[] propertyInfos = typeof( T ).GetProperties( BindingFlags.Public | ~BindingFlags.Static );
