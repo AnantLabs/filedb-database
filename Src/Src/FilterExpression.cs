@@ -6,7 +6,6 @@
  * Written by Brett Goodman <eztools-software.com>, October 2014
  */
 using System;
-using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
@@ -120,7 +119,7 @@ namespace FileDbNs
             var hashSet = new HashSet<object>();
 
             Type type = typeof( T );
-            #if NETFX_CORE
+            #if NETFX_CORE || PCL
             PropertyInfo prop = type.GetRuntimeProperties().FirstOrDefault( p => p.PropertyType == type );
             #else
             PropertyInfo prop = type.GetProperty( propertyName );
