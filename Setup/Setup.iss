@@ -76,8 +76,13 @@ Name: quicklaunchicon; Description: {cm:CreateQuickLaunchIcon}; GroupDescription
 ; Files
 Source: Files\Protected\FileDb.dll; DestDir: {app}; Flags: replacesameversion
 Source: Files\FileDb.xml; DestDir: {app};
-Source: Files\Protected\FileDb.Wp.dll; DestDir: {app}; Flags: replacesameversion
-Source: Files\FileDb.Wp.xml; DestDir: {app};
+
+Source: Files\Protected\FileDbPcl.dll; DestDir: {app}; Flags: replacesameversion
+Source: Files\FileDbPcl.xml; DestDir: {app};
+
+;Source: Files\Protected\FileDbRt.dll; DestDir: {app}; Flags: replacesameversion
+;Source: Files\FileDbRt.xml; DestDir: {app};
+
 Source: Files\Protected\FileDbExplorer.exe; DestDir: {app}; Flags: replacesameversion
 Source: Files\FileDbExplorer.exe.config; DestDir: {app}
 Source: Files\TenTec.Windows.iGridLib.iGrid.v3.0.dll; DestDir: {app}
@@ -91,15 +96,17 @@ Source: Files\Samples\WPF\Properties\*; DestDir: {app}\Samples\WPF\Properties
 ;WinForms
 Source: Files\Samples\WinForms\*; DestDir: {app}\Samples\WinForms
 Source: Files\Samples\WinForms\Properties\*; DestDir: {app}\Samples\WinForms\Properties
-;WinPhone
-Source: Files\Samples\WindowsPhone\*; DestDir: {app}\Samples\WindowsPhone
-Source: Files\Samples\WindowsPhone\Properties\*; DestDir: {app}\Samples\WindowsPhone\Properties
+;WinPhoneRT
+Source: Files\Samples\WindowsPhoneRT\*; DestDir: {app}\Samples\WindowsPhoneRT
+Source: Files\Samples\WindowsPhoneRT\Properties\*; DestDir: {app}\Samples\WindowsPhoneRT\Properties
+Source: Files\Samples\WindowsPhoneRT\Assets\*; DestDir: {app}\Samples\WindowsPhoneRT\Assets
+;WinPhoneSL
+Source: Files\Samples\WindowsPhoneSL\*; DestDir: {app}\Samples\WindowsPhoneSL
+Source: Files\Samples\WindowsPhoneSL\Properties\*; DestDir: {app}\Samples\WindowsPhoneSL\Properties
+Source: Files\Samples\WindowsPhoneSL\Assets\*; DestDir: {app}\Samples\WindowsPhoneSL\Assets
+Source: Files\Samples\WindowsPhoneSL\Resources\*; DestDir: {app}\Samples\WindowsPhoneSL\Resources
 ;Shared database
 Source: Files\Samples\Northwind Database\*; DestDir: {app}\Samples\Northwind Database
-;Silverlight
-;Source: Files\Samples\Silverlight\*; DestDir: {app}\Samples\Silverlight
-;Source: Files\Samples\Silverlight\Properties\*; DestDir: {app}\Samples\Silverlight\Properties
-;Source: Files\Samples\Northwind Database\*; DestDir: {app}\Samples\Silverlight\Northwind Database
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -112,7 +119,8 @@ Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\{#APP_NAME}; Filena
 Name: {group}\Help; Filename: {app}\Help.html
 Name: {group}\Samples\FileDb WPF Sample Project; Filename: {app}\Samples\WPF\SampleApp.csproj
 Name: {group}\Samples\FileDb WinForms Sample Project; Filename: {app}\Samples\WinForms\SampleApp.csproj
-Name: {group}\Samples\FileDb Windows Phone Sample Project; Filename: {app}\Samples\WindowsPhone\SampleApp.csproj
+Name: {group}\Samples\FileDb Windows Phone Silverlight Sample Project; Filename: {app}\Samples\WindowsPhoneSL\WindowsPhoneSL.csproj
+Name: {group}\Samples\FileDb Windows Phone RT Sample Project; Filename: {app}\Samples\WindowsPhoneRT\WindowsPhoneRT.csproj
 ;Name: {group}\Samples\FileDb Silverlight Sample Project; Filename: {app}\Samples\Silverlight\SampleApp.csproj
 
 [Run]
@@ -120,7 +128,8 @@ Name: {group}\Samples\FileDb Windows Phone Sample Project; Filename: {app}\Sampl
 Filename: {app}\FileDbExplorer.exe; Description: {cm:LaunchProgram,{#APP_NAME}}; Flags: nowait postinstall skipifsilent
 Filename: {app}\Samples\WPF\SampleApp.csproj; Flags: nowait postinstall skipifsilent shellexec; Description: Open FileDb WPF Sample Project
 Filename: {app}\Samples\WinForms\SampleApp.csproj; Flags: nowait postinstall skipifsilent shellexec; Description: Open FileDb WinForms Sample Project
-Filename: {app}\Samples\WindowsPhone\SampleApp.csproj; Flags: nowait postinstall skipifsilent shellexec; Description: Open FileDb Windows Phone Sample Project
+Filename: {app}\Samples\WindowsPhoneSL\WindowsPhoneSL.csproj; Flags: nowait postinstall skipifsilent shellexec; Description: Open FileDb Windows Phone Silverlight Sample Project
+Filename: {app}\Samples\WindowsPhoneRT\WindowsPhoneRT.csproj; Flags: nowait postinstall skipifsilent shellexec; Description: Open FileDb Windows Phone RT Sample Project
 ;Filename: {app}\Samples\Silverlight\SampleApp.csproj; Flags: nowait postinstall skipifsilent shellexec; Description: Open FileDb Silverlight Sample Project
 ;Filename: {app}\Readme.html; Flags: nowait postinstall skipifsilent shellexec unchecked; Description: Open Readme file
 

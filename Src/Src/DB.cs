@@ -297,7 +297,7 @@ namespace FileDbNs
         /// 
         public override string ToString()
         {
-            return _dbEngine.DbFileName ?? "memory DB";
+            return _dbEngine.DbFileName;
         }
 
         #endregion Overrides

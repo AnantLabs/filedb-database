@@ -1,0 +1,77 @@
+﻿<Page
+    x:Class="WindowsPhoneRT.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WindowsPhoneRT"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <ScrollViewer VerticalScrollMode="Auto" HorizontalScrollMode="Disabled">
+        <!--LayoutRoot is the root grid where all page content is placed-->
+        <Grid x:Name="LayoutRoot" Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!--TitlePanel contains the name of the application and page title-->
+            <StackPanel x:Name="TitlePanel" Grid.Row="0" Margin="12,17,0,28">
+                <TextBlock x:Name="ApplicationTitle" Text="FileDb Sample" FontSize="30"/>
+            </StackPanel>
+
+            <!--ContentPanel-->
+            <Grid x:Name="ContentPanel" Margin="12,60,12,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="0">
+                    <Button Content="Create" Height="Auto" Name="BtnCreate" HorizontalAlignment="Stretch" FontSize="18" Padding="1,1" Click="BtnCreate_Click" />
+                    <Button Content="Add Records" Height="Auto" Name="BtnAddRecords" HorizontalAlignment="Stretch" FontSize="18" Padding="1,1" Click="BtnAddRecords_Click" />
+                    <Button Content="Open" Height="Auto" Name="BtnOpen" HorizontalAlignment="Stretch" FontSize="18" Padding="1,1" Click="BtnOpen_Click" />
+                    <Button Content="Close" Height="Auto" Name="BtnClose" HorizontalAlignment="Stretch" FontSize="18" Padding="1,1" Click="BtnClose_Click" />
+                    <Button Content="Drop" Height="Auto" Name="BtnDrop" HorizontalAlignment="Stretch" FontSize="18" Padding="1,1" Click="BtnDrop_Click" />
+                    <Rectangle Height="2" Fill="White" StrokeThickness="1" HorizontalAlignment="Stretch" />
+                    <Button FontSize="18" Height="Auto" Name="BtnUpdateMatchingRecords" Padding="1,1" HorizontalAlignment="Stretch" Click="BtnUpdateMatchingRecords_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Update matching<LineBreak/>records</TextBlock>
+                    </Button>
+                    <Button FontSize="18" Height="Auto" Name="BtnUpdateRecordsRegex" Padding="1,1" HorizontalAlignment="Stretch" Click="BtnUpdateRecordsRegex_Click" >
+                        <TextBlock TextWrapping="Wrap">Update records<LineBreak/>Regex</TextBlock>
+                    </Button>
+                    <Rectangle Height="2" StrokeThickness="1" HorizontalAlignment="Stretch" Fill="White" />
+                    <Button Content="Clean" FontSize="18" Height="Auto" Name="BtnClean" Padding="1,1" HorizontalAlignment="Stretch" Click="BtnClean_Click" />
+                    <Button Content="Reindex" Height="Auto" Name="BtnReindex" HorizontalAlignment="Stretch" FontSize="18" Click="BtnReindex_Click" />
+                </StackPanel>
+                <StackPanel Height="Auto" HorizontalAlignment="Stretch" Margin="0,0,0,0" Name="stackPanel2" VerticalAlignment="Stretch" Grid.Column="2">
+                    <Button Height="Auto" Name="BtnGetAllRecords" HorizontalAlignment="Stretch" FontSize="18" Click="BtnGetAllRecords_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get All<LineBreak/>Records</TextBlock>
+                    </Button>
+                    <Button Height="Auto" Name="BtnGetRecordsRegex" HorizontalAlignment="Stretch" FontSize="18" Click="BtnGetRecordsRegex_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get Records Regex</TextBlock>
+                    </Button>
+                    <Button Height="Auto" Name="BtnGetMatchingRecords" HorizontalAlignment="Stretch" FontSize="18" Click="BtnGetMatchingRecords_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get Matching<LineBreak/>Records</TextBlock>
+                    </Button>
+                    <Button Height="Auto" Name="BtnGetRecordByIndex" HorizontalAlignment="Stretch" FontSize="18" Click="BtnGetRecordByIndex_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get record<LineBreak/>by index</TextBlock>
+                    </Button>
+                    <Button Height="Auto" Name="BtnGetRecordByKey" HorizontalAlignment="Stretch" FontSize="18" Click="BtnGetRecordByKey_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get record<LineBreak/>by key</TextBlock>
+                    </Button>
+                    <Button Content="LINQ Select" Height="Auto" Name="BtnLinqSelect" HorizontalAlignment="Stretch" FontSize="18" Click="BtnLinqSelect_Click" />
+                    <Rectangle Height="2" Stroke="Bisque" StrokeThickness="1" HorizontalAlignment="Stretch" Fill="White" />
+                    <Button Content="Remove by key" Height="Auto" Name="BtnRemoveByKey" HorizontalAlignment="Stretch" FontSize="18" Click="BtnRemoveByKey_Click" />
+                    <Button Height="Auto" Name="BtnRemoveByValue" HorizontalAlignment="Stretch" FontSize="18" Click="BtnRemoveByValue_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Remove by<LineBreak/>value</TextBlock>
+                    </Button>
+                    <Button Height="Auto" Name="BtnMetaData" HorizontalAlignment="Stretch" FontSize="18" Click="BtnMetaData_Click" >
+                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get/Set<LineBreak/>MetaData</TextBlock>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</Page>

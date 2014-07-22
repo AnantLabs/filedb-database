@@ -206,7 +206,15 @@ namespace FileDbNs
 
         public string DbFileName
         {
-            get { return _dbFileName; }
+            get
+            {
+                string retVal = _dbFileName;
+                if( retVal == null && _dbStream != null )
+                {
+                    retVal = "memory DB";
+                }
+                return retVal;
+            }            
         }
 
         internal float UserVersion
@@ -408,11 +416,11 @@ namespace FileDbNs
             switch( folderLoc )
             {
                 case FolderLocEnum.RoamingFolder:
-                storageFolder = ApplicationData.Current.LocalFolder;
+                storageFolder = ApplicationData.Current.RoamingFolder;
                 break; ;
 
                 case FolderLocEnum.TempFolder:
-                storageFolder = ApplicationData.Current.LocalFolder;
+                storageFolder = ApplicationData.Current.TempFolder;
                 break; ;
 
                 default:
@@ -2199,7 +2207,7 @@ namespace FileDbNs
                     object[] record = readRecord( offset, includeIndex, out deleted );
                     Debug.Assert( !deleted );
 
-                    bool isMatch = evaluate( searchExpGrp, record, _fields );
+                    bool isMatch = searchExpGrp == null || evaluate( searchExpGrp, record, _fields );
 
                     if( isMatch )
                     {
@@ -2244,7 +2252,7 @@ namespace FileDbNs
 
         internal static bool evaluate( FilterExpressionGroup searchExpGrp, object[] record, Fields fields )
         {
-            if( searchExpGrp.Expressions.Count == 0 )
+            if( searchExpGrp == null || searchExpGrp.Expressions.Count == 0 )
                 return true;
 
             bool isMatch = false;
