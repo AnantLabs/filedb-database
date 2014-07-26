@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle( "FileDb Database" )]
-[assembly: AssemblyDescription( "Local database for .NET - Windows version" )]
+[assembly: AssemblyTitle( "FileDb Database - Windows version" )]
+[assembly: AssemblyDescription( "Local database for .NET" )]
 [assembly: AssemblyConfiguration( "" )]
 [assembly: AssemblyCompany( "EzTools Software (www.eztools-software.com)" )]
-[assembly: AssemblyProduct( "FileDb .NET Database Engine" )]
+[assembly: AssemblyProduct( "FileDb .NET Database Engine - Windows version" )]
 [assembly: AssemblyCopyright( "Copyright © EzTools Software - all rights reserved" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
