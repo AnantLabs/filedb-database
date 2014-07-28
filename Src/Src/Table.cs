@@ -96,7 +96,7 @@ namespace FileDbNs
         
         /// <summary>
         /// Used for auto-increment fields. Set to the number which you want incrementing to begin.
-        /// Set to -1 if not an auto-increment field.
+        /// Leave it null if not an auto-increment field.
         /// </summary>
         public Int32? AutoIncStart { get; set; }
 
