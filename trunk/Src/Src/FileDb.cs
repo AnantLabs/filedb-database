@@ -4337,13 +4337,31 @@ namespace FileDbNs
                     }
                     else
                     {
-                        bool val;
-                        if( data.GetType() == typeof( bool ) )
+                        bool val = false;
+                        if( data is bool )
+                        {
                             val = (bool) data;
-                        else if( data.GetType() == typeof( Byte ) )
-                            val = ((Byte) data) == 0 ? true : false;
+                        }
+                        else if( data is string )
+                        {
+                            var s = (string) data;
+                            if( string.Compare( s, "false", StringComparison.OrdinalIgnoreCase ) == 0 )
+                                val = false;
+                            else if( string.Compare( s, "true", StringComparison.OrdinalIgnoreCase ) == 0 )
+                                val = true;
+                        }
                         else
-                            throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
+                        {
+                            try
+                            {
+                                Int32 i = Convert.ToInt32( data );
+                                val = i != 0;
+                            }
+                            catch //( Exception )
+                            {
+                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
+                            }
+                        }
 
                         dataWriter.Write( val ? (Byte) 1 : (Byte) 0 );
                     }
