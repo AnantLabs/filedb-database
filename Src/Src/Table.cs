@@ -6,6 +6,7 @@
  * Written by Brett Goodman <eztools-software.com>, October 2014
  */
 using System;
+using System.Dynamic;
 using System.IO;
 using System.Text;
 using System.Collections;
@@ -196,12 +197,15 @@ namespace FileDbNs
         Fields _fields;
         List<object> _values;
 
+        // experimenting with dymanics
+        //public dynamic DynamicFields;
+
         /// <summary>
         /// Create a Record object with the indicated Fields and values.  If creating a list of Record objects 
         /// (for a Records list) be sure to use the same Fields list for each Record.
         /// </summary>
-        /// <param name="fields"></param>
-        /// <param name="values"></param>
+        /// <param name="fields">List of Field objects</param>
+        /// <param name="values">Array of values.  Each value will be converted to the Field type if possible.</param>
         /// 
         public Record( Fields fields, object[] values )
         {
@@ -211,11 +215,145 @@ namespace FileDbNs
             for( int n=0; n < fields.Count; n++ )
             {
                 Field field = fields[n];
-                object val = null;                
+                object val = null;
                 if( values != null )
+                {
                     val = values[n];
+
+                    if( val != null && !field.IsArray )
+                    {
+                        // if the field is NOT an Array type and its NOT in the correct type, we must attempt convert it 
+                        val = convertObjectToFieldType( val, field );
+                    }
+                }
+
                 _values.Add( val );
             }
+        }
+
+        /// <summary>
+        /// Create a Record object with the indicated Fields and values.  If creating a list of Record objects 
+        /// (for a Records list) be sure to use the same Fields list for each Record.
+        /// </summary>
+        /// <param name="fields">List of Field objects</param>
+        /// <param name="values">Array of values.  Each value will be converted to the Field type if possible.</param>
+        /// 
+        public Record( Fields fields, FieldValues values )
+        {
+            _fields = fields;
+            _values = new List<object>( fields.Count );
+            // we must initialize the record values with null
+            for( int n=0; n < fields.Count; n++ )
+                _values.Add( null );
+
+            foreach( var val in values )
+            {
+                this[val.Key] = convertObjectToFieldType( val.Value, fields[val.Key] );
+            }
+        }
+
+
+        object convertObjectToFieldType( object data, Field field )
+        {
+            object val = data;
+
+            switch( field.DataType )
+            {
+                case DataTypeEnum.Byte:
+                    if( data.GetType() != typeof(Byte) )
+                        val = Convert.ToByte( data );
+                    break;
+
+                case DataTypeEnum.Int32:
+                    if( data.GetType() != typeof(Int32) )
+                        val = Convert.ToInt32( data );
+                    break;
+
+                case DataTypeEnum.UInt32:
+                    if( data.GetType() != typeof(UInt32) )
+                        val = Convert.ToUInt32( data );
+                    break;
+
+                case DataTypeEnum.Float:
+                    if( data.GetType() != typeof(float) )
+                        val = Convert.ToSingle( data );
+                    break;
+
+                case DataTypeEnum.Double:
+                    if( data.GetType() != typeof(double) )
+                        val = Convert.ToDouble( data );
+                    break;
+
+                case DataTypeEnum.Bool:
+                    if( data.GetType() != typeof(bool) )
+                    {
+                        if( data is string )
+                        {
+                            var s = (string) data;
+                            if( string.Compare( s, "false", StringComparison.OrdinalIgnoreCase ) == 0 )
+                                val = false;
+                            else if( string.Compare( s, "true", StringComparison.OrdinalIgnoreCase ) == 0 )
+                                val = true;
+                        }
+                        else
+                        {
+                            try
+                            {
+                                Int32 i = Convert.ToInt32( data );
+                                val = i != 0;
+                            }
+                            catch //( Exception )
+                            {
+                                throw new FileDbException( FileDbException.InValidBoolType, FileDbExceptionsEnum.InvalidDataType );
+                            }
+                        }
+                    }
+                    break;
+
+                case DataTypeEnum.DateTime:
+                    if( data.GetType() != typeof( DateTime ) )
+                    {
+                        if( data is string )
+                            val = DateTime.Parse( data.ToString() );
+                        else
+                            throw new FileDbException( FileDbException.InvalidDateTimeType,
+                                FileDbExceptionsEnum.InvalidDataType );
+                    }
+                    break;
+
+                case DataTypeEnum.String:
+                    if( data.GetType() != typeof( String ) )
+                        val = data.ToString();
+                    break;
+
+                case DataTypeEnum.Int64:
+                    if( data.GetType() != typeof(Int64) )
+                        val = Convert.ToInt64( data );
+                    break;
+
+                case DataTypeEnum.Decimal:
+                    if( data.GetType() != typeof(Decimal) )
+                    {
+                        val = Convert.ToDecimal( data );
+                    }
+                    break;
+
+                case DataTypeEnum.Guid:
+                    if( !(data is Guid) )
+                    {
+                        if( data is string )
+                            val = new Guid( data.ToString() );
+                        else
+                            throw new FileDbException( FileDbException.InvalidDateTimeType, FileDbExceptionsEnum.InvalidDataType );
+                    }
+                    break;
+
+                default:
+                    // Unknown type
+                    throw new FileDbException( string.Format( FileDbException.StrInvalidDataType2,
+                        field.Name, field.DataType, data.GetType().Name ), FileDbExceptionsEnum.InvalidDataType );
+            }
+            return val;
         }
 
         public override string ToString()
@@ -270,8 +408,8 @@ namespace FileDbNs
                 Field f = _fields[0];
                 switch( f.DataType )
                 {
-                    case DataTypeEnum.String:
-                        type = typeof( String );
+                    case DataTypeEnum.Bool:
+                        type = typeof( Boolean );
                         break;
                     case DataTypeEnum.Byte:
                         type = typeof( Byte );
@@ -282,17 +420,26 @@ namespace FileDbNs
                     case DataTypeEnum.UInt32:
                         type = typeof( UInt32 );
                         break;
+                    case DataTypeEnum.Int64:
+                        type = typeof( Int64 );
+                        break;
                     case DataTypeEnum.Float:
                         type = typeof( Single );
                         break;
+                    //case DataTypeEnum.Single:
+                    //    type = typeof( Single );
+                    //    break;
                     case DataTypeEnum.Double:
                         type = typeof( Double );
                         break;
-                    case DataTypeEnum.Bool:
-                        type = typeof( Boolean );
+                    case DataTypeEnum.Decimal:
+                        type = typeof( Double );
                         break;
                     case DataTypeEnum.DateTime:
                         type = typeof( DateTime );
+                        break;
+                    case DataTypeEnum.String:
+                        type = typeof( String );
                         break;
                 }
                 types.Add( type );
@@ -424,6 +571,18 @@ namespace FileDbNs
         }
 
         #region Get helpers
+
+        /// <summary>
+        /// Return the Typed field value.
+        /// </summary>
+        /// <param name="fieldName">The name of the field</param>
+        /// <returns>The Type field value</returns>
+        /// 
+        public T GetValue<T>( string fieldName )
+        {
+            return (T) this[fieldName];
+        }
+
 
         /// <summary>
         /// Return the integer field value.
@@ -898,6 +1057,23 @@ namespace FileDbNs
             return string.Format( "NumRecords = {0}", this.Count );
         }
 
+        /* experimenting with dymanics
+         * 
+        public void SetDynamicFields()
+        {
+            foreach( var record in this )
+            {
+                record.DynamicFields = new ExpandoObject();
+
+                var expando = (IDictionary<String, Object>) record.DynamicFields;
+                
+                for( int idx = 0; idx < record.FieldNames.Count; idx++ )
+                {
+                    expando.Add( record.FieldNames[idx], record.Values[idx] );
+                }
+            }
+        }*/
+
         /// <summary>
         /// The Records of the Table
         /// </summary>
@@ -911,15 +1087,29 @@ namespace FileDbNs
         public Fields Fields { get { return _fields; } }
 
         /// <summary>
-        /// Create a new Record with all of the fields of the Table.  The Record is not 
-        /// added to the Table.  To do this, call Records.Add.
+        /// Add a new Record to this Table with the specfied values, which must be in the order
+        /// of their corresponding fields.
         /// </summary>
         /// <returns></returns>
         /// 
-        public Record NewRow()
+        public Record AddRecord( object[] row )
         {
-            Record row = new Record( _fields, null );
-            return row;
+            var record = new Record( _fields, row );
+            this.Add( record );
+            return record;
+        }
+
+        /// <summary>
+        /// Add a new Record to this Table with the FieldValues
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        /// 
+        public Record AddRecord( FieldValues values )
+        {
+            var record = new Record( _fields, values );
+            this.Add( record );
+            return record;
         }
 
         #if NETFX_CORE || PCL
