@@ -255,8 +255,11 @@ namespace FileDbNs
 
         object convertObjectToFieldType( object data, Field field )
         {
+            if( data == null )
+              return null;
+            
             object val = data;
-
+            
             switch( field.DataType )
             {
                 case DataTypeEnum.Byte:
