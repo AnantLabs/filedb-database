@@ -42,6 +42,23 @@ namespace FileDbNs
         /// <param name="searchVal">The Field value to filter on</param>
         /// <param name="equality">The Equality operator to use in the value comparison</param>
         /// <param name="matchType">The match type, eg. MatchType.Exact</param>
+        /// 
+        public FilterExpression( string fieldName, object searchVal, ComparisonOperatorEnum equality, MatchTypeEnum matchType )
+        {
+            FieldName = fieldName;
+            SearchVal = searchVal;
+            MatchType = matchType;
+            Equality = equality;
+            IsNot = false;
+        }
+
+        /// <summary>
+        /// Create a FilterExpression with the indicated values
+        /// </summary>
+        /// <param name="fieldName">The name of the Field to filter on</param>
+        /// <param name="searchVal">The Field value to filter on</param>
+        /// <param name="equality">The Equality operator to use in the value comparison</param>
+        /// <param name="matchType">The match type, eg. MatchType.Exact</param>
         /// <param name="isNot">Operator negation</param>
         /// 
         public FilterExpression( string fieldName, object searchVal, ComparisonOperatorEnum equality, MatchTypeEnum matchType, bool isNot )
