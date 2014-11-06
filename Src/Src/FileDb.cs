@@ -1718,9 +1718,9 @@ namespace FileDbNs
                     object[] record = readRecord( _index[index], false, out deleted );
                     Debug.Assert( !deleted );
 
-                    object val = record[field.Ordinal].ToString();
+                    //object val = record[field.Ordinal].ToString();
 
-                    if( (searchExp.Equality == EqualityEnum.Like || searchExp.Equality == EqualityEnum.NotLike) && regex == null )
+                    if( (searchExp.Equality == ComparisonOperatorEnum.Regex /*|| searchExp.Equality == EqualityEnum.NotRegex*/) && regex == null )
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     bool isMatch = evaluate( field, searchExp, record, regex );
@@ -2131,7 +2131,7 @@ namespace FileDbNs
                     object[] record = readRecord( offset, includeIndex, out deleted );
                     Debug.Assert( !deleted );
 
-                    if( (searchExp.Equality == EqualityEnum.Like || searchExp.Equality == EqualityEnum.NotLike) && regex == null )
+                    if( (searchExp.Equality == ComparisonOperatorEnum.Regex /*|| searchExp.Equality == EqualityEnum.NotRegex*/) && regex == null )
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     bool isMatch = evaluate( field, searchExp, record, regex );
@@ -2328,130 +2328,162 @@ namespace FileDbNs
             if( field.IsArray )
                 return false;
 
-            EqualityEnum compareResult = EqualityEnum.NotEqual;
+            var compareResult = ComparisonOperatorEnum.NotEqual;
 
             // get the field value
             object val = record[field.Ordinal];
 
-            if( val == null && searchExp.SearchVal == null ) // both null - I don't know if this is possible
-            {
+            bool isMatch = false;
+
+            if( val == null && searchExp.SearchVal == null ) // both null - maybe not possible?
                 return true;
-            }
-            else if( val != null && searchExp.SearchVal != null ) // neither null
+
+            else if( val == null || searchExp.SearchVal == null ) // only 1 is null
+                return false;
+            
+            // neither null
+            
+            if( searchExp.Equality == ComparisonOperatorEnum.Contains )
             {
-                // putting the RegEx search first (outside of the test below) allows RegEx searches on non-string fields
-                if( (searchExp.Equality == EqualityEnum.Like || searchExp.Equality == EqualityEnum.NotLike) )
+                // hopefully searching for strings
+
+                string str = val.ToString();
+
+                if( !string.IsNullOrEmpty( str ) )
                 {
-                    // hopefully searching for strings
-
-                    if( regex == null )
-                        regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
-
                     // See if the record matches the regular expression
-                    compareResult = regex.IsMatch( val.ToString() ) ? EqualityEnum.Like : EqualityEnum.NotLike;
+                    var idx = str.IndexOf( searchExp.SearchVal.ToString(), searchExp.MatchType == MatchTypeEnum.IgnoreCase ? 
+                        StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture );
+                    isMatch = idx >= 0;
                 }
-                else if( searchExp.Equality == EqualityEnum.In || searchExp.Equality == EqualityEnum.NotIn )
+            }
+            else if( searchExp.Equality == ComparisonOperatorEnum.Regex ) //|| searchExp.Equality == EqualityEnum.NotRegex) )
+            {
+                // hopefully searching for strings
+
+                if( regex == null )
+                    regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
+
+                //compareResult = regex.IsMatch( val.ToString() ) ? EqualityEnum.Regex : EqualityEnum.NotRegex;
+                //compareResult = ComparisonOperatorEnum.Regex;
+                string str = val.ToString();
+
+                if( !string.IsNullOrEmpty( str ) )
                 {
-                    HashSet<object> hashSet = searchExp.SearchVal as HashSet<object>;
-                    if( hashSet == null )
-                        throw new FileDbException( FileDbException.HashSetExpected, FileDbExceptionsEnum.HashSetExpected );
-
-                    // If the HashSet was created by the FilterExpression parser, the Field type wasn't
-                    // yet known so all of the values will be string.  We must convert them to the
-                    // Field type now.
-
-                    if( field.DataType != DataTypeEnum.String )
-                    {
-                        HashSet<object> tempHashSet = new HashSet<object>();
-                        foreach( object obj in hashSet )
-                        {
-                            tempHashSet.Add( convertValueToType( obj, field.DataType ) );
-                        }
-                        hashSet = tempHashSet;
-                        searchExp.SearchVal = tempHashSet;
-                    }
-                    else
-                    {
-                        if( searchExp.MatchType == MatchTypeEnum.IgnoreCase )
-                            val = val.ToString().ToUpper();
-                    }
-
-                    compareResult = hashSet.Contains( val ) ? EqualityEnum.In : EqualityEnum.NotIn;
-                    
-                    #if DEBUG
-                    if( compareResult == EqualityEnum.In )
-                    {
-                        int debug = 0;
-                    }
-                    #endif
+                    // See if the record matches the regular expression
+                    isMatch = regex.IsMatch( str );
                 }
-                else if( field.DataType == DataTypeEnum.String )
+            }
+            else if( searchExp.Equality == ComparisonOperatorEnum.In ) //|| searchExp.Equality == EqualityEnum.NotIn )
+            {
+                var hashSet = searchExp.SearchVal as HashSet<object>;
+                if( hashSet == null )
+                    throw new FileDbException( FileDbException.HashSetExpected, FileDbExceptionsEnum.HashSetExpected );
+
+                // If the HashSet was created by the FilterExpression parser, the Field type wasn't
+                // yet known so all of the values will be string.  We must convert them to the
+                // Field type now.
+
+                if( field.DataType != DataTypeEnum.String )
+                {
+                    var tempHashSet = new HashSet<object>();
+                    foreach( object obj in hashSet )
+                    {
+                        tempHashSet.Add( convertValueToType( obj, field.DataType ) );
+                    }
+                    hashSet = tempHashSet;
+                    searchExp.SearchVal = tempHashSet;
+                }
+                else
+                {
+                    if( searchExp.MatchType == MatchTypeEnum.IgnoreCase )
+                        val = val.ToString().ToUpper();
+                }
+
+                //compareResult = hashSet.Contains( val ) ? EqualityEnum.In : EqualityEnum.NotIn;
+                //compareResult = ComparisonOperatorEnum.In;
+                isMatch = hashSet.Contains( val );
+            }
+            else // all others
+            {
+                if( field.DataType == DataTypeEnum.String )
                 {
                     int ncomp = string.Compare( searchExp.SearchVal.ToString(), val.ToString(),
-                        searchExp.MatchType == MatchTypeEnum.UseCase ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase );
+                        searchExp.MatchType == MatchTypeEnum.UseCase
+                            ? StringComparison.CurrentCulture
+                            : StringComparison.CurrentCultureIgnoreCase );
 
-                    compareResult = ncomp == 0 ? EqualityEnum.Equal : (ncomp > 0 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    compareResult = ncomp == 0
+                        ? ComparisonOperatorEnum.Equal
+                        : (ncomp > 0 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 else
                 {
                     compareResult = compareVals( field, val, searchExp.SearchVal );
                 }
-            }
 
-            bool isMatch = false;
+                // compareResult should only be one of: Equal, NotEqual, GreaterThan, LessThan
 
-            // compareResult should only be one of: Equal, NotEqual, GreaterThan, LessThan
+                // first check for NotEqual since it would be anythying which is not Equal
 
-            // first check for NotEqual since it would be anythying which is not Equal
-
-            if( searchExp.Equality == EqualityEnum.NotEqual )
-            {
-                if( compareResult != EqualityEnum.Equal )
-                    isMatch = true;
-            }
-            else
-            {
-                // are they the same?
-                if( compareResult == searchExp.Equality )
-                    isMatch = true;
+                if( searchExp.Equality == ComparisonOperatorEnum.NotEqual )
+                {
+                    // a match is anything BUT equal
+                    if( compareResult != ComparisonOperatorEnum.Equal )
+                        isMatch = true;
+                }
                 else
                 {
-                    if( compareResult == EqualityEnum.Equal )
-                    {
-                        if( searchExp.Equality == EqualityEnum.Equal ||
-                            searchExp.Equality == EqualityEnum.LessThanOrEqual ||
-                            searchExp.Equality == EqualityEnum.GreaterThanOrEqual )
-                        {
-                            isMatch = true;
-                        }
-                    }
-                    else if( compareResult == EqualityEnum.NotEqual )
-                    {
-                        if( searchExp.Equality == EqualityEnum.NotEqual ||
-                            searchExp.Equality == EqualityEnum.LessThan ||
-                            searchExp.Equality == EqualityEnum.GreaterThan )
-                        {
-                            isMatch = true;
-                        }
-                    }
-                    else if( compareResult == EqualityEnum.LessThan &&
-                             (searchExp.Equality == EqualityEnum.LessThan || searchExp.Equality == EqualityEnum.LessThanOrEqual) )
+                    // are they the same?
+                    if( compareResult == searchExp.Equality )
                     {
                         isMatch = true;
                     }
-                    else if( compareResult == EqualityEnum.GreaterThan &&
-                             (searchExp.Equality == EqualityEnum.GreaterThan || searchExp.Equality == EqualityEnum.GreaterThanOrEqual) )
+                    else
                     {
-                        isMatch = true;
+                        if( compareResult == ComparisonOperatorEnum.Equal )
+                        {
+                            if( searchExp.Equality == ComparisonOperatorEnum.Equal ||
+                                searchExp.Equality == ComparisonOperatorEnum.LessThanOrEqual ||
+                                searchExp.Equality == ComparisonOperatorEnum.GreaterThanOrEqual )
+                            {
+                                isMatch = true;
+                            }
+                        }
+                        else if( compareResult == ComparisonOperatorEnum.NotEqual )
+                        {
+                            if( searchExp.Equality == ComparisonOperatorEnum.NotEqual ||
+                                searchExp.Equality == ComparisonOperatorEnum.LessThan ||
+                                searchExp.Equality == ComparisonOperatorEnum.GreaterThan )
+                            {
+                                isMatch = true;
+                            }
+                        }
+                        else if( compareResult == ComparisonOperatorEnum.LessThan &&
+                                 (searchExp.Equality == ComparisonOperatorEnum.LessThan ||
+                                  searchExp.Equality == ComparisonOperatorEnum.LessThanOrEqual) )
+                        {
+                            isMatch = true;
+                        }
+                        else if( compareResult == ComparisonOperatorEnum.GreaterThan &&
+                                 (searchExp.Equality == ComparisonOperatorEnum.GreaterThan ||
+                                  searchExp.Equality == ComparisonOperatorEnum.GreaterThanOrEqual) )
+                        {
+                            isMatch = true;
+                        }
                     }
                 }
             }
+            
+            if( searchExp.IsNot )
+                isMatch = !isMatch; // NOT the whole thing
+
             return isMatch;
         }
 
-        static EqualityEnum compareVals( Field field, object val1, object val2 )
+        static ComparisonOperatorEnum compareVals( Field field, object val1, object val2 )
         {
-            EqualityEnum retVal = EqualityEnum.NotEqual;
+            var retVal = ComparisonOperatorEnum.NotEqual;
 
             switch( field.DataType )
             {
@@ -2460,7 +2492,7 @@ namespace FileDbNs
                     Byte b1 = Convert.ToByte( val1 ),
                          b2 = Convert.ToByte( val2 );
 
-                    retVal = b1 == b2 ? EqualityEnum.Equal : (b1 > b2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = b1 == b2 ? ComparisonOperatorEnum.Equal : (b1 > b2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2469,7 +2501,7 @@ namespace FileDbNs
                     bool b1 = Convert.ToBoolean( val1 ),
                          b2 = Convert.ToBoolean( val2 );
 
-                    retVal = b1 == b2 ? EqualityEnum.Equal : EqualityEnum.NotEqual;
+                    retVal = b1 == b2 ? ComparisonOperatorEnum.Equal : ComparisonOperatorEnum.NotEqual;
                 }
                 break;
 
@@ -2478,7 +2510,7 @@ namespace FileDbNs
                     float f1 = Convert.ToSingle( val1 ),
                           f2 = Convert.ToSingle( val2 );
 
-                    retVal = f1 == f2 ? EqualityEnum.Equal : (f1 > f2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = f1 == f2 ? ComparisonOperatorEnum.Equal : (f1 > f2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2487,7 +2519,7 @@ namespace FileDbNs
                     double d1 = Convert.ToDouble( val1 ),
                            d2 = Convert.ToDouble( val2 );
 
-                    retVal = d1 == d2 ? EqualityEnum.Equal : (d1 > d2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = d1 == d2 ? ComparisonOperatorEnum.Equal : (d1 > d2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2500,7 +2532,7 @@ namespace FileDbNs
                     {
                         int debug = 0;
                     }*/
-                    retVal = i1 == i2 ? EqualityEnum.Equal : (i1 > i2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = i1 == i2 ? ComparisonOperatorEnum.Equal : (i1 > i2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2509,7 +2541,7 @@ namespace FileDbNs
                     UInt32 i1 = Convert.ToUInt32( val1 ),
                            i2 = Convert.ToUInt32( val2 );
 
-                    retVal = i1 == i2 ? EqualityEnum.Equal : (i1 > i2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = i1 == i2 ? ComparisonOperatorEnum.Equal : (i1 > i2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2518,14 +2550,14 @@ namespace FileDbNs
                     DateTime dt1 = Convert.ToDateTime( val1 ),
                              dt2 = Convert.ToDateTime( val2 );
                     
-                    retVal = dt1 == dt2 ? EqualityEnum.Equal : (dt1 > dt2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = dt1 == dt2 ? ComparisonOperatorEnum.Equal : (dt1 > dt2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
                 case DataTypeEnum.String:
                 {                    
                     int ncomp = string.Compare( val1.ToString(), val2.ToString(), StringComparison.CurrentCulture );
-                    retVal = ncomp == 0 ? EqualityEnum.Equal : (ncomp > 0 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = ncomp == 0 ? ComparisonOperatorEnum.Equal : (ncomp > 0 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2534,7 +2566,7 @@ namespace FileDbNs
                     Int64 i1 = Convert.ToInt64( val1 ),
                           i2 = Convert.ToInt64( val2 );
 
-                    retVal = i1 == i2 ? EqualityEnum.Equal : (i1 > i2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = i1 == i2 ? ComparisonOperatorEnum.Equal : (i1 > i2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2543,7 +2575,7 @@ namespace FileDbNs
                     Decimal d1 = Convert.ToDecimal( val1 ),
                             d2 = Convert.ToDecimal( val2 );
 
-                    retVal = d1 == d2 ? EqualityEnum.Equal : (d1 > d2 ? EqualityEnum.GreaterThan : EqualityEnum.LessThan);
+                    retVal = d1 == d2 ? ComparisonOperatorEnum.Equal : (d1 > d2 ? ComparisonOperatorEnum.GreaterThan : ComparisonOperatorEnum.LessThan);
                 }
                 break;
 
@@ -2552,7 +2584,7 @@ namespace FileDbNs
                     Guid g1 = convertToGuid( val1 ),
                          g2 = convertToGuid( val2 );
 
-                    retVal = g1.CompareTo( g2 ) == 0 ? EqualityEnum.Equal : EqualityEnum.NotEqual;
+                    retVal = g1.CompareTo( g2 ) == 0 ? ComparisonOperatorEnum.Equal : ComparisonOperatorEnum.NotEqual;
                 }
                 break;
             }
@@ -5173,19 +5205,9 @@ namespace FileDbNs
 
             try
             {
-                if( _ver_major >= 2 )
+                if( _ver_major >= 2 && reader.PeekChar() != -1 )
                 {
-                    DataTypeEnum dataType;
-
-                    try
-                    {
-                        dataType = (DataTypeEnum) reader.ReadInt32();
-                    }
-                    catch( EndOfStreamException ex )
-                    {
-                        // just means there was no metadata
-                        return;
-                    }
+                    var dataType = (DataTypeEnum) reader.ReadInt32();
 
                     switch( dataType )
                     {

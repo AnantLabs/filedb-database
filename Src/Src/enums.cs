@@ -85,7 +85,7 @@ namespace FileDbNs
     /// <summary>
     /// Specifies the comparison operator to use for FilterExpressions
     /// </summary>
-    public enum EqualityEnum { Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, In, NotIn, Like, NotLike }
+    public enum ComparisonOperatorEnum { Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, In, Regex, Contains } //NotRegex, NotIn, NotEqual }
 
     //=====================================================================
     /// <summary>
