@@ -481,7 +481,7 @@ namespace SampleApp
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
                 FileDbNs.Table table = _db.SelectRecords( fieldSearchExp );
                 displayRecords( table );
@@ -504,24 +504,26 @@ namespace SampleApp
             {
                 // Use the FilterExpressionGroup's filter parser to create a FilterExpressionGroup
                 // The syntax is similar to SQL (do not preceed with WHERE)
-                // Note that we prefix the fieldname with ~ to get a case-INSENSITIVE search
+                // Note that there are 2 ways to get a case-INSENSITIVE search:
+                // Use either ~= or you can prefix the fieldname with ~
+                // Both methods are shown below
                 // (FileDb doesn't currently support UPPER or LOWER)
-                // Note that we can also use LIKE when we want to ignore case, but the difference
-                // is that LIKE will create a RegEx search which would be a little slower
-                // Note also that each set of parentheses will create a child FilterExpressionGroup
 
-                string filter = "(~FirstName = 'steven' OR [FirstName] LIKE 'NANCY') AND LastName = 'Fuller'";
+                string filter = "(~FirstName = 'steven' OR [FirstName] ~= 'NANCY') AND LastName = 'Fuller'";
 
+                // automatically create the FilterExpressionGroup
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
                 FileDbNs.Table table = _db.SelectRecords( filterExpGrp );
                 displayRecords( table );
 
-                // we can manually build the same FilterExpressionGroup
-                var fname1Exp = new FilterExpression( "FirstName", "steven", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                // we can MANUALLY build the same FilterExpressionGroup
+                var fname1Exp = new FilterExpression( "FirstName", "steven", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                
                 // the following two lines produce the same FilterExpression
-                var fname2Exp = FilterExpression.Parse( "FirstName LIKE 'NANCY'" );
-                fname2Exp = new FilterExpression( "FirstName", "NANCY", EqualityEnum.Like );
-                var lnameExp = new FilterExpression( "LastName", "Fuller", EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                var fname2Exp = FilterExpression.Parse( "FirstName ~= 'NANCY'" );
+                fname2Exp = new FilterExpression( "FirstName", "NANCY", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                
+                var lnameExp = new FilterExpression( "LastName", "Fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
@@ -672,11 +674,11 @@ fieldValues["StringArray"] = new string[] { "x", null };
                 displayRecords( table );
 
                 // equivalent building it manually
-                var fname1Exp = new FilterExpression( "FirstName", "andrew", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "andrew", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
                 // the following lines produce the same FilterExpression
                 var fname2Exp = FilterExpression.Parse( "~FirstName = nancy" );
-                fname2Exp = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var lnameExp = new FilterExpression( "LastName", "fuller", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                fname2Exp = new FilterExpression( "FirstName", "nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
@@ -710,7 +712,7 @@ fieldValues["StringArray"] = new string[] { "x", null };
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
                 var fieldValues = new FieldValues();
                 fieldValues.Add( "IsCitizen", true );
@@ -786,7 +788,7 @@ fieldValues["StringArray"] = new string[] { "x", null };
             {
                 string searchVal = "Buchanan";
 
-                FilterExpression fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                FilterExpression fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
                 FileDbNs.Table table = _db.SelectRecords( fieldSearchExp, null, null, true );
 
                 Record record = table[0];
@@ -802,7 +804,7 @@ fieldValues["StringArray"] = new string[] { "x", null };
         {
             try
             {
-                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
                 int numDeleted = _db.DeleteRecords( searchExp );
             }
             catch( Exception ex )
@@ -815,8 +817,8 @@ fieldValues["StringArray"] = new string[] { "x", null };
         {
             try
             {
-                var lnameExp = new FilterExpression( "LastName", "peacock", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var fname1Exp = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "peacock", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var allNamesGrp = new FilterExpressionGroup();
                 allNamesGrp.Add( BoolOpEnum.Or, lnameExp );
@@ -839,8 +841,8 @@ fieldValues["StringArray"] = new string[] { "x", null };
         {
             try
             {
-                var exp1 = new FilterExpression( "FirstName", "Nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var exp2 = new FilterExpression( "LastName", "Leverling", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var exp1 = new FilterExpression( "FirstName", "Nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var exp2 = new FilterExpression( "LastName", "Leverling", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
                 var expGrp = new FilterExpressionGroup();
                 expGrp.Add( BoolOpEnum.Or, exp1 );
                 expGrp.Add( BoolOpEnum.Or, exp2 );
@@ -987,8 +989,10 @@ fieldValues["StringArray"] = new string[] { "x", null };
                 try
                 {
                     employeesDb.Open( path + "Employees.fdb", true );
+
+                    // create a Regex filter
                     string searchVal = @"\bFull";
-                    var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                    var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
                     FileDbNs.Table table = employeesDb.SelectRecords( fieldSearchExp );
 
