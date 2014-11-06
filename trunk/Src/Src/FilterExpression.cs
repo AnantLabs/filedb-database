@@ -11,6 +11,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace FileDbNs
 {
@@ -29,8 +30,8 @@ namespace FileDbNs
         /// <param name="searchVal">The Field value to filter on</param>
         /// <param name="equality">The Equality operator to use in the value comparison</param>
         /// 
-        public FilterExpression( string fieldName, object searchVal, EqualityEnum equality )
-            : this( fieldName, searchVal, equality, MatchTypeEnum.UseCase )
+        public FilterExpression( string fieldName, object searchVal, ComparisonOperatorEnum equality )
+            : this( fieldName, searchVal, equality, MatchTypeEnum.UseCase, false )
         {
         }
 
@@ -41,13 +42,15 @@ namespace FileDbNs
         /// <param name="searchVal">The Field value to filter on</param>
         /// <param name="equality">The Equality operator to use in the value comparison</param>
         /// <param name="matchType">The match type, eg. MatchType.Exact</param>
+        /// <param name="isNot">Operator negation</param>
         /// 
-        public FilterExpression( string fieldName, object searchVal, EqualityEnum equality, MatchTypeEnum matchType )
+        public FilterExpression( string fieldName, object searchVal, ComparisonOperatorEnum equality, MatchTypeEnum matchType, bool isNot )
         {
             FieldName = fieldName;
             SearchVal = searchVal;
             MatchType = matchType;
             Equality = equality;
+            IsNot = isNot;
         }
 
         internal BoolOpEnum BoolOp { get; set; }
@@ -55,7 +58,8 @@ namespace FileDbNs
         public string FieldName { get; set; }
         public object SearchVal { get; set; }
         public MatchTypeEnum MatchType { get; set; }
-        public EqualityEnum Equality { get; set; }
+        public ComparisonOperatorEnum Equality { get; set; }
+        public bool IsNot { get; set; }
 
         /// <summary>
         /// Parse the expression string to create a FilterExpressionGroup representing a simple expression.
@@ -73,6 +77,28 @@ namespace FileDbNs
             return fexp;
         }
 
+        /// <summary>
+        /// Utility method to transform a filesystem wildcard pattern into a regex pattern
+        /// eg. december* or mary?
+        /// </summary>
+        /// <param name="pattern"></param>
+        /// <returns></returns>
+        /// 
+        public static string WildcardToRegex( string pattern )
+        {
+            string result = Regex.Escape( pattern )
+                                 .Replace( @"\*", ".+?" )
+                                 .Replace( @"\?", "." );
+
+            if( result.EndsWith( ".+?" ) )
+            {
+                result = result.Remove( result.Length - 3, 3 );
+                result += ".*";
+            }
+
+            return result;
+        }
+        
         /// <summary>
         /// Create a FilterExpression of type "IN". This type is a HashSet of the values which will be used
         /// to filter the query.
@@ -97,7 +123,7 @@ namespace FileDbNs
                 hashSet.Add( val );
             }
 
-            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
+            fexp = new FilterExpression( fieldName, hashSet, ComparisonOperatorEnum.In );
 
             return fexp;
         }
@@ -134,7 +160,7 @@ namespace FileDbNs
                 hashSet.Add( val );
             }
 
-            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
+            fexp = new FilterExpression( fieldName, hashSet, ComparisonOperatorEnum.In );
 
             return fexp;
         }
@@ -158,7 +184,7 @@ namespace FileDbNs
                 hashSet.Add( s );
             }
 
-            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
+            fexp = new FilterExpression( fieldName, hashSet, ComparisonOperatorEnum.In );
 
             return fexp;
         }
@@ -182,7 +208,7 @@ namespace FileDbNs
                 hashSet.Add( id );
             }
 
-            fexp = new FilterExpression( fieldName, hashSet, EqualityEnum.In );
+            fexp = new FilterExpression( fieldName, hashSet, ComparisonOperatorEnum.In );
 
             return fexp;
         }
@@ -265,14 +291,15 @@ namespace FileDbNs
             ParseState state = ParseState.Left;
             bool hasBracket = false,
                  inString = false,
-                 not = false;
+                 isNot = false;
             string fieldName = null;
             object searchVal = null;
             var sbTemp = new StringBuilder();
-            EqualityEnum comparisonOp = EqualityEnum.Equal;
+            ComparisonOperatorEnum comparisonOp = ComparisonOperatorEnum.Equal;
             MatchTypeEnum matchType = MatchTypeEnum.UseCase;
             BoolOpEnum curBoolOp = BoolOpEnum.And;
             int startPos = pos;
+
 
             // skip past any leading spaces
             while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
@@ -310,8 +337,13 @@ namespace FileDbNs
                             parseExpression( filter, ref pos, newSrchExpGrp );
                             state = ParseState.BoolOp;
                         }
+                        else if( filter[pos] == '~' ) // eg. ~LastName
+                        {
+                            matchType = MatchTypeEnum.IgnoreCase;
+                        }
                         else if( char.IsWhiteSpace( filter[pos] ) ||
-                               (!char.IsLetterOrDigit( filter[pos] ) && filter[pos] != '_' && filter[pos] != '~') ) // field names with spaces in them must be wrapped with brackets
+                                 (!char.IsLetterOrDigit( filter[pos] ) && filter[pos] != '_' && filter[pos] != '~') )
+                            // field names with spaces in them must be wrapped with brackets
                         {
                             fieldName = filter.Substring( startPos, pos - startPos ).Trim();
                         }
@@ -339,39 +371,61 @@ namespace FileDbNs
                     // skip whitespace
                     while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
 
-                    if( char.IsLetter( filter[pos] ) ) // LIKE
+                    if( char.IsLetter( filter[pos] ) ) // REGEX
                     {
-                        // should be LIKE or IN
-                        if( pos + 4 >= filter.Length )
-                            throwInvalidFilterConstruct( filter, pos );
+                        // should be CONTAINS, REGEX, IN or NOT
+                        //if( pos + 4 >= filter.Length )
+                        //    throwInvalidFilterConstruct( filter, pos );
 
-                        // NOT
-                        if( char.ToUpper(filter[pos]) == 'N' && char.ToUpper(filter[pos + 1]) == 'O' && char.ToUpper(filter[pos + 2]) == 'T' && char.IsWhiteSpace( filter[pos+3] ) )
+                        try
                         {
-                            pos += 3;
-                            not = true;
-                            continue;
-                        }
-                        // IN
-                        else if( char.ToUpper(filter[pos]) == 'I' && char.ToUpper(filter[pos + 1]) == 'N' && (char.IsWhiteSpace( filter[pos + 2] ) || filter[pos + 2] == '(') )
-                        {
-                            pos += 2;
-                            if( char.IsWhiteSpace( filter[pos] ) ) // skip whitespace
+                            // NOT
+                            if( char.ToUpper( filter[pos] ) == 'N' && char.ToUpper( filter[pos + 1] ) == 'O' &&
+                                char.ToUpper( filter[pos + 2] ) == 'T' && char.IsWhiteSpace( filter[pos + 3] ) )
                             {
-                                while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
-                                if( filter[pos] != '(' )
-                                    throwInvalidFilterConstruct( filter, pos-2 );
+                                pos += 3;
+                                isNot = true;
+                                continue;
                             }
-                            comparisonOp = not ? EqualityEnum.NotIn : EqualityEnum.In;
+                            // IN
+                            else if( char.ToUpper( filter[pos] ) == 'I' && char.ToUpper( filter[pos + 1] ) == 'N' &&
+                                     (char.IsWhiteSpace( filter[pos + 2] ) || filter[pos + 2] == '(') )
+                            {
+                                pos += 2;
+                                if( char.IsWhiteSpace( filter[pos] ) ) // skip whitespace
+                                {
+                                    while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
+                                    if( filter[pos] != '(' )
+                                        throwInvalidFilterConstruct( filter, pos - 2 );
+                                }
+                                comparisonOp = ComparisonOperatorEnum.In;
+                            }
+                            // REGEX
+                            else if( char.ToUpper( filter[pos] ) == 'R' && char.ToUpper( filter[pos + 1] ) == 'E' &&
+                                     char.ToUpper( filter[pos + 2] ) == 'G' && char.ToUpper( filter[pos + 3] ) == 'E' &&
+                                     char.ToUpper( filter[pos + 4] ) == 'X' && char.IsWhiteSpace( filter[pos + 5] ) )
+                            {
+                                pos += 5;
+                                comparisonOp = ComparisonOperatorEnum.Regex;
+                            }
+                            // CONTAINS
+                            else if( char.ToUpper( filter[pos] ) == 'C' && char.ToUpper( filter[pos + 1] ) == 'O' &&
+                                     char.ToUpper( filter[pos + 2] ) == 'N' && char.ToUpper( filter[pos + 3] ) == 'T' &&
+                                     char.ToUpper( filter[pos + 4] ) == 'A' && char.ToUpper( filter[pos + 5] ) == 'I' &&
+                                     char.ToUpper( filter[pos + 6] ) == 'N' && char.ToUpper( filter[pos + 7] ) == 'S' &&
+                                char.IsWhiteSpace( filter[pos + 8] ) )
+                            {
+                                pos += 8;
+                                comparisonOp = ComparisonOperatorEnum.Contains;
+                            }
+                            else
+                                throwInvalidFilterConstruct( filter, pos - 2 );
+
                         }
-                        // LIKE
-                        else if( char.ToUpper( filter[pos] ) == 'L' && char.ToUpper( filter[pos + 1] ) == 'I' && char.ToUpper( filter[pos + 2] ) == 'K' && char.ToUpper( filter[pos + 3] ) == 'E' && char.IsWhiteSpace( filter[pos + 4] ) )
+                        catch( Exception ex )
                         {
-                            pos += 4;
-                            comparisonOp = not? EqualityEnum.NotLike : EqualityEnum.Like;
-                        }
-                        else
                             throwInvalidFilterConstruct( filter, pos - 2 );
+                        }
                     }
                     // alternative way to specify ignore case search (other way is to prefix a fieldname with ~)
                     else if( filter[pos] == '~' ) // ~=
@@ -384,7 +438,7 @@ namespace FileDbNs
                         if( filter[pos] != '=' )
                             throwInvalidFilterConstruct( filter, pos );
 
-                        comparisonOp = EqualityEnum.Equal;
+                        comparisonOp = ComparisonOperatorEnum.Equal;
                     }
                     else if( filter[pos] == '!' ) // !=
                     {
@@ -395,11 +449,12 @@ namespace FileDbNs
                         if( filter[pos] != '=' )
                             throwInvalidFilterConstruct( filter, pos );
 
-                        comparisonOp = EqualityEnum.NotEqual;
+                        comparisonOp = ComparisonOperatorEnum.Equal;
+                        isNot = true;
                     }
                     else if( filter[pos] == '=' )
                     {
-                        comparisonOp = EqualityEnum.Equal;
+                        comparisonOp = ComparisonOperatorEnum.Equal;
                     }
                     else if( filter[pos] == '<' ) // <, <= or <>
                     {
@@ -409,15 +464,16 @@ namespace FileDbNs
                         if( filter[pos + 1] == '>' )
                         {
                             pos++;
-                            comparisonOp = EqualityEnum.NotEqual;
+                            comparisonOp = ComparisonOperatorEnum.Equal;
+                            isNot = true;
                         }
                         else if( filter[pos + 1] == '=' )
                         {
                             pos++;
-                            comparisonOp = EqualityEnum.LessThanOrEqual;
+                            comparisonOp = ComparisonOperatorEnum.LessThanOrEqual;
                         }
                         else
-                            comparisonOp = EqualityEnum.LessThan;
+                            comparisonOp = ComparisonOperatorEnum.LessThan;
                     }
                     else if( filter[pos] == '>' ) // > or >=
                     {
@@ -427,10 +483,10 @@ namespace FileDbNs
                         if( filter[pos + 1] == '=' )
                         {
                             pos++;
-                            comparisonOp = EqualityEnum.GreaterThanOrEqual;
+                            comparisonOp = ComparisonOperatorEnum.GreaterThanOrEqual;
                         }
                         else
-                            comparisonOp = EqualityEnum.GreaterThan;
+                            comparisonOp = ComparisonOperatorEnum.GreaterThan;
                     }
                     else
                     {
@@ -444,7 +500,7 @@ namespace FileDbNs
                 #region Right
                 else if( state == ParseState.Right )
                 {
-                    if( comparisonOp == EqualityEnum.In || comparisonOp == EqualityEnum.NotIn )
+                    if( comparisonOp == ComparisonOperatorEnum.In ) //|| comparisonOp == EqualityEnum.NotIn )
                     {
                         // skip whitespace
                         while( pos < filter.Length && char.IsWhiteSpace( filter[pos] ) ) pos++;
@@ -486,7 +542,7 @@ namespace FileDbNs
                                 // Expression completed
                                 searchVal = sbTemp.ToString();
                                 sbTemp.Length = 0;
-                                var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType );
+                                var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType, isNot );
                                 parentSrchExpGrp.Add( curBoolOp, srchExp );
                                 if( filter[pos] == ')' )
                                     return;
@@ -515,7 +571,7 @@ namespace FileDbNs
                                     inString = false;
                                     searchVal = sbTemp.ToString();
                                     sbTemp.Length = 0;
-                                    var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType );
+                                    var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType, isNot );
                                     parentSrchExpGrp.Add( curBoolOp, srchExp );
                                     fieldName = null;
                                     state = ParseState.BoolOp;
@@ -589,14 +645,14 @@ namespace FileDbNs
             // did we just complete an Expression?
             if( state == ParseState.Right )
             {
-                if( comparisonOp != EqualityEnum.In && comparisonOp != EqualityEnum.NotIn )
+                if( comparisonOp != ComparisonOperatorEnum.In ) //&& comparisonOp != EqualityEnum.NotIn )
                 {
                     searchVal = sbTemp.ToString();
                     if( !inString && string.Compare( (string) searchVal, "null", StringComparison.OrdinalIgnoreCase ) == 0 )
                         searchVal = null;
                     sbTemp.Length = 0;
                 }
-                var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType );
+                var srchExp = new FilterExpression( fieldName, searchVal, comparisonOp, matchType, isNot );
                 parentSrchExpGrp.Add( curBoolOp, srchExp );
             }
         }

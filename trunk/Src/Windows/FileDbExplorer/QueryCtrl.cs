@@ -606,7 +606,7 @@ namespace FileDbExplorer
         {
             // create a new row regardless if adding or editing
             if( _editRow == null )
-                _editRow = _table.NewRow();
+                _editRow = _table.AddRecord();
 
             #if DEBUG
             if( _nCurEditRow > -1 ) Debug.Assert( _nCurEditRow == rowIndex );

@@ -200,6 +200,10 @@ namespace FileDbNs
         // experimenting with dymanics
         //public dynamic DynamicFields;
 
+        public Record( Fields fields ) : this( fields, (object[]) null )
+        {
+        }
+
         /// <summary>
         /// Create a Record object with the indicated Fields and values.  If creating a list of Record objects 
         /// (for a Records list) be sure to use the same Fields list for each Record.
@@ -242,13 +246,17 @@ namespace FileDbNs
         {
             _fields = fields;
             _values = new List<object>( fields.Count );
+
             // we must initialize the record values with null
             for( int n=0; n < fields.Count; n++ )
                 _values.Add( null );
 
-            foreach( var val in values )
+            if( values != null )
             {
-                this[val.Key] = convertObjectToFieldType( val.Value, fields[val.Key] );
+                foreach( var val in values )
+                {
+                    this[val.Key] = convertObjectToFieldType( val.Value, fields[val.Key] );
+                }
             }
         }
 
@@ -1089,6 +1097,17 @@ namespace FileDbNs
         /// 
         public Fields Fields { get { return _fields; } }
 
+        /// <summary>
+        /// Add a new Record to this Table with all null values.
+        /// </summary>
+        /// <returns></returns>
+        /// 
+        public Record AddRecord()
+        {
+            var record = new Record( _fields, (object[]) null );
+            this.Add( record );
+            return record;
+        }
         /// <summary>
         /// Add a new Record to this Table with the specfied values, which must be in the order
         /// of their corresponding fields.
