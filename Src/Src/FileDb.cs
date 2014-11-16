@@ -1720,7 +1720,7 @@ namespace FileDbNs
 
                     //object val = record[field.Ordinal].ToString();
 
-                    if( (searchExp.Equality == ComparisonOperatorEnum.Regex /*|| searchExp.Equality == EqualityEnum.NotRegex*/) && regex == null )
+                    if( searchExp.Equality == ComparisonOperatorEnum.Regex && regex == null )
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     bool isMatch = evaluate( field, searchExp, record, regex );
@@ -2131,7 +2131,7 @@ namespace FileDbNs
                     object[] record = readRecord( offset, includeIndex, out deleted );
                     Debug.Assert( !deleted );
 
-                    if( (searchExp.Equality == ComparisonOperatorEnum.Regex /*|| searchExp.Equality == EqualityEnum.NotRegex*/) && regex == null )
+                    if( searchExp.Equality == ComparisonOperatorEnum.Regex && regex == null )
                         regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
                     bool isMatch = evaluate( field, searchExp, record, regex );
@@ -2357,15 +2357,13 @@ namespace FileDbNs
                     isMatch = idx >= 0;
                 }
             }
-            else if( searchExp.Equality == ComparisonOperatorEnum.Regex ) //|| searchExp.Equality == EqualityEnum.NotRegex) )
+            else if( searchExp.Equality == ComparisonOperatorEnum.Regex )
             {
                 // hopefully searching for strings
 
                 if( regex == null )
                     regex = new Regex( searchExp.SearchVal.ToString(), RegexOptions.IgnoreCase );
 
-                //compareResult = regex.IsMatch( val.ToString() ) ? EqualityEnum.Regex : EqualityEnum.NotRegex;
-                //compareResult = ComparisonOperatorEnum.Regex;
                 string str = val.ToString();
 
                 if( !string.IsNullOrEmpty( str ) )
@@ -2400,8 +2398,6 @@ namespace FileDbNs
                         val = val.ToString().ToUpper();
                 }
 
-                //compareResult = hashSet.Contains( val ) ? EqualityEnum.In : EqualityEnum.NotIn;
-                //compareResult = ComparisonOperatorEnum.In;
                 isMatch = hashSet.Contains( val );
             }
             else // all others

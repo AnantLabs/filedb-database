@@ -508,6 +508,7 @@ namespace SampleApp
                 // Use either ~= or you can prefix the fieldname with ~
                 // Both methods are shown below
                 // (FileDb doesn't currently support UPPER or LOWER)
+                // Note also that each set of parentheses will create a child FilterExpressionGroup
 
                 string filter = "(~FirstName = 'steven' OR [FirstName] ~= 'NANCY') AND LastName = 'Fuller'";
 

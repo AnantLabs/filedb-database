@@ -553,7 +553,7 @@ namespace WindowsPhoneRT
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
                 Table table = _db.SelectRecords( fieldSearchExp );
                 displayRecords( table );
@@ -570,10 +570,10 @@ namespace WindowsPhoneRT
             {
                 // Use the FilterExpressionGroup's filter parser to create a FilterExpressionGroup
                 // The syntax is similar to SQL (do not preceed with WHERE)
-                // Note that we prefix the fieldname with ~ to get a case-INSENSITIVE search
+                // Note that there are 2 ways to get a case-INSENSITIVE search:
+                // Use either ~= or you can prefix the fieldname with ~
+                // Both methods are shown below
                 // (FileDb doesn't currently support UPPER or LOWER)
-                // Note that we can also use LIKE when we want to ignore case, but the difference
-                // is that LIKE will create a RegEx search which would be a little slower
                 // Note also that each set of parentheses will create a child FilterExpressionGroup
 
                 string filter = "(~FirstName = 'steven' OR [FirstName] LIKE 'NANCY') AND LastName = 'Fuller'";
@@ -583,11 +583,13 @@ namespace WindowsPhoneRT
                 displayRecords( table );
 
                 // we can manually build the same FilterExpressionGroup
-                var lnameExp = new FilterExpression( "LastName", "Fuller", EqualityEnum.Equal, MatchTypeEnum.UseCase );
-                var fname1Exp = new FilterExpression( "FirstName", "steven", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "steven", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+
                 // the following two lines produce the same FilterExpression
-                var fname2Exp = FilterExpression.Parse( "FirstName LIKE 'NANCY'" );
-                fname2Exp = new FilterExpression( "FirstName", "NANCY", EqualityEnum.Like );
+                var fname2Exp = FilterExpression.Parse( "FirstName ~= 'NANCY'" );
+                fname2Exp = new FilterExpression( "FirstName", "NANCY", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+
+                var lnameExp = new FilterExpression( "LastName", "Fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
@@ -657,11 +659,11 @@ namespace WindowsPhoneRT
                 displayRecords( table );
 
                 // equivalent building it manually
-                var fname1Exp = new FilterExpression( "FirstName", "andrew", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "andrew", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
                 // the following two lines produce the same FilterExpression
                 var fname2Exp = FilterExpression.Parse( "~FirstName = nancy" );
-                fname2Exp = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var lnameExp = new FilterExpression( "LastName", "fuller", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                fname2Exp = new FilterExpression( "FirstName", "nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
@@ -692,7 +694,7 @@ namespace WindowsPhoneRT
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
                 var fieldValues = new FieldValues();
                 fieldValues.Add( "IsCitizen", true );
@@ -716,8 +718,8 @@ namespace WindowsPhoneRT
             {
                 // the following two lines produce the same FilterExpression
                 var exp1 = FilterExpression.Parse( "~FirstName = nancy" );
-                exp1 = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var exp2 = new FilterExpression( "LastName", "leverling", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                exp1 = new FilterExpression( "FirstName", "nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var exp2 = new FilterExpression( "LastName", "leverling", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
                 var expGrp = new FilterExpressionGroup();
                 expGrp.Add( BoolOpEnum.Or, exp1 );
                 expGrp.Add( BoolOpEnum.Or, exp2 );
@@ -740,7 +742,7 @@ namespace WindowsPhoneRT
         {
             try
             {
-                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
                 int numDeleted = _db.DeleteRecords( searchExp );
             }
             catch( Exception ex )
