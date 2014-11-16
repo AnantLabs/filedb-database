@@ -488,9 +488,9 @@ namespace WindowsPhoneSL
                 // Use the FilterExpressionGroup's filter parser to create a FilterExpressionGroup
                 // The syntax is similar to SQL (do not preceed with WHERE)
                 // Note that there are 2 ways to get a case-INSENSITIVE search:
-                // Use either ~= or you can prefix the fieldname with ~
+                // Use either ~= or you can prefix the fieldname with ~ to ignore case
                 // Both methods are shown below
-                // (FileDb doesn't currently support UPPER or LOWER)
+                // (FileDb doesn't support UPPER or LOWER)
                 // Note also that each set of parentheses will create a child FilterExpressionGroup
 
                 string filter = "(~FirstName = 'steven' OR [FirstName] ~= 'NANCY') AND LastName = 'Fuller'";
@@ -500,14 +500,17 @@ namespace WindowsPhoneSL
                 displayRecords( table );
 
                 // we can manually build the same FilterExpressionGroup
-
                 var fname1Exp = new FilterExpression( "FirstName", "steven", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 // the following two lines produce the same FilterExpression
-                var fname2Exp = FilterExpression.Parse( "FirstName ~= 'NANCY'" );
+                var fname2Exp = FilterExpression.Parse( "FirstName ~= 'NANCY'" ); // equal/ignore case
                 fname2Exp = new FilterExpression( "FirstName", "NANCY", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var lnameExp = new FilterExpression( "LastName", "Fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
+
+                // NOTE: FileDb now supports CONTAINS which is very fast, so you could now do this too
+                //fname2Exp = FilterExpression.Parse( "~FirstName CONTAINS 'NANCY'" ); // equal/ignore case
+                //fname2Exp = new FilterExpression( "FirstName", "NANCY", ComparisonOperatorEnum.Contains, MatchTypeEnum.IgnoreCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
