@@ -44,8 +44,6 @@ What needs to be done
 
 The most needed thing at this point is a suite of test functions to be written which can be used to verify the accuracy of the database as changes are made.
 
-I also thought about making it so you could create an in-memory database, where there is no file backing (to create it, you would pass null as the filename).  Then have a Save method which returns a Byte[] or saves to a passed in Stream.  There may be some scenarios where this could be very handy.
-
 It would be cool if someone who knows LINQ internals could implement IQueryable to make it work even better with LINQ.  As it is now, you must select the dataset (Table) and use it int the LINQ query.  If IQueryable is implemented we can use the FileDb object in the LINQ query directly.
 
 

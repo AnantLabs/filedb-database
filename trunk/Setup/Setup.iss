@@ -104,6 +104,7 @@ Source: Files\Samples\WindowsPhoneRT\Assets\*; DestDir: {app}\Samples\WindowsPho
 Source: Files\Samples\WindowsPhoneSL\*; DestDir: {app}\Samples\WindowsPhoneSL
 Source: Files\Samples\WindowsPhoneSL\Properties\*; DestDir: {app}\Samples\WindowsPhoneSL\Properties
 Source: Files\Samples\WindowsPhoneSL\Assets\*; DestDir: {app}\Samples\WindowsPhoneSL\Assets
+Source: Files\Samples\WindowsPhoneSL\Assets\Tiles\*; DestDir: {app}\Samples\WindowsPhoneSL\Assets\Tiles
 Source: Files\Samples\WindowsPhoneSL\Resources\*; DestDir: {app}\Samples\WindowsPhoneSL\Resources
 ;Shared database
 Source: Files\Samples\Northwind Database\*; DestDir: {app}\Samples\Northwind Database

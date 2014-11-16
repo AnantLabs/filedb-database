@@ -471,7 +471,7 @@ namespace SampleApp
                 // get all records sorted by LastName, Firstname.  Notice how prefix the fieldname with ~
                 // in the OrderBy list to get case-insensitive sort
 
-                FileDbNs.Table table = _db.SelectAllRecords( null, new string[] { "~LastName", "Firstname" } );
+                Table table = _db.SelectAllRecords( null, new string[] { "~LastName", "Firstname" } );
                 displayRecords( table );
             }
             catch( Exception ex )
@@ -488,7 +488,7 @@ namespace SampleApp
                 // to get a reverse sort, prefix with !
                 // to get a case-insensitive sort, prefix with ~
 
-                FileDbNs.Table table = _db.SelectAllRecords( new string[] { "ID", "Firstname", "LastName" }, 
+                Table table = _db.SelectAllRecords( new string[] { "ID", "Firstname", "LastName" }, 
                     new string[] { "!~LastName", "~FirstName" } );
                 displayRecords( table );
             }
@@ -503,9 +503,9 @@ namespace SampleApp
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
-                FileDbNs.Table table = _db.SelectRecords( fieldSearchExp );
+                Table table = _db.SelectRecords( fieldSearchExp );
                 displayRecords( table );
             }
             catch( Exception ex )
@@ -520,24 +520,26 @@ namespace SampleApp
             {
                 // Use the FilterExpressionGroup's filter parser to create a FilterExpressionGroup
                 // The syntax is similar to SQL (do not preceed with WHERE)
-                // Note that we prefix the fieldname with ~ to get a case-INSENSITIVE search
+                // Note that there are 2 ways to get a case-INSENSITIVE search:
+                // Use either ~= or you can prefix the fieldname with ~
+                // Both methods are shown below
                 // (FileDb doesn't currently support UPPER or LOWER)
-                // Note that we can also use LIKE when we want to ignore case, but the difference
-                // is that LIKE will create a RegEx search which would be a little slower
                 // Note also that each set of parentheses will create a child FilterExpressionGroup
 
-                string filter = "(~FirstName = 'steven' OR [FirstName] LIKE 'NANCY') AND LastName = 'Fuller'";
+                string filter = "(~FirstName = 'steven' OR [FirstName] ~= 'NANCY') AND LastName = 'Fuller'";
 
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
-                FileDbNs.Table table = _db.SelectRecords( filterExpGrp );
+                Table table = _db.SelectRecords( filterExpGrp );
                 displayRecords( table );
 
                 // we can manually build the same FilterExpressionGroup
-                var fname1Exp = new FilterExpression( "FirstName", "steven", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "steven", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                
                 // the following two lines produce the same FilterExpression
-                var fname2Exp = FilterExpression.Parse( "FirstName LIKE 'NANCY'" );
-                fname2Exp = new FilterExpression( "FirstName", "NANCY", EqualityEnum.Like );
-                var lnameExp = new FilterExpression( "LastName", "Fuller", EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                var fname2Exp = FilterExpression.Parse( "FirstName ~= 'NANCY'" );
+                fname2Exp = new FilterExpression( "FirstName", "NANCY", ComparisonOperatorEnum.Regex );
+
+                var lnameExp = new FilterExpression( "LastName", "Fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
@@ -567,7 +569,7 @@ namespace SampleApp
                 // first find a record and get its index
 
                 FilterExpression fieldSearchExp = FilterExpression.Parse( "LastName = Buchanan" );
-                FileDbNs.Table table = _db.SelectRecords( fieldSearchExp, null, null, true );
+                Table table = _db.SelectRecords( fieldSearchExp, null, null, true );
                 if( table.Count > 0 )
                 {
                     int index = (int) table[0]["index"];
@@ -610,7 +612,7 @@ namespace SampleApp
             try
             {
                 FilterExpression fieldSearchExp = FilterExpression.Parse( "LastName = 'Peacock'" );
-                FileDbNs.Table table = _db.SelectRecords( fieldSearchExp, new string[] { "ID", "Float" }, null, true );
+                Table table = _db.SelectRecords( fieldSearchExp, new string[] { "ID", "Float" }, null, true );
 
                 if( table.Count > 0 )
                 {
@@ -640,15 +642,15 @@ namespace SampleApp
                 string filter = "(~FirstName = 'andrew' OR ~FirstName = 'nancy') AND ~LastName = 'fuller'";
 
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
-                FileDbNs.Table table = _db.SelectRecords( filterExpGrp );
+                Table table = _db.SelectRecords( filterExpGrp );
                 displayRecords( table );
 
                 // equivalent building it manually
-                var fname1Exp = new FilterExpression( "FirstName", "andrew", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "andrew", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
                 // the following two lines produce the same FilterExpression
                 var fname2Exp = FilterExpression.Parse( "~FirstName = nancy" );
-                fname2Exp = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var lnameExp = new FilterExpression( "LastName", "fuller", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                fname2Exp = new FilterExpression( "FirstName", "nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "fuller", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var fnamesGrp = new FilterExpressionGroup();
                 fnamesGrp.Add( BoolOpEnum.Or, fname1Exp );
@@ -682,13 +684,13 @@ namespace SampleApp
             try
             {
                 string searchVal = @"\bFull";
-                var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
                 var fieldValues = new FieldValues();
                 fieldValues.Add( "IsCitizen", true );
                 int nRecs = _db.UpdateRecords( fieldSearchExp, fieldValues );
 
-                FileDbNs.Table table = _db.SelectRecords( fieldSearchExp );
+                Table table = _db.SelectRecords( fieldSearchExp );
                 displayRecords( table );
             }
             catch( Exception ex )
@@ -734,9 +736,9 @@ namespace SampleApp
                 {
                     employeesDb.Open( path + "Employees.fdb", false );
                     string searchVal = @"\bFull";
-                    var fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Like );
+                    var fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Regex );
 
-                    FileDbNs.Table table = employeesDb.SelectRecords( fieldSearchExp );
+                    Table table = employeesDb.SelectRecords( fieldSearchExp );
 
                     FileDb newDb = table.SaveToDb( "Employees2.fdb" );
                     table = newDb.SelectRecords( fieldSearchExp );
@@ -772,11 +774,11 @@ namespace SampleApp
                 {
                     customersDb.Open( path + "Customers.fdb", false );
 
-                    FileDbNs.Table customers = customersDb.SelectAllRecords();
+                    Table customers = customersDb.SelectAllRecords();
 
                     FilterExpression filterExp = FilterExpression.Parse( "CustomerID <> 'ALFKI'" );
 
-                    FileDbNs.Table subCusts = customers.SelectRecords( filterExp, // "CustomerID <> 'ALFKI'",
+                    Table subCusts = customers.SelectRecords( filterExp, // "CustomerID <> 'ALFKI'",
                         new string[] { "CustomerID", "CompanyName", "City" }, new string[] { "~City", "~CompanyName" } );
 
                     displayRecords( subCusts );
@@ -799,13 +801,13 @@ namespace SampleApp
         {
             try
             {
-                var exp1 = new FilterExpression( "FirstName", "Nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var exp2 = new FilterExpression( "LastName", "Leverling", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var exp1 = new FilterExpression( "FirstName", "Nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var exp2 = new FilterExpression( "LastName", "Leverling", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
                 var expGrp = new FilterExpressionGroup();
                 expGrp.Add( BoolOpEnum.Or, exp1 );
                 expGrp.Add( BoolOpEnum.Or, exp2 );
 
-                FileDbNs.Table table = _db.SelectRecords( expGrp, new string[] { "ID" } );
+                Table table = _db.SelectRecords( expGrp, new string[] { "ID" } );
 
                 foreach( Record record in table )
                 {
@@ -825,8 +827,8 @@ namespace SampleApp
             {
                 string searchVal = "Buchanan";
 
-                FilterExpression fieldSearchExp = new FilterExpression( "LastName", searchVal, EqualityEnum.Equal, MatchTypeEnum.UseCase );
-                FileDbNs.Table table = _db.SelectRecords( fieldSearchExp, null, null, true );
+                FilterExpression fieldSearchExp = new FilterExpression( "LastName", searchVal, ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
+                Table table = _db.SelectRecords( fieldSearchExp, null, null, true );
 
                 Record record = table[0];
                 _db.DeleteRecordByIndex( (int) record["index"] );
@@ -841,7 +843,7 @@ namespace SampleApp
         {
             try
             {
-                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", EqualityEnum.Equal, MatchTypeEnum.UseCase );
+                FilterExpression searchExp = new FilterExpression( "FirstName", "Nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.UseCase );
                 int numDeleted = _db.DeleteRecords( searchExp );
             }
             catch( Exception ex )
@@ -854,8 +856,8 @@ namespace SampleApp
         {
             try
             {
-                var lnameExp = new FilterExpression( "LastName", "peacock", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
-                var fname1Exp = new FilterExpression( "FirstName", "nancy", EqualityEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var lnameExp = new FilterExpression( "LastName", "peacock", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
+                var fname1Exp = new FilterExpression( "FirstName", "nancy", ComparisonOperatorEnum.Equal, MatchTypeEnum.IgnoreCase );
 
                 var allNamesGrp = new FilterExpressionGroup();
                 allNamesGrp.Add( BoolOpEnum.Or, lnameExp );
@@ -977,7 +979,7 @@ namespace SampleApp
                 try
                 {
                     FilterExpression filterExp = FilterExpression.Parse( "LastName in ('Fuller', 'Peacock')" );
-                    FileDbNs.Table customers = employeesDb.SelectRecords( filterExp );
+                    Table customers = employeesDb.SelectRecords( filterExp );
 
                     var query =
                         from record in customers
@@ -1032,21 +1034,21 @@ namespace SampleApp
 
                     // get all Customer records
                     FilterExpression filterExp;
-                    FileDbNs.Table customers = customersDb.SelectAllRecords( new string[] { "CustomerID", "CompanyName" } );
+                    Table customers = customersDb.SelectAllRecords( new string[] { "CustomerID", "CompanyName" } );
 
                     // now get only Order records for the target Customer records using FilterExpression.CreateInExpressionFromTable
                     // this method creates a HastSet which is extremely efficient when used by FileDb.SelectRecords
 
                     filterExp = FilterExpression.CreateInExpressionFromTable( "CustomerID", customers, "CustomerID" );
-                    FileDbNs.Table orders = ordersDb.SelectRecords( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
+                    Table orders = ordersDb.SelectRecords( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
 
                     // now get only OrderDetails records for the target Order records
                     filterExp = FilterExpression.CreateInExpressionFromTable( "OrderID", orders, "OrderID" );
-                    FileDbNs.Table orderDetails = orderDetailsDb.SelectRecords( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
+                    Table orderDetails = orderDetailsDb.SelectRecords( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
 
                     // now get only Product records for the target OrderDetails records
                     filterExp = FilterExpression.CreateInExpressionFromTable( "ProductID", orderDetails, "ProductID" );
-                    FileDbNs.Table products = productsDb.SelectRecords( filterExp, new string[] { "ProductID", "ProductName" } );
+                    Table products = productsDb.SelectRecords( filterExp, new string[] { "ProductID", "ProductName" } );
 
                     // produces a flat/normalized sequence
 
@@ -1100,7 +1102,7 @@ namespace SampleApp
 
                 try
                 {
-                    FileDbNs.Table customers = employeesDb.SelectAllRecords();
+                    Table customers = employeesDb.SelectAllRecords();
 
                     var employeeGrps =
                         from c in customers
@@ -1162,21 +1164,21 @@ namespace SampleApp
 
                     // get all Customer records
                     FilterExpression filterExp;
-                    FileDbNs.Table customers = customersDb.SelectAllRecords( new string[] { "CustomerID", "CompanyName" } );
+                    Table customers = customersDb.SelectAllRecords( new string[] { "CustomerID", "CompanyName" } );
 
                     // now get only Order records for the target Customer records using FilterExpression.CreateInExpressionFromTable
                     // this method creates a HastSet which is extremely efficient when used by FileDb.SelectRecords
 
                     filterExp = FilterExpression.CreateInExpressionFromTable( "CustomerID", customers, "CustomerID" );
-                    FileDbNs.Table orders = ordersDb.SelectRecords( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
+                    Table orders = ordersDb.SelectRecords( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
 
                     // now get only OrderDetails records for the target Order records
                     filterExp = FilterExpression.CreateInExpressionFromTable( "OrderID", orders, "OrderID" );
-                    FileDbNs.Table orderDetails = orderDetailsDb.SelectRecords( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
+                    Table orderDetails = orderDetailsDb.SelectRecords( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
 
                     // now get only Product records for the target OrderDetails records
                     filterExp = FilterExpression.CreateInExpressionFromTable( "ProductID", orderDetails, "ProductID" );
-                    FileDbNs.Table products = productsDb.SelectRecords( filterExp, new string[] { "ProductID", "ProductName" } );
+                    Table products = productsDb.SelectRecords( filterExp, new string[] { "ProductID", "ProductName" } );
 
 
                     // Step 2:  Use Linq to generate the objects for us
@@ -1268,17 +1270,17 @@ namespace SampleApp
 
                     // get all Customer records
                     FilterExpression filterExp;
-                    FileDbNs.Table customers = customersDb.SelectAllRecords( new string[] { "CustomerID", "CompanyName" } );
+                    Table customers = customersDb.SelectAllRecords( new string[] { "CustomerID", "CompanyName" } );
 
                     // now get only Order records for the target Customer records using FilterExpression.CreateInExpressionFromTable
                     // this method creates a HastSet which is extremely efficient when used by FileDb.SelectRecords
 
                     filterExp = FilterExpression.CreateInExpressionFromTable( "CustomerID", customers, "CustomerID" );
-                    FileDbNs.Table orders = ordersDb.SelectRecords( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
+                    Table orders = ordersDb.SelectRecords( filterExp, new string[] { "CustomerID", "OrderID", "OrderDate" } );
 
                     // now get only OrderDetails records for the target Order records
                     filterExp = FilterExpression.CreateInExpressionFromTable( "OrderID", orders, "OrderID" );
-                    FileDbNs.Table orderDetails = orderDetailsDb.SelectRecords( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
+                    Table orderDetails = orderDetailsDb.SelectRecords( filterExp, new string[] { "OrderID", "ProductID", "UnitPrice", "Quantity" } );
 
                     // Step 2:  Use Linq to generate the objects for us
 
