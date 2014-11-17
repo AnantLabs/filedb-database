@@ -40,7 +40,7 @@
                     <Button Content="Drop" Height="Auto" Name="BtnDrop" HorizontalAlignment="Stretch" FontSize="20" Padding="1,1" Click="BtnDrop_Click" />
                     <Rectangle Height="2" Fill="White" StrokeThickness="1" HorizontalAlignment="Stretch" />
                     <Button FontSize="20" Height="Auto" Name="BtnUpdateMatchingRecords" Padding="1,1" HorizontalAlignment="Stretch" Click="BtnUpdateMatchingRecords_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Update matching<LineBreak/>records</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Update matching<LineBreak/>records</TextBlock>
                     </Button>
                     <Button FontSize="20" Height="Auto" Name="BtnUpdateRecordsRegex" Padding="1,1" HorizontalAlignment="Stretch" Click="BtnUpdateRecordsRegex_Click" >
                         <TextBlock TextWrapping="Wrap">Update records<LineBreak/>Regex</TextBlock>
@@ -51,28 +51,31 @@
                 </StackPanel>
                 <StackPanel Height="Auto" HorizontalAlignment="Stretch" Margin="0,0,0,0" Name="stackPanel2" VerticalAlignment="Stretch" Grid.Column="2">
                     <Button Height="Auto" Name="BtnGetAllRecords" HorizontalAlignment="Stretch" FontSize="20" Click="BtnGetAllRecords_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get All<LineBreak/>Records</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get All<LineBreak/>Records</TextBlock>
+                    </Button>
+                    <Button Height="Auto" Name="BtnGetRecordsWithContains" HorizontalAlignment="Stretch" FontSize="20" Click="BtnGetRecordsWithContains_Click" >
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get Records using Contains</TextBlock>
                     </Button>
                     <Button Height="Auto" Name="BtnGetRecordsRegex" HorizontalAlignment="Stretch" FontSize="20" Click="BtnGetRecordsRegex_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get Records Regex</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get Records Regex</TextBlock>
                     </Button>
                     <Button Height="Auto" Name="BtnGetMatchingRecords" HorizontalAlignment="Stretch" FontSize="20" Click="BtnGetMatchingRecords_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get Matching<LineBreak/>Records</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get Matching<LineBreak/>Records</TextBlock>
                     </Button>
                     <Button Height="Auto" Name="BtnGetRecordByIndex" HorizontalAlignment="Stretch" FontSize="20" Click="BtnGetRecordByIndex_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get record<LineBreak/>by index</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get record<LineBreak/>by index</TextBlock>
                     </Button>
                     <Button Height="Auto" Name="BtnGetRecordByKey" HorizontalAlignment="Stretch" FontSize="20" Click="BtnGetRecordByKey_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get record<LineBreak/>by key</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get record<LineBreak/>by key</TextBlock>
                     </Button>
                     <Button Content="LINQ Select" Height="Auto" Name="BtnLinqSelect" HorizontalAlignment="Stretch" FontSize="20" Click="BtnLinqSelect_Click" />
                     <Rectangle Height="2" Stroke="Bisque" StrokeThickness="1" HorizontalAlignment="Stretch" Fill="White" />
                     <Button Content="Remove by key" Height="Auto" Name="BtnRemoveByKey" HorizontalAlignment="Stretch" FontSize="20" Click="BtnRemoveByKey_Click" />
                     <Button Height="Auto" Name="BtnRemoveByValue" HorizontalAlignment="Stretch" FontSize="20" Click="BtnRemoveByValue_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Remove by<LineBreak/>value</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Remove by<LineBreak/>value</TextBlock>
                     </Button>
                     <Button Height="Auto" Name="BtnMetaData" HorizontalAlignment="Stretch" FontSize="20" Click="BtnMetaData_Click" >
-                        <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">Get/Set<LineBreak/>MetaData</TextBlock>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center">Get/Set<LineBreak/>MetaData</TextBlock>
                     </Button>
                 </StackPanel>
             </Grid>
