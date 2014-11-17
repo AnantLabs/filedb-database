@@ -12,8 +12,10 @@ namespace FileDbNs
 {
     //=====================================================================
     /// <summary>
-    /// Represents an open FileDb database file.  None of the FileDb classes are re-entrant -
-    /// access to the class objects must be syncronised by the calling application.
+    /// Represents an open FileDb database file.  All of the FileDb classes/methods are re-entrant -
+    /// there is no need to syncronise access to the class objects by the calling application.
+    /// However you should use the try-finally pattern when you open a FileDb to ensure
+    /// prompt closing in the finally code block.
     /// </summary>
     /// 
     public partial class FileDb : IDisposable

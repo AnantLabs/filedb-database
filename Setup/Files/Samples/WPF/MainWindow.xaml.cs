@@ -476,6 +476,34 @@ namespace SampleApp
             }
         }
 
+        private void BtnGetRecordsWithContains_Click( object sender, RoutedEventArgs e )
+        {
+            try
+            {
+                // different ways to search for LastName CONTAINS 'lever' with ignore case
+
+                // pre-compiled filter (which could be re-used repeatedly)
+                // this is the lowest level way to create a FilterExpression
+                var filterExp = new FilterExpression( "LastName", "lever", ComparisonOperatorEnum.Contains, MatchTypeEnum.IgnoreCase );
+                // use ~ on the field name to indicate ignore case
+                filterExp = FilterExpression.Parse( "~LastName CONTAINS 'lever'" );
+
+                // using string expression directly in SelectRecords - it calls FilterExpression.Parse as above
+                FileDbNs.Table table = _db.SelectRecords( "~LastName CONTAINS 'lever'" );
+                displayRecords( table );
+
+                // get the same records again as a typed list using your own custom class
+                IList<Person> persons = _db.SelectRecords<Person>( filterExp );
+                grid.Columns.Clear();
+                grid.ItemsSource = persons;
+
+            }
+            catch( Exception ex )
+            {
+                MessageBox.Show( ex.Message );
+            }
+        }
+
         private void BtnGetRecordsRegex_Click( object sender, RoutedEventArgs e )
         {
             try
@@ -511,7 +539,7 @@ namespace SampleApp
                 // Note also that each set of parentheses will create a child FilterExpressionGroup
 
                 string filter = "(~FirstName = 'steven' OR [FirstName] ~= 'NANCY') AND LastName = 'Fuller'";
-
+                
                 FilterExpressionGroup filterExpGrp = FilterExpressionGroup.Parse( filter );
                 FileDbNs.Table table = _db.SelectRecords( filterExpGrp );
                 displayRecords( table );
